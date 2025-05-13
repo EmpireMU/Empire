@@ -4,6 +4,13 @@ from evennia import default_cmds
 
 
 class CmdHelloWorld(Command):
+    """
+    A simple echo command
+
+    Usage:
+        echo <something>
+
+    """
     
     key = "hello"
 
