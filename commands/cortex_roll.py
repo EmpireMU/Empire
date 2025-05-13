@@ -11,8 +11,7 @@ class CmdCortexRoll(Command):
     key = "roll"
 
     def parse(self):
-        dice_string = self.args.strip
-        self.dice = dice_string.split("+")
+        self.dice = self.args.strip.split("+")
         return
 
     def func(self):
