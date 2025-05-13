@@ -24,7 +24,7 @@ class CmdCortexRoll(Command):
         i = 0
         for die in self.dice:
             i += 1
-            results[i] = randint(1, die)
+            results[i] = str(randint(1, die))
             return
         
 
