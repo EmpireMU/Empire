@@ -1,4 +1,6 @@
 from evennia import Command
+from evennia import CmdSet
+from evennia import default_cmds
 
 
 class CmdHelloWorld(Command):
@@ -7,8 +9,12 @@ class CmdHelloWorld(Command):
 
     def func(self):
         caller = self.caller
-        location = self.location
+        location = caller.location
         message = "Hello World!"
         location.msg_contents(message)
         return
     
+
+class HelloWorldCmdSet(CmdSet):
+    def at_cmdset_creation(self):
+        self.add(CmdHelloWorld)
