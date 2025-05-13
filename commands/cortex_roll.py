@@ -10,12 +10,16 @@ class CmdCortexRoll(Command):
     
     key = "roll"
 
+    def parse(self):
+        dice_string = self.args.strip
+        self.dice = dice_string.split("+")
+        return
+
     def func(self):
-        args = self.args.strip
+        
         if not args:
             self.caller.msg("What dice do you want to roll?")
             return
-        dice = args.split("+")
         results = []
         i = 0
         for die in dice:
