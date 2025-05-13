@@ -14,7 +14,7 @@ class CmdCortexRoll(Command):
         if not self.args:
             self.caller.msg("What dice do you want to roll?")
             return
-        dice_string = self.args.strip().lower()
+        dice_string = self.args.strip()
         self.dice = dice_string.split("+")
 
     def func(self):
