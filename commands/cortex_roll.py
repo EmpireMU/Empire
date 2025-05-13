@@ -11,7 +11,7 @@ class CmdCortexRoll(Command):
     key = "roll"
 
     def parse(self):
-        if not args:
+        if not self.args:
             self.caller.msg("What dice do you want to roll?")
             return
         dice_string = self.args.strip().lower()
