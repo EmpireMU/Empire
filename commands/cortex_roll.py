@@ -18,21 +18,24 @@ class CmdCortexRoll(Command):
         self.dice = dice_string.split("+")
 
     def func(self):
+
+        caller = self.caller
+        location = caller.location
         
         
         results = []
         i = 0
         for die in self.dice:
+            message = die
+            location.msg_contents(die)
             results.append(str(randint(1, int(die))))
             return
         
 
 
 
-        caller = self.caller
-        location = caller.location
-        message = results
-        location.msg_contents(message)
+        
+        
     
 
 class CortexCmdSet(CmdSet):
