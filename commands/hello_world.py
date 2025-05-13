@@ -1,4 +1,4 @@
-from evennia import commands
+from evennia import Command
 
 
 class CmdHelloWorld(Command):
@@ -9,7 +9,6 @@ class CmdHelloWorld(Command):
         caller = self.caller
         location = self.location
         message = "Hello World!"
-
         location.msg_contents(message)
         return
     
