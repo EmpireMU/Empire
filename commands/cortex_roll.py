@@ -11,18 +11,19 @@ class CmdCortexRoll(Command):
     key = "roll"
 
     def parse(self):
+        if not args:
+            self.caller.msg("What dice do you want to roll?")
+            return
         dice_string = self.args.strip().lower()
         self.dice = dice_string.split("+")
         return
 
     def func(self):
         
-        if not args:
-            self.caller.msg("What dice do you want to roll?")
-            return
+        
         results = []
         i = 0
-        for die in dice:
+        for die in self.dice:
             i += 1
             results[i] = randint(1, die)
             return
