@@ -16,7 +16,6 @@ class CmdCortexRoll(Command):
             return
         dice_string = self.args.strip().lower()
         self.dice = dice_string.split("+")
-        return
 
     def func(self):
         
