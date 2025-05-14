@@ -19,7 +19,7 @@ class CmdCortexRoll(Command):
 
     def func(self):
         
-        results = self.caller + "rolls: "
+        results = self.caller.key + "rolls: "
         for die in self.dice:
             results = results + str(randint(1, int(die))) + "(" + die + ") +"
 
