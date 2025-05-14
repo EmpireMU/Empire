@@ -17,8 +17,9 @@ class CmdCortexRoll(Command):
         self.args = self.args.strip()
         caller = self.caller
         location = caller.location
-        location.msg_contents(self.args)
+        
         self.dice = self.args.split("+")
+        location.msg_contents(self.dice)
 
     def func(self):
 
