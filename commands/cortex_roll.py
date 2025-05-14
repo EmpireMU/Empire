@@ -22,11 +22,11 @@ class CmdCortexRoll(Command):
         caller = self.caller
         location = caller.location
         
-        
+        results = "Results: "
         for die in self.dice:
             location.msg_contents(self.dice)
             location.msg_contents(die)
-            results = results.append(str(randint(1, int(die))))
+            results.append(str(randint(1, int(die))))
             return
         
 
