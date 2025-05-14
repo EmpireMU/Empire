@@ -28,7 +28,6 @@ class CmdCortexRoll(Command):
         for die in self.dice:
             location.msg_contents(die)
             results = results + "+(" + die + ")" + str(randint(1, int(die)))
-            return
         
 
 
