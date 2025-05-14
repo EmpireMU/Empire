@@ -15,22 +15,17 @@ class CmdCortexRoll(Command):
             self.caller.msg("What dice do you want to roll?")
             return
         self.args = self.args.strip()
-        caller = self.caller
-        location = caller.location
-        
-        self.dice = self.args.split("\+")
-        location.msg_contents(self.dice)
+        self.dice = []
+        self.dice = self.args.split("+")
 
     def func(self):
 
         caller = self.caller
         location = caller.location
-        location.msg_contents(self.dice)
         
         
         results = []
         for die in self.dice:
-            message = die
             location.msg_contents(self.dice)
             location.msg_contents(die)
             results.append(str(randint(1, int(die))))
