@@ -23,7 +23,6 @@ class CmdCortexRoll(Command):
         location = caller.location
         
         
-        results = []
         for die in self.dice:
             location.msg_contents(self.dice)
             location.msg_contents(die)
