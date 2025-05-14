@@ -25,9 +25,9 @@ class CmdCortexRoll(Command):
         location = caller.location
         
         results = "Results: "
-        for i in self.dice:
-            location.msg_contents(self.dice[i])
-            results = results + "+(" + self.dice[i] + ")" + str(randint(1, int(self.dice[i])))
+        for die in self.dice:
+            location.msg_contents(die)
+            results = results + "+(" + die + ")" + str(randint(1, int(die)))
             return
         
 
