@@ -64,7 +64,7 @@ def initialize_traits(character: Any, force: bool = False) -> Tuple[bool, str]:
         changes.append(plot_point_change)
     
     # Initialize attributes
-    changes.extend(initialize_trait_group(character, ATTRIBUTES, "character_attributes", force))
+    changes.extend(initialize_trait_group(character, ATTRIBUTES, "attributes", force))
     
     # Initialize skills
     changes.extend(initialize_trait_group(character, SKILLS, "skills", force))
@@ -72,11 +72,8 @@ def initialize_traits(character: Any, force: bool = False) -> Tuple[bool, str]:
     # Initialize distinctions
     changes.extend(initialize_trait_group(character, DISTINCTIONS, "distinctions", force))
     
-    # Initialize resources and signature assets handlers
-    # This ensures the handlers exist for adding traits later
-    if not hasattr(character, 'resources'):
-        character.resources = TraitHandler(character, db_attribute_key="char_resources")
-        changes.append("Initialized resources handler")
+    # Initialize signature assets handler
+    # This ensures the handler exists for adding traits later
     if not hasattr(character, 'signature_assets'):
         character.signature_assets = TraitHandler(character, db_attribute_key="char_signature_assets")
         changes.append("Initialized signature assets handler")

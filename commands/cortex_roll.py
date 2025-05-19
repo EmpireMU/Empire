@@ -54,7 +54,7 @@ def format_colored_roll(value, die, trait_info, extra_value=None):
         if trait_info.category == 'distinctions':
             trait = trait_info.caller.distinctions.get(trait_info.key)
         elif trait_info.category == 'attributes':
-            trait = trait_info.caller.character_attributes.get(trait_info.key)
+            trait = trait_info.caller.attributes.get(trait_info.key)
         elif trait_info.category == 'skills':
             trait = trait_info.caller.skills.get(trait_info.key)
         elif trait_info.category == 'resources':
@@ -418,6 +418,21 @@ class CmdCortexRoll(Command):
         # For now just cleanup any temporary attributes if needed
         pass
 
+    def get_trait_dice(self, trait_info):
+        """Get the dice for a trait."""
+        if trait_info.category == 'attributes':
+            trait = trait_info.caller.attributes.get(trait_info.key)
+        elif trait_info.category == 'skills':
+            trait = trait_info.caller.skills.get(trait_info.key)
+        elif trait_info.category == 'signature_assets':
+            trait = trait_info.caller.signature_assets.get(trait_info.key)
+        else:
+            return None
+            
+        if not trait:
+            return None
+            
+        return [trait.base]
 
 class CortexCmdSet(CmdSet):
     """

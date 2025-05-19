@@ -48,44 +48,23 @@ class Character(ObjectParent, DefaultCharacter):
         return TraitHandler(self, db_attribute_key="char_distinctions")
         
     @lazy_property
-    def character_attributes(self):
+    def attributes(self):
         """
-        Attributes represent raw ability (d4-d12):
-        - d4: Notable deficiency
-        - d6: Typical person
-        - d8: Notable strength
-        - d10: Rarely-surpassed excellence
-        - d12: Peak of human performance
+        Character attributes (d4-d12)
         """
         return TraitHandler(self, db_attribute_key="char_attributes")
         
     @lazy_property
     def skills(self):
         """
-        Skills represent training/expertise (d4-d12):
-        - d4: Untrained, likely to cause trouble
-        - d6: Comfortable, knows their limits
-        - d8: Expert
-        - d10: Top of their field
-        - d12: Legendary
+        Character skills (d4-d12)
         """
         return TraitHandler(self, db_attribute_key="char_skills")
         
     @lazy_property
-    def resources(self):
-        """
-        Resources are organizational dice pools for:
-        - Political Capital
-        - Wealth
-        - Military
-        """
-        return TraitHandler(self, db_attribute_key="char_resources")
-        
-    @lazy_property
     def signature_assets(self):
         """
-        Signature Assets are remarkable items or NPC companions.
-        Usually d8, sometimes d6, rarely d10 or d12.
+        Signature assets (d4-d12)
         """
         return TraitHandler(self, db_attribute_key="char_signature_assets")
         
@@ -109,20 +88,20 @@ class Character(ObjectParent, DefaultCharacter):
 
         # Initialize attributes
         for trait in ATTRIBUTES:
-            existing = self.character_attributes.get(trait.key)
+            existing = self.attributes.get(trait.key)
             if existing:
                 existing.base = trait.default_value
             else:
-                self.character_attributes.add(
+                self.attributes.add(
                     trait.key,
                     value=trait.default_value,
                     desc=trait.description,
                     name=trait.name
                 )
                 # Ensure .base is set correctly
-                self.character_attributes.get(trait.key).base = trait.default_value
+                self.attributes.get(trait.key).base = trait.default_value
             # Debug print
-            self.msg(f"Attribute {trait.key}: default_value={trait.default_value}, base={self.character_attributes.get(trait.key).base}")
+            self.msg(f"Attribute {trait.key}: default_value={trait.default_value}, base={self.attributes.get(trait.key).base}")
 
         # Initialize skills
         for trait in SKILLS:
@@ -173,9 +152,8 @@ class Character(ObjectParent, DefaultCharacter):
         self.msg(f"Debug: Initializing trait handlers for {self.name}")
         self.msg(f"Debug: traits = {self.traits}")
         self.msg(f"Debug: distinctions = {self.distinctions}")
-        self.msg(f"Debug: character_attributes = {self.character_attributes}")
+        self.msg(f"Debug: attributes = {self.attributes}")
         self.msg(f"Debug: skills = {self.skills}")
-        self.msg(f"Debug: resources = {self.resources}")
         self.msg(f"Debug: signature_assets = {self.signature_assets}")
 
     def at_post_puppet(self):
@@ -189,9 +167,8 @@ class Character(ObjectParent, DefaultCharacter):
         # Ensure trait handlers are initialized
         _ = self.traits
         _ = self.distinctions
-        _ = self.character_attributes
+        _ = self.attributes
         _ = self.skills
-        _ = self.resources
         _ = self.signature_assets
         
         # Ensure Cortex Prime command set is available

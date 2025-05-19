@@ -254,4 +254,12 @@ def format_roll_result(value: int, die: str, trait: TraitDie) -> str:
     if trait.category:
         category_name = trait.category.title().rstrip('s')  # Remove trailing 's' and capitalize
         return f"{value}(d{die} {category_name}: {trait.key})"
-    return f"{value}(d{die})" 
+    return f"{value}(d{die})"
+
+def get_all_traits(character):
+    """Get all traits for a character."""
+    return [
+        ('attributes', character.attributes),
+        ('skills', character.skills),
+        ('signature_assets', character.signature_assets)
+    ] 
