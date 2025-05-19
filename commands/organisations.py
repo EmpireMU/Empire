@@ -3,7 +3,7 @@ Organization commands for managing organizations and their members.
 """
 
 from evennia.commands.default.muxcommand import MuxCommand
-from evennia import CmdSet
+from evennia import CmdSet, create_object
 from evennia.utils import evtable
 from evennia.utils.search import search_object
 from typeclasses.organisations import Organisation
@@ -66,12 +66,16 @@ class CmdOrg(MuxCommand):
             return
             
         # Create the organization
-        org = Organisation.objects.create(
-            db_key=self.args,
+        org = create_object(
+            typeclass=Organisation,
+            key=self.args,
             location=self.caller.location
         )
         
-        self.caller.msg(f"Created organization: {org.name}")
+        if org:
+            self.caller.msg(f"Created organization: {org.name}")
+        else:
+            self.caller.msg("Failed to create organization.")
         
     def manage_member(self):
         """Add or update a member's rank."""
