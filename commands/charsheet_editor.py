@@ -420,6 +420,144 @@ class CmdPersonality(MuxCommand):
         msg += f"\n\n{char.db.personality}"
         self.msg(msg)
 
+class CmdResource(MuxCommand):
+    """
+    Manage a character's resources.
+    
+    Usage:
+        resource [<character>]                    - List all resources
+        resource <character> = add <name> d<size> - Add a new resource
+        resource <character> = del <name> d<size> - Delete a specific resource
+        
+    Examples:
+        resource Ada                    - List Ada's resources
+        resource Ada = add "Political Capital" d8
+        resource Ada = add "Political Capital" d6
+        resource Ada = del "Political Capital" d8
+        
+    Resources are organizational dice pools that can have multiple instances
+    of the same type with different die sizes. For example, a character might
+    have three Political Capital of size d8 and two Political Capital of size d6.
+    """
+    
+    key = "resource"
+    locks = "cmd:perm(Builder)"  # Builders and above can use this
+    help_category = "Building"
+    
+    def func(self):
+        """Execute the command."""
+        # If no arguments, show caller's resources
+        if not self.args:
+            self.show_resources(self.caller)
+            return
+            
+        # Check if this is a view or edit command
+        if "=" not in self.args:
+            # View command
+            char = self.caller.search(self.args)
+            if not char:
+                return
+            self.show_resources(char)
+            return
+            
+        # Parse edit command
+        try:
+            char_name, rest = self.args.split("=", 1)
+            char = self.caller.search(char_name.strip())
+            if not char:
+                return
+                
+            # Split the rest into command and arguments
+            parts = rest.strip().split(" ", 1)
+            if len(parts) != 2:
+                self.msg("Usage: resource <character> = add <name> d<size> or resource <character> = del <name> d<size>")
+                return
+                
+            cmd, args = parts
+            cmd = cmd.lower()
+            
+            if cmd not in ['add', 'del']:
+                self.msg("Command must be 'add' or 'del'")
+                return
+                
+            # Parse resource name and die size
+            if not args.strip().endswith(('d4', 'd6', 'd8', 'd10', 'd12')):
+                self.msg("Die size must be d4, d6, d8, d10, or d12")
+                return
+                
+            # Split the last word (die size) from the name
+            name_parts = args.rsplit(" ", 1)
+            if len(name_parts) != 2:
+                self.msg("Usage: resource <character> = add <name> d<size> or resource <character> = del <name> d<size>")
+                return
+                
+            name, die_size = name_parts
+            name = name.strip('"').strip()
+            die_size = int(die_size[1:])  # Remove 'd' prefix
+            
+            # Create a unique key for this resource instance
+            # Format: name_die_size (e.g., "Political Capital_d8")
+            key = f"{name}_{die_size}"
+            
+            if cmd == 'add':
+                # Add the resource
+                char.resources.add(key, value=f"d{die_size}", name=name)
+                self.caller.msg(f"Added {char.name}'s {name} (d{die_size}).")
+                char.msg(f"{self.caller.name} added your {name} (d{die_size}).")
+            else:  # cmd == 'del'
+                # Delete the resource
+                if not char.resources.get(key):
+                    self.msg(f"{char.name} doesn't have a {name} resource of size d{die_size}.")
+                    return
+                char.resources.remove(key)
+                self.caller.msg(f"Deleted {char.name}'s {name} (d{die_size}).")
+                char.msg(f"{self.caller.name} deleted your {name} (d{die_size}).")
+                
+        except ValueError:
+            self.msg("Usage: resource <character> = add <name> d<size> or resource <character> = del <name> d<size>")
+            return
+            
+    def show_resources(self, char):
+        """Show a character's resources."""
+        if not char.resources.all():
+            self.msg(f"{char.name} has no resources.")
+            return
+            
+        # Group resources by name
+        resources_by_name = {}
+        for key, trait in char.resources.all().items():
+            name = trait.name
+            if name not in resources_by_name:
+                resources_by_name[name] = []
+            resources_by_name[name].append(trait)
+            
+        # Build the display message
+        msg = f"\n|w{char.name}'s Resources|n\n"
+        
+        # Create table
+        table = evtable.EvTable(
+            "|wResource|n",
+            "|wDice|n",
+            border="table",
+            width=78
+        )
+        
+        # Add rows
+        for name, traits in sorted(resources_by_name.items()):
+            # Count dice of each size
+            dice_counts = {}
+            for trait in traits:
+                die_size = f"d{trait.base}"
+                dice_counts[die_size] = dice_counts.get(die_size, 0) + 1
+                
+            # Format dice string (e.g., "2d8, 1d6")
+            dice_str = ", ".join(f"{count}{size}" for size, count in sorted(dice_counts.items()))
+            
+            table.add_row(name, dice_str)
+            
+        msg += str(table)
+        self.msg(msg)
+
 class CharSheetEditorCmdSet(CmdSet):
     """
     Command set for editing character sheets.
@@ -434,4 +572,5 @@ class CharSheetEditorCmdSet(CmdSet):
         self.add(CmdSetDistinction())
         self.add(CmdBiography())
         self.add(CmdBackground())
-        self.add(CmdPersonality()) 
+        self.add(CmdPersonality())
+        self.add(CmdResource()) 
