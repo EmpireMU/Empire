@@ -89,10 +89,8 @@ class Organisation(DefaultObject):
         # Store character ID as integer
         self.db.members[character.id] = rank
         
-        # Initialize organizations dict if needed
-        if not hasattr(character.db, 'organisations'):
-            character.db.organisations = {}
-        # Add this organization
+        # Initialize organizations dict if needed and add this organization
+        character.db.organisations = character.db.organisations or {}
         character.db.organisations[self.id] = rank
     
     def remove_member(self, character):
@@ -104,7 +102,7 @@ class Organisation(DefaultObject):
         """
         if character.id in self.db.members:
             del self.db.members[character.id]
-            if hasattr(character.db, 'organisations') and self.id in character.db.organisations:
+            if self.id in character.db.organisations:
                 del character.db.organisations[self.id]
     
     def set_rank(self, character, rank):
@@ -122,10 +120,8 @@ class Organisation(DefaultObject):
             self.add_member(character, rank)
         else:
             self.db.members[character.id] = rank
-            # Initialize organizations dict if needed
-            if not hasattr(character.db, 'organisations'):
-                character.db.organisations = {}
-            # Update the rank
+            # Initialize organizations dict if needed and update the rank
+            character.db.organisations = character.db.organisations or {}
             character.db.organisations[self.id] = rank
     
     def get_rank(self, character):
