@@ -350,6 +350,10 @@ class CmdClearOrgMemberships(MuxCommand):
             self.caller.msg(f"{char.name} does not have any organization memberships.")
             return
             
+        # Debug output
+        self.caller.msg(f"\nDebug Information for {char.name}:")
+        self.caller.msg(f"Current Organizations: {char.db.organisations}")
+            
         # Clear organization memberships
         char.db.organisations = {}
         self.caller.msg(f"Cleared organization memberships for {char.name}.")
