@@ -137,8 +137,8 @@ class CmdWipeTraits(MuxCommand):
                     for key in handler.all():
                         handler.remove(key)
             
-            # Reinitialize traits
-            success, msg = initialize_traits(char)
+            # Force reinitialize traits
+            success, msg = initialize_traits(char, force=True)
             if success:
                 return True, "Traits wiped and reinitialized"
             return False, msg

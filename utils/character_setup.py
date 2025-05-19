@@ -2,13 +2,13 @@
 Utility functions for character setup and initialization.
 """
 
-def initialize_traits(character):
+def initialize_traits(character, force=False):
     """
     Initialize or reinitialize all traits on a character.
-    This is safe to run multiple times - it will not duplicate traits.
     
     Args:
         character: The character object to initialize traits for
+        force: If True, will reinitialize all traits even if they exist
     
     Returns:
         tuple: (success, message) where success is a boolean and message describes what was done
@@ -18,12 +18,12 @@ def initialize_traits(character):
         
     changes = []
     
-    # Initialize plot points if needed
-    if not character.traits.get("plot_points"):
+    # Initialize plot points
+    if force or not character.traits.get("plot_points"):
         character.traits.add(key="plot_points", value=1, min=0)
         changes.append("Added plot points")
         
-    # Initialize attributes if needed (all start at d6 - "typical person")
+    # Initialize attributes (all start at d6 - "typical person")
     ATTRIBUTES = [
         ("prowess", "Prowess", "Strength, endurance and ability to fight"),
         ("finesse", "Finesse", "Dexterity and agility"),
@@ -34,12 +34,11 @@ def initialize_traits(character):
     ]
     
     for attr_key, attr_name, attr_desc in ATTRIBUTES:
-        if not character.character_attributes.get(attr_key):
-            character.character_attributes.add(key=attr_key, value=6,
-                                  desc=attr_desc)
+        if force or not character.character_attributes.get(attr_key):
+            character.character_attributes.add(key=attr_key, value=6, desc=attr_desc)
             changes.append(f"Added attribute: {attr_name}")
             
-    # Initialize skills if needed (start at d4 - "untrained")
+    # Initialize skills (start at d4 - "untrained")
     SKILLS = [
         ("administration", "Administration", "Organizing affairs of large groups"),
         ("arcana", "Arcana", "Knowledge of magic"),
@@ -63,12 +62,11 @@ def initialize_traits(character):
     ]
     
     for skill_key, skill_name, skill_desc in SKILLS:
-        if not character.skills.get(skill_key):
-            character.skills.add(key=skill_key, value=4,
-                               desc=skill_desc)
+        if force or not character.skills.get(skill_key):
+            character.skills.add(key=skill_key, value=4, desc=skill_desc)
             changes.append(f"Added skill: {skill_name}")
             
-    # Initialize distinction slots if needed
+    # Initialize distinction slots (all d8)
     DISTINCTIONS = [
         ("concept", "Character Concept", "Core character concept (e.g. Bold Adventurer)"),
         ("culture", "Cultural Background", "Character's cultural origin"),
@@ -76,9 +74,8 @@ def initialize_traits(character):
     ]
     
     for dist_key, dist_name, dist_desc in DISTINCTIONS:
-        if not character.distinctions.get(dist_key):
-            character.distinctions.add(key=dist_key, value=8,
-                                    desc=dist_desc)
+        if force or not character.distinctions.get(dist_key):
+            character.distinctions.add(key=dist_key, value=8, desc=dist_desc)
             changes.append(f"Added distinction slot: {dist_name}")
             
     if not changes:
