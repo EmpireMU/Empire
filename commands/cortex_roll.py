@@ -142,13 +142,38 @@ class CmdCortexRoll(Command):
         """Parse the dice input and difficulty."""
         if not self.args:
             self.msg("What dice do you want to roll?")
+            self.dice = None
             return
             
         # Split and clean args, removing empty strings
-        args = [arg.strip().lower() for arg in self.args.split() if arg.strip()]
+        args = []
+        current_arg = []
+        in_quotes = False
+        
+        # Parse args, handling quoted strings
+        for word in self.args.split():
+            if word.startswith('"'):
+                in_quotes = True
+                current_arg.append(word[1:])
+            elif word.endswith('"'):
+                in_quotes = False
+                current_arg.append(word[:-1])
+                args.append(' '.join(current_arg))
+                current_arg = []
+            elif in_quotes:
+                current_arg.append(word)
+            else:
+                args.append(word)
+                
+        if current_arg:  # Handle any remaining words
+            args.append(' '.join(current_arg))
+            
+        # Clean up args
+        args = [arg.strip().lower() for arg in args if arg.strip()]
         
         if not args:
             self.msg("What dice do you want to roll?")
+            self.dice = None
             return
             
         # Check for difficulty
@@ -164,6 +189,7 @@ class CmdCortexRoll(Command):
                 # Validate reasonable difficulty range
                 if not (1 <= self.difficulty <= 30):
                     self.msg(f"Difficulty must be between 1 and 30, not {self.difficulty}.")
+                    self.dice = None
                     return
             else:
                 # Try to match named difficulty exactly first
@@ -182,18 +208,22 @@ class CmdCortexRoll(Command):
                     self.difficulty = DIFFICULTIES[partial_matches[0]]
                 elif len(partial_matches) > 1:
                     self.msg(f"Ambiguous difficulty '{diff_val}'. Matches: {', '.join(partial_matches)}")
+                    self.dice = None
                     return
                 else:
                     self.msg(f"Unknown difficulty '{diff_val}'. Valid difficulties are: {', '.join(DIFFICULTIES.keys())}")
+                    self.dice = None
                     return
         
         # Validate dice pool size
         if not args:
             self.msg("You must specify at least one die to roll.")
+            self.dice = None
             return
             
         if len(args) > MAX_DICE_POOL:
             self.msg(f"You cannot roll more than {MAX_DICE_POOL} dice at once.")
+            self.dice = None
             return
         
         # Process dice/traits
@@ -209,19 +239,22 @@ class CmdCortexRoll(Command):
                 # Check for step modifiers on raw dice
                 if '(' in arg:
                     self.msg("Raw dice (like 'd8') cannot be stepped up or down. Only traits can be modified.")
+                    self.dice = None
                     return
                 
                 if len(arg) > 1 and arg[1:] in VALID_DIE_SIZES:
                     die = arg[1:]
-                    dice_pool.append(TraitDie(die, None, None, None))
+                    dice_pool.append(TraitDie(die, None, None, None, self.caller))
                 else:
                     self.msg(f"Invalid die size: {arg}")
+                    self.dice = None
                     return
             else:
                 # Check for invalid characters in trait names (allowing parentheses for modifiers)
                 base_name = arg.split('(')[0] if '(' in arg else arg
                 if not base_name.replace(' ', '').isalnum():
                     self.msg(f"Invalid character in trait name: {base_name}")
+                    self.dice = None
                     return
                     
                 # Try to find trait
