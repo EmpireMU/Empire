@@ -508,13 +508,14 @@ class CmdResource(MuxCommand):
                     # Increment count
                     value_str = str(trait.value)
                     count = 1
-                    if value_str[0].isdigit():
+                    if 'd' in value_str:
                         try:
-                            count = int(float(value_str.split('d')[0]))
+                            count = int(value_str.split('d')[0])
                         except ValueError:
                             count = 1
                     new_count = count + 1
                     trait.value = f"{new_count}d{die_size}"
+                    trait.base = die_size  # Ensure base is set
                     self.caller.msg(f"Added another {name} (d{die_size}) to {char.name}. Now has {new_count}.")
                     char.msg(f"{self.caller.name} added another {name} (d{die_size}). You now have {new_count}.")
                 else:
@@ -523,8 +524,7 @@ class CmdResource(MuxCommand):
                     trait = char.resources.get(key)
                     if trait:
                         trait.base = die_size
-                        # Ensure the value is stored as a string
-                        trait.value = f"1d{die_size}"
+                        trait.value = f"1d{die_size}"  # Ensure value is set as string
                     self.caller.msg(f"Added {char.name}'s first {name} (d{die_size}).")
                     char.msg(f"{self.caller.name} added your first {name} (d{die_size}).")
             else:  # cmd == 'del'
@@ -537,14 +537,15 @@ class CmdResource(MuxCommand):
                 # Decrement count or remove if last one
                 value_str = str(trait.value)
                 count = 1
-                if value_str[0].isdigit():
+                if 'd' in value_str:
                     try:
-                        count = int(float(value_str.split('d')[0]))
+                        count = int(value_str.split('d')[0])
                     except ValueError:
                         count = 1
                 if count > 1:
                     new_count = count - 1
                     trait.value = f"{new_count}d{die_size}"
+                    trait.base = die_size  # Ensure base is set
                     self.caller.msg(f"Removed one {name} (d{die_size}) from {char.name}. Now has {new_count}.")
                     char.msg(f"{self.caller.name} removed one {name} (d{die_size}). You now have {new_count}.")
                 else:
@@ -592,9 +593,9 @@ class CmdResource(MuxCommand):
                 die_size = f"d{trait.base}"
                 value_str = str(trait.value)
                 count = 1
-                if value_str[0].isdigit():
+                if 'd' in value_str:
                     try:
-                        count = int(float(value_str.split('d')[0]))
+                        count = int(value_str.split('d')[0])
                     except ValueError:
                         count = 1
                 dice_counts[die_size] = dice_counts.get(die_size, 0) + count
