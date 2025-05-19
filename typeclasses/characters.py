@@ -101,13 +101,13 @@ class Character(ObjectParent, DefaultCharacter):
         self.cmdset.add(CortexCmdSet, persistent=True)
 
         # Initialize plot points
-        self.traits.add("plot_points", value="1", min=0)
+        self.traits.add("plot_points", value=1, min=0)
 
         # Initialize attributes
         for trait in ATTRIBUTES:
             self.character_attributes.add(
                 trait.key,
-                value=str(trait.default_value),  # Pass die size as a string
+                value=trait.default_value,  # Pass die size as an integer
                 desc=trait.description,
                 name=trait.name
             )
@@ -116,7 +116,7 @@ class Character(ObjectParent, DefaultCharacter):
         for trait in SKILLS:
             self.skills.add(
                 trait.key,
-                value=str(trait.default_value),  # Pass die size as a string
+                value=trait.default_value,  # Pass die size as an integer
                 desc=trait.description,
                 name=trait.name
             )
@@ -125,7 +125,7 @@ class Character(ObjectParent, DefaultCharacter):
         for trait in DISTINCTIONS:
             self.distinctions.add(
                 trait.key,
-                value=str(trait.default_value),  # Pass die size as a string
+                value=trait.default_value,  # Pass die size as an integer
                 desc=trait.description,
                 name=trait.name
             )
