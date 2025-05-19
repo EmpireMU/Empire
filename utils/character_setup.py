@@ -13,27 +13,14 @@ def initialize_traits(character):
     Returns:
         tuple: (success, message) where success is a boolean and message describes what was done
     """
-    from evennia.contrib.rpg.traits import TraitHandler
-    
+    if not hasattr(character, 'traits'):
+        return False, f"{character.name} does not support traits (wrong typeclass?)"
+        
     changes = []
     
-    # Initialize trait handlers if they don't exist
-    if not hasattr(character, '_traits'):
-        character._traits = TraitHandler(character)
-    if not hasattr(character, '_attributes'):
-        character._attributes = TraitHandler(character, db_attribute_key="attributes")
-    if not hasattr(character, '_skills'):
-        character._skills = TraitHandler(character, db_attribute_key="skills")
-    if not hasattr(character, '_distinctions'):
-        character._distinctions = TraitHandler(character, db_attribute_key="distinctions")
-    if not hasattr(character, '_resources'):
-        character._resources = TraitHandler(character, db_attribute_key="resources")
-    if not hasattr(character, '_signature_assets'):
-        character._signature_assets = TraitHandler(character, db_attribute_key="signature_assets")
-    
     # Initialize plot points if needed
-    if not character._traits.get("plot_points"):
-        character._traits.add("plot_points", "Plot Points", trait_type="counter", base=1, min=0)
+    if not character.traits.get("plot_points"):
+        character.traits.add("plot_points", "Plot Points", trait_type="counter", base=1, min=0)
         changes.append("Added plot points")
         
     # Initialize attributes if needed (all start at d6 - "typical person")
@@ -47,8 +34,8 @@ def initialize_traits(character):
     ]
     
     for attr_key, attr_name, attr_desc in ATTRIBUTES:
-        if not character._attributes.get(attr_key):
-            character._attributes.add(attr_key, attr_name, trait_type="static", base=6,
+        if not character.attributes.get(attr_key):
+            character.attributes.add(attr_key, attr_name, trait_type="static", base=6,
                                   desc=attr_desc)
             changes.append(f"Added attribute: {attr_name}")
             
@@ -76,8 +63,8 @@ def initialize_traits(character):
     ]
     
     for skill_key, skill_name, skill_desc in SKILLS:
-        if not character._skills.get(skill_key):
-            character._skills.add(skill_key, skill_name, trait_type="static", base=4,
+        if not character.skills.get(skill_key):
+            character.skills.add(skill_key, skill_name, trait_type="static", base=4,
                                desc=skill_desc)
             changes.append(f"Added skill: {skill_name}")
             
@@ -89,8 +76,8 @@ def initialize_traits(character):
     ]
     
     for dist_key, dist_name, dist_desc in DISTINCTIONS:
-        if not character._distinctions.get(dist_key):
-            character._distinctions.add(dist_key, dist_name, trait_type="static", base=8,
+        if not character.distinctions.get(dist_key):
+            character.distinctions.add(dist_key, dist_name, trait_type="static", base=8,
                                     desc=dist_desc)
             changes.append(f"Added distinction slot: {dist_name}")
             
