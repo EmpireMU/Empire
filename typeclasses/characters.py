@@ -107,7 +107,7 @@ class Character(ObjectParent, DefaultCharacter):
         for trait in ATTRIBUTES:
             self.character_attributes.add(
                 trait.key,  # trait_key must be first positional argument
-                value=trait.default_value,
+                value=int(trait.default_value),  # Ensure value is an integer
                 desc=trait.description,
                 name=trait.name
             )
@@ -116,7 +116,7 @@ class Character(ObjectParent, DefaultCharacter):
         for trait in SKILLS:
             self.skills.add(
                 trait.key,  # trait_key must be first positional argument
-                value=trait.default_value,
+                value=int(trait.default_value),  # Ensure value is an integer
                 desc=trait.description,
                 name=trait.name
             )
@@ -125,7 +125,7 @@ class Character(ObjectParent, DefaultCharacter):
         for trait in DISTINCTIONS:
             self.distinctions.add(
                 trait.key,  # trait_key must be first positional argument
-                value=trait.default_value,
+                value=int(trait.default_value),  # Ensure value is an integer
                 desc=trait.description,
                 name=trait.name
             )
