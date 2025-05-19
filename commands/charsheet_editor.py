@@ -1,13 +1,13 @@
 """
 Staff commands for editing character sheets.
 """
-from evennia import Command
+from evennia.commands.command import Command, MuxCommand
 from evennia import CmdSet
 from utils.character_setup import initialize_traits
 
 UNDELETABLE_TRAITS = ["attributes", "skills"]
 
-class CmdSetTrait(Command):
+class CmdSetTrait(MuxCommand):
     """
     Set a trait on a character's sheet.
     
@@ -33,7 +33,6 @@ class CmdSetTrait(Command):
     key = "settrait"
     locks = "cmd:perm(Builder)"  # Builders and above can use this
     help_category = "Building"
-    switch_options = ()  # No switches for this command
     
     def func(self):
         """Handle the trait setting."""
@@ -91,7 +90,7 @@ class CmdSetTrait(Command):
         except Exception as e:
             self.caller.msg(f"Error setting trait: {e}")
 
-class CmdDeleteTrait(Command):
+class CmdDeleteTrait(MuxCommand):
     """
     Delete a trait from a character's sheet.
     
@@ -108,7 +107,6 @@ class CmdDeleteTrait(Command):
     key = "deletetrait"
     locks = "cmd:perm(Builder)"
     help_category = "Building"
-    switch_options = ()  # No switches for this command
     
     def func(self):
         """Handle the trait deletion."""
@@ -140,7 +138,7 @@ class CmdDeleteTrait(Command):
         else:
             self.caller.msg(f"{char.name} does not have trait support.")
 
-class CmdSetDistinction(Command):
+class CmdSetDistinction(MuxCommand):
     """
     Set a character's distinction name and description.
     
@@ -164,7 +162,6 @@ class CmdSetDistinction(Command):
     key = "setdist"
     locks = "cmd:perm(Builder)"  # Builders and above can use this
     help_category = "Building"
-    switch_options = ()  # No switches for this command
     
     def func(self):
         """Handle setting the distinction."""
@@ -209,7 +206,7 @@ class CmdSetDistinction(Command):
         except Exception as e:
             self.caller.msg(f"Error setting distinction: {e}")
 
-class CmdInitTraits(Command):
+class CmdInitTraits(MuxCommand):
     """
     Initialize or reinitialize a character's traits.
     
@@ -238,7 +235,6 @@ class CmdInitTraits(Command):
     
     def func(self):
         """Handle trait initialization."""
-        # Let Evennia handle switches - no need to check self.switches directly
         if "all" in self.switches:
             # Initialize all characters
             from evennia.objects.models import ObjectDB
@@ -268,7 +264,7 @@ class CmdInitTraits(Command):
             return
             
         success, msg = initialize_traits(char)
-        self.caller.msg(f"{char.name}: {msg}")
+        self.caller.msg(msg)
 
 class CharSheetEditorCmdSet(CmdSet):
     """

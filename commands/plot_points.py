@@ -2,7 +2,7 @@
 Commands for managing Cortex Prime plot points.
 """
 
-from evennia import Command
+from evennia.commands.command import Command, MuxCommand
 from evennia import CmdSet
 
 class CmdGivePlotPoint(Command):
@@ -71,8 +71,7 @@ class CmdSpendPlotPoint(Command):
     key = "spendpp"
     locks = "cmd:all()"  # Everyone can use this command
     help_category = "Game"
-    switch_options = ()  # No switches for this command
-
+    
     def func(self):
         """Handle the plot point spending."""
         char = self.caller
@@ -121,8 +120,7 @@ class CmdCheckPlotPoints(Command):
     key = "pp"
     locks = "cmd:all()"  # Everyone can use this command
     help_category = "Game"
-    switch_options = ()  # No switches for this command
-
+    
     def func(self):
         """Show plot point count."""
         if not self.args:
@@ -155,7 +153,7 @@ class CmdCheckPlotPoints(Command):
         except Exception as e:
             self.caller.msg(f"Error checking plot points: {e}")
 
-class CmdSetRoomPlotPoints(Command):
+class CmdSetRoomPlotPoints(MuxCommand):
     """
     Set plot points for all characters in a room.
     
@@ -175,8 +173,7 @@ class CmdSetRoomPlotPoints(Command):
     key = "setroompp"
     locks = "cmd:perm(Builder)"  # Builders and above can use this
     help_category = "Game"
-    switch_options = ()  # No switches for this command
-
+    
     def func(self):
         """Handle the plot point setting."""
         if not self.args:
@@ -184,14 +181,12 @@ class CmdSetRoomPlotPoints(Command):
             return
             
         # Check if setting for specific character or whole room
-        if "=" in self.args:
-            # Setting for specific character
-            char_name, amount = self.args.split("=", 1)
-            char_name = char_name.strip()
-            char = self.caller.search(char_name)
+        if self.rhs:  # Using = syntax
+            char = self.caller.search(self.lhs)
             if not char:
                 return
             chars = [char]
+            amount = self.rhs.strip()
         else:
             # Setting for whole room
             amount = self.args.strip()
@@ -230,13 +225,13 @@ class CmdSetRoomPlotPoints(Command):
                 self.caller.msg(f"Error setting plot points for {char.name}: {e}")
                 
         # Report results to the GM
-        if "=" in self.args:
+        if self.rhs:  # Using = syntax
             if success_count:
                 self.caller.msg(f"Set {char.name}'s plot points to {amount}.")
         else:
             self.caller.msg(f"Set plot points to {amount} for {success_count} character{'s' if success_count != 1 else ''}.")
 
-class CmdSetCharacterPlotPoints(Command):
+class CmdSetCharacterPlotPoints(MuxCommand):
     """
     Set a character's plot points to a specific value.
     
@@ -254,26 +249,20 @@ class CmdSetCharacterPlotPoints(Command):
     key = "setpp"
     locks = "cmd:perm(Builder)"  # Builders and above can use this
     help_category = "Game"
-    switch_options = ()  # No switches for this command
-
+    
     def func(self):
         """Handle the plot point setting."""
-        if not self.args or "=" not in self.args:
+        if not self.args or not self.rhs:
             self.caller.msg("Usage: setpp <character>=<amount>")
             return
             
-        char_name, amount = self.args.split("=", 1)
-        char_name = char_name.strip()
-        amount = amount.strip()
-        
-        # Find the character
-        char = self.caller.search(char_name)
+        char = self.caller.search(self.lhs)
         if not char:
             return
             
         # Validate amount
         try:
-            amount = int(amount)
+            amount = int(self.rhs)
             if amount < 0:
                 self.caller.msg("Plot points cannot be negative.")
                 return
