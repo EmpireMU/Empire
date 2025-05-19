@@ -181,7 +181,8 @@ class CmdCortexRoll(Command):
         try:
             vs_index = args.index("vs")
             if vs_index < len(args) - 1:  # Make sure there's a value after "vs"
-                diff_val = args[vs_index + 1]
+                # Get all words after "vs" as the difficulty value
+                diff_val = ' '.join(args[vs_index + 1:])
                 # Remove difficulty and "vs" from dice list
                 args = args[:vs_index]
                 
