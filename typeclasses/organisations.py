@@ -12,10 +12,12 @@ class Organisation(DefaultObject):
     
     Organisations have:
     - A head (character)
-    - Members with ranks
+    - Members with ranks (1-10, with custom names)
     - A public description
     - Optional secret status
     """
+    
+    MAX_RANKS = 10
     
     @lazy_property
     def members(self):
@@ -59,8 +61,8 @@ class Organisation(DefaultObject):
     
     def at_object_creation(self):
         """Initialize the organisation."""
-        self.db.members = {}  # {character_id: rank_id}
-        self.db.ranks = {}    # {rank_id: rank_name}
+        self.db.members = {}  # {character_id: rank_number}
+        self.db.ranks = {}    # {rank_number: rank_name}
         self.db.head = None
         self.db.description = ""
         self.db.is_secret = False
@@ -71,11 +73,17 @@ class Organisation(DefaultObject):
         
         Args:
             character: The character to add
-            rank: Optional rank to assign
+            rank: Optional rank number (1-10) to assign
         """
         if not rank and self.ranks:
             # If no rank specified but ranks exist, use the lowest rank
             rank = min(self.ranks.keys())
+        elif not rank:
+            # If no ranks exist, use rank 1
+            rank = 1
+            
+        if not isinstance(rank, int) or rank < 1 or rank > self.MAX_RANKS:
+            raise ValueError(f"Rank must be a number between 1 and {self.MAX_RANKS}")
         
         self.db.members[character.id] = rank
         character.db.organisations = character.db.organisations or {}
@@ -99,8 +107,11 @@ class Organisation(DefaultObject):
         
         Args:
             character: The character to set rank for
-            rank: The rank to set
+            rank: The rank number (1-10) to set
         """
+        if not isinstance(rank, int) or rank < 1 or rank > self.MAX_RANKS:
+            raise ValueError(f"Rank must be a number between 1 and {self.MAX_RANKS}")
+            
         if character.id in self.db.members:
             self.db.members[character.id] = rank
             character.db.organisations[self.id] = rank
@@ -113,47 +124,58 @@ class Organisation(DefaultObject):
             character: The character to get rank for
             
         Returns:
-            The rank name or None if not a member
+            Tuple of (rank_number, rank_name) or None if not a member
         """
-        rank_id = self.db.members.get(character.id)
-        if rank_id:
-            return self.ranks.get(rank_id)
+        rank_num = self.db.members.get(character.id)
+        if rank_num:
+            return (rank_num, self.ranks.get(rank_num, f"Rank {rank_num}"))
         return None
     
-    def add_rank(self, rank_id, rank_name):
+    def set_rank_name(self, rank_num, rank_name):
         """
-        Add a new rank to the organisation.
+        Set the name for a rank number.
         
         Args:
-            rank_id: Unique identifier for the rank
-            rank_name: Display name for the rank
+            rank_num: The rank number (1-10)
+            rank_name: The name to give this rank
         """
-        self.db.ranks[rank_id] = rank_name
-    
-    def remove_rank(self, rank_id):
-        """
-        Remove a rank from the organisation.
-        
-        Args:
-            rank_id: The rank to remove
-        """
-        if rank_id in self.db.ranks:
-            del self.db.ranks[rank_id]
-            # Update members with this rank
-            for char_id, rank in list(self.db.members.items()):
-                if rank == rank_id:
-                    del self.db.members[char_id]
+        if not isinstance(rank_num, int) or rank_num < 1 or rank_num > self.MAX_RANKS:
+            raise ValueError(f"Rank must be a number between 1 and {self.MAX_RANKS}")
+            
+        self.db.ranks[rank_num] = rank_name
     
     def get_members(self):
         """
         Get all members of the organisation.
         
         Returns:
-            List of (character, rank) tuples
+            List of (character, rank_number, rank_name) tuples
         """
         members = []
-        for char_id, rank in self.db.members.items():
+        for char_id, rank_num in self.db.members.items():
             char = self.search(char_id, global_search=True)
             if char:
-                members.append((char, self.ranks.get(rank)))
-        return members 
+                rank_name = self.ranks.get(rank_num, f"Rank {rank_num}")
+                members.append((char, rank_num, rank_name))
+        return sorted(members, key=lambda x: x[1])  # Sort by rank number
+        
+    def delete(self):
+        """
+        Delete the organisation and clean up all references.
+        This will:
+        1. Remove all members from the organisation
+        2. Clear the head reference
+        3. Delete the organisation object
+        """
+        # Remove all members
+        for char_id in list(self.db.members.keys()):
+            char = self.search(char_id, global_search=True)
+            if char:
+                self.remove_member(char)
+        
+        # Clear head reference
+        if self.head:
+            self.head = None
+            
+        # Delete the organisation
+        self.delete() 
