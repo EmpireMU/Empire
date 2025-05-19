@@ -49,7 +49,7 @@ def format_trait_section(title, traits, show_desc=False):
     )
     
     # Add rows
-    for trait in sorted(traits, key=lambda x: x.key):
+    for trait in sorted(traits, key=lambda x: str(x.key)):
         display_name, die_size, description = get_trait_display(trait)
         if show_desc:
             table.add_row(display_name, die_size, description)

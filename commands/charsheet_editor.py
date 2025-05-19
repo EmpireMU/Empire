@@ -51,7 +51,7 @@ class CmdSetTrait(MuxCommand):
         try:
             category, trait_key, die_value = self.rhs.split(" ", 2)
             category = category.lower()
-            trait_key = trait_key.strip('"').strip()
+            trait_key = str(trait_key.strip('"').strip())  # Ensure trait key is a string
             die_size = int(die_value[1:])  # Remove 'd' prefix
         except ValueError:
             self.msg("Usage: settrait <character> = <category> <trait_key> <die_size>")
