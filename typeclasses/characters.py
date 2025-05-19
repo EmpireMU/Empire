@@ -103,6 +103,10 @@ class Character(ObjectParent, DefaultCharacter):
         # Initialize plot points
         self.traits.add("plot_points", value=1, min=0)
 
+        # Initialize character background and personality
+        self.db.background = "No background has been set."
+        self.db.personality = "No personality has been set."
+
         # Initialize attributes
         for trait in ATTRIBUTES:
             existing = self.character_attributes.get(trait.key)

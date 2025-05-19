@@ -247,6 +247,179 @@ class CmdSetDistinction(MuxCommand):
         except Exception as e:
             self.caller.msg(f"Error setting distinction: {e}")
 
+class CmdBiography(MuxCommand):
+    """
+    View a character's complete biography.
+    
+    Usage:
+        biography [<character>]
+        
+    Examples:
+        biography                    - View your own biography
+        biography Ada               - View Ada's biography
+        
+    Shows:
+        - Description (set with 'desc' command)
+        - Background (set with 'background' command)
+        - Personality (set with 'personality' command)
+    """
+    
+    key = "biography"
+    locks = "cmd:all()"  # Everyone can view
+    help_category = "Character"
+    
+    def func(self):
+        """Execute the command."""
+        # If no arguments, show caller's biography
+        if not self.args:
+            self.show_biography(self.caller)
+            return
+            
+        # View command
+        char = self.caller.search(self.args)
+        if not char:
+            return
+        self.show_biography(char)
+            
+    def show_biography(self, char):
+        """Show a character's biography."""
+        # Get the character's description using Evennia's built-in method
+        desc = char.get_display_desc(self.caller)
+        
+        # Build the biography message
+        msg = f"\n|w{char.name}'s Biography|n"
+        msg += f"\n\n|wDescription:|n\n{desc}"
+        msg += f"\n\n|wBackground:|n\n{char.db.background}"
+        msg += f"\n\n|wPersonality:|n\n{char.db.personality}"
+        
+        self.msg(msg)
+
+class CmdBackground(MuxCommand):
+    """
+    View or edit a character's background.
+    
+    Usage:
+        background [<character>]
+        background <character> = <text>
+        
+    Examples:
+        background                    - View your own background
+        background Ada               - View Ada's background
+        background Ada = Born in the mountains...
+        
+    Note: Use 'biography' to see all character information at once.
+    """
+    
+    key = "background"
+    locks = "cmd:all()"  # Everyone can view, but editing requires permissions
+    help_category = "Character"
+    
+    def func(self):
+        """Execute the command."""
+        # If no arguments, show caller's background
+        if not self.args:
+            self.show_background(self.caller)
+            return
+            
+        # Check if this is a view or edit command
+        if "=" not in self.args:
+            # View command
+            char = self.caller.search(self.args)
+            if not char:
+                return
+            self.show_background(char)
+            return
+            
+        # Edit command - check permissions
+        if not self.caller.check_permstring("Builder"):
+            self.msg("You don't have permission to edit backgrounds.")
+            return
+            
+        # Parse edit command
+        try:
+            char_name, text = self.args.split("=", 1)
+            char = self.caller.search(char_name.strip())
+            if not char:
+                return
+                
+            # Update the background
+            char.db.background = text.strip()
+            self.msg(f"Updated {char.name}'s background.")
+            char.msg(f"{self.caller.name} updated your background.")
+            
+        except ValueError:
+            self.msg("Usage: background <character> = <text>")
+            return
+            
+    def show_background(self, char):
+        """Show a character's background."""
+        msg = f"\n|w{char.name}'s Background|n"
+        msg += f"\n\n{char.db.background}"
+        self.msg(msg)
+
+class CmdPersonality(MuxCommand):
+    """
+    View or edit a character's personality.
+    
+    Usage:
+        personality [<character>]
+        personality <character> = <text>
+        
+    Examples:
+        personality                    - View your own personality
+        personality Ada               - View Ada's personality
+        personality Ada = Friendly and outgoing...
+        
+    Note: Use 'biography' to see all character information at once.
+    """
+    
+    key = "personality"
+    locks = "cmd:all()"  # Everyone can view, but editing requires permissions
+    help_category = "Character"
+    
+    def func(self):
+        """Execute the command."""
+        # If no arguments, show caller's personality
+        if not self.args:
+            self.show_personality(self.caller)
+            return
+            
+        # Check if this is a view or edit command
+        if "=" not in self.args:
+            # View command
+            char = self.caller.search(self.args)
+            if not char:
+                return
+            self.show_personality(char)
+            return
+            
+        # Edit command - check permissions
+        if not self.caller.check_permstring("Builder"):
+            self.msg("You don't have permission to edit personalities.")
+            return
+            
+        # Parse edit command
+        try:
+            char_name, text = self.args.split("=", 1)
+            char = self.caller.search(char_name.strip())
+            if not char:
+                return
+                
+            # Update the personality
+            char.db.personality = text.strip()
+            self.msg(f"Updated {char.name}'s personality.")
+            char.msg(f"{self.caller.name} updated your personality.")
+            
+        except ValueError:
+            self.msg("Usage: personality <character> = <text>")
+            return
+            
+    def show_personality(self, char):
+        """Show a character's personality."""
+        msg = f"\n|w{char.name}'s Personality|n"
+        msg += f"\n\n{char.db.personality}"
+        self.msg(msg)
+
 class CharSheetEditorCmdSet(CmdSet):
     """
     Command set for editing character sheets.
@@ -258,4 +431,7 @@ class CharSheetEditorCmdSet(CmdSet):
         """
         self.add(CmdSetTrait())
         self.add(CmdDeleteTrait())
-        self.add(CmdSetDistinction()) 
+        self.add(CmdSetDistinction())
+        self.add(CmdBiography())
+        self.add(CmdBackground())
+        self.add(CmdPersonality()) 
