@@ -206,46 +206,6 @@ class CmdSetDistinction(Command):
         except Exception as e:
             self.caller.msg(f"Error setting distinction: {e}")
 
-class CmdInitTraits(Command):
-    """
-    Initialize or reinitialize a character's traits.
-    
-    Usage:
-        inittraits <character>
-        
-    This command will safely initialize any missing traits on a character.
-    It will not overwrite existing traits, only add missing ones.
-    
-    This is useful for:
-    - Fixing characters with missing traits
-    - Setting up new characters
-    - Resetting a character to base stats
-    
-    Only staff members can use this command.
-    """
-    
-    key = "inittraits"
-    locks = "cmd:perm(Builder)"  # Builders and above can use this
-    help_category = "Building"
-    
-    def func(self):
-        """Handle the trait initialization."""
-        if not self.args:
-            self.caller.msg("Usage: inittraits <character>")
-            return
-            
-        char = self.caller.search(self.args.strip())
-        if not char:
-            return
-            
-        success, message = initialize_traits(char)
-        if success:
-            self.caller.msg(f"Successfully initialized {char.name}'s traits: {message}")
-            if char != self.caller:
-                char.msg(f"{self.caller.name} has initialized your character traits.")
-        else:
-            self.caller.msg(f"Failed to initialize traits: {message}")
-
 class CharSheetEditorCmdSet(CmdSet):
     """
     Command set for editing character sheets.
@@ -258,4 +218,5 @@ class CharSheetEditorCmdSet(CmdSet):
         self.add(CmdSetTrait())
         self.add(CmdDeleteTrait())
         self.add(CmdSetDistinction())
-        self.add(CmdInitTraits()) 
+        # Commenting out trait initialization command for now
+        # self.add(CmdInitTraits()) 

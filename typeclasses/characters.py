@@ -90,16 +90,15 @@ class Character(ObjectParent, DefaultCharacter):
     def at_object_creation(self):
         """
         Called only once when object is first created.
-        Initialize trait handlers but don't add traits yet.
         """
         super().at_object_creation()
-        # Just ensure the handlers exist
-        _ = self.traits
-        _ = self.distinctions
-        _ = self.attributes
-        _ = self.skills
-        _ = self.resources
-        _ = self.signature_assets
+        # Commenting out trait initialization for now
+        # _ = self.traits
+        # _ = self.distinctions
+        # _ = self.attributes
+        # _ = self.skills
+        # _ = self.resources
+        # _ = self.signature_assets
 
     def at_init(self):
         """
