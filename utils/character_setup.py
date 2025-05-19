@@ -53,7 +53,15 @@ def initialize_traits(character: Any, force: bool = False) -> Tuple[bool, str]:
     Returns:
         tuple: (success, message) where success is a boolean and message describes what was done
     """
-    if not hasattr(character, 'traits'):
+    # Force initialize trait handlers
+    try:
+        _ = character.traits
+        _ = character.distinctions
+        _ = character.character_attributes
+        _ = character.skills
+        _ = character.resources
+        _ = character.signature_assets
+    except AttributeError:
         return False, f"{character.name} does not support traits (wrong typeclass?)"
         
     changes = []
@@ -64,19 +72,13 @@ def initialize_traits(character: Any, force: bool = False) -> Tuple[bool, str]:
         changes.append(plot_point_change)
     
     # Initialize attributes
-    changes.extend(initialize_trait_group(character, ATTRIBUTES, "attributes", force))
+    changes.extend(initialize_trait_group(character, ATTRIBUTES, "character_attributes", force))
     
     # Initialize skills
     changes.extend(initialize_trait_group(character, SKILLS, "skills", force))
     
     # Initialize distinctions
     changes.extend(initialize_trait_group(character, DISTINCTIONS, "distinctions", force))
-    
-    # Initialize signature assets handler
-    # This ensures the handler exists for adding traits later
-    if not hasattr(character, 'signature_assets'):
-        character.signature_assets = TraitHandler(character, db_attribute_key="char_signature_assets")
-        changes.append("Initialized signature assets handler")
             
     if not changes:
         return True, "Character traits were already fully initialized"
