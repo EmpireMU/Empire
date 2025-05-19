@@ -333,11 +333,7 @@ class CmdClearOrgMemberships(MuxCommand):
     help_category = "Organisations"
     
     def func(self):
-        """Execute the command."""
-        if not self.caller.check_permstring("Admin"):
-            self.caller.msg("You don't have permission to use this command.")
-            return
-            
+        """Clear all organization memberships for a character."""
         if not self.args:
             self.caller.msg("Usage: clearorgs <character>")
             return
@@ -346,40 +342,25 @@ class CmdClearOrgMemberships(MuxCommand):
         if not char:
             return
             
-        # Debug message to verify character
-        self.caller.msg(f"Character found: {char.name}")
-            
-        if not hasattr(char, 'db.organisations'):
-            self.caller.msg(f"{char.name} does not have any organization memberships.")
+        if not char.db.organisations:
+            self.caller.msg(f"{char.key} does not have any organization memberships.")
             return
             
-        # Debug message before initialization
-        self.caller.msg(f"Before initialization: {char.db.organisations}")
-            
-        # Ensure db.organisations is initialized
-        if char.db.organisations is None:
-            char.db.organisations = {}
-            
-        # Debug message after initialization
-        self.caller.msg(f"After initialization: {char.db.organisations}")
-            
-        # Debug output
-        self.caller.msg(f"\nDebug Information for {char.name}:")
-        self.caller.msg(f"Current Organizations: {char.db.organisations}")
-        self.caller.msg(f"Organization IDs: {list(char.db.organisations.keys())}")
-        for org_id in char.db.organisations:
-            org = char.search(org_id, global_search=True)
-            self.caller.msg(f"Organization {org_id}: {'Found' if org else 'Not Found'}")
-            
-        # Clean up organization memberships for deleted organizations
+        # Clean up any deleted organizations
         for org_id in list(char.db.organisations.keys()):
-            org = char.search(org_id, global_search=True)
+            org = self.caller.search(org_id, global_search=True)
             if not org:
+                # Organization doesn't exist but is referenced - it's orphaned
+                self.caller.msg(f"Found orphaned organization reference (ID: {org_id}). Cleaning up...")
                 del char.db.organisations[org_id]
-            
-        # Clear organization memberships
+            else:
+                # Organization exists but might be in an invalid state - delete it properly
+                self.caller.msg(f"Found organization {org.key} in invalid state. Deleting...")
+                org.delete()
+                
+        # Clear all memberships
         char.db.organisations = {}
-        self.caller.msg(f"Cleared organization memberships for {char.name}.")
+        self.caller.msg(f"Cleared all organization memberships for {char.key}.")
 
 class OrgCmdSet(CmdSet):
     """Command set for organisation commands."""

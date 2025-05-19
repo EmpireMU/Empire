@@ -22,12 +22,12 @@ class Organisation(DefaultObject):
     @lazy_property
     def members(self):
         """Get all members of this organisation."""
-        return self.db.members or {}
+        return self.db.members
     
     @lazy_property
     def ranks(self):
         """Get all ranks in this organisation."""
-        return self.db.ranks or {}
+        return self.db.ranks
     
     @property
     def head(self):
