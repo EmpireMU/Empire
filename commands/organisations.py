@@ -27,8 +27,15 @@ class CmdOrg(MuxCommand):
             self.caller.msg("Usage: org <organisation>")
             return
             
-        org = self.caller.search(self.args, global_search=True)
+        # Search for organisation by name (case-insensitive)
+        from evennia.objects.models import ObjectDB
+        org = ObjectDB.objects.filter(
+            db_key__iexact=self.args,
+            db_typeclass_path__contains="organisations.Organisation"
+        ).first()
+        
         if not org:
+            self.caller.msg(f"Could not find organisation '{self.args}'.")
             return
             
         # Check if organisation is secret and viewer is neither staff nor member
@@ -125,8 +132,11 @@ class CmdOrgAdmin(MuxCommand):
         from typeclasses.organisations import Organisation
         from evennia.objects.models import ObjectDB
         
-        # Check if organisation already exists by name
-        if ObjectDB.objects.filter(db_key__iexact=name).exists():
+        # Check if organisation already exists by name and typeclass
+        if ObjectDB.objects.filter(
+            db_key__iexact=name,
+            db_typeclass_path__contains="organisations.Organisation"
+        ).exists():
             self.caller.msg(f"An organisation named {name} already exists.")
             return
             
