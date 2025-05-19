@@ -74,7 +74,7 @@ class CmdSetTrait(MuxCommand):
             self.msg(f"Debug: Trying to get {handler_name} handler for {char.name}")
             handler = getattr(char, handler_name)
             self.msg(f"Debug: Got handler: {handler}")
-            if not handler:
+            if handler is None:  # Only return if handler is None, not if it's empty
                 self.msg(f"Could not get {category} trait handler for {char.name}")
                 return
         except AttributeError as e:
