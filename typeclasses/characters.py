@@ -13,7 +13,6 @@ from evennia.utils import lazy_property
 from evennia.contrib.rpg.traits import TraitHandler
 from .objects import ObjectParent
 from utils.trait_definitions import ATTRIBUTES, SKILLS, DISTINCTIONS
-from evennia.objects.models import search_object
 
 
 class Character(ObjectParent, DefaultCharacter):
@@ -83,9 +82,6 @@ class Character(ObjectParent, DefaultCharacter):
         self.db.background = "No background has been set."
         self.db.personality = "No personality has been set."
 
-        # Initialize organization memberships using Evennia's attribute system
-        self.attributes.add('organisations', {}, category='organisations')
-
         # Initialize attributes
         for trait in ATTRIBUTES:
             existing = self.character_attributes.get(trait.key)
@@ -154,15 +150,6 @@ class Character(ObjectParent, DefaultCharacter):
         _ = self.character_attributes
         _ = self.skills
         _ = self.signature_assets
-
-        # Clean up organization memberships for deleted organizations
-        orgs = self.attributes.get('organisations', default={}, category='organisations')
-        if orgs:
-            for org_id in list(orgs.keys()):
-                orgs_search = search_object(f"#{org_id}")
-                if not orgs_search:
-                    del orgs[org_id]
-            self.attributes.add('organisations', orgs, category='organisations')
 
     def at_post_puppet(self):
         """

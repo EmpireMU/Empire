@@ -1,36 +1,46 @@
 """
-Commands for viewing character sheets.
+Character sheet commands for viewing and editing character information.
 """
-from evennia import Command
-from evennia import CmdSet
+
+from evennia import Command, CmdSet
 from evennia.utils import evtable
-from evennia.utils.ansi import ANSIString
-from evennia.utils.search import search_object
+from evennia.objects.models import search_object
 
 def get_trait_display(trait):
     """
-    Convert a trait object into display strings.
+    Get display information for a trait.
     
     Args:
-        trait: A trait object with key, base, and optional desc attributes
+        trait: The trait object to display
         
     Returns:
-        tuple: (display_name, die_size, description)
+        Tuple of (display_name, die_size, description)
     """
-    # Use trait.name if available, otherwise fall back to key
-    display_name = trait.name if hasattr(trait, 'name') else str(trait.key).title()
-    die_size = f"d{trait.base}"  # Format die size as d8, d10, etc.
-    description = trait.desc if hasattr(trait, 'desc') else ""
+    if not trait:
+        return "", "", ""
+        
+    # Get the display name, falling back to key if name not set
+    display_name = trait.name or trait.key
+    
+    # Get the die size, falling back to base value if not set
+    die_size = f"d{trait.base}" if trait.base else ""
+    
+    # Get the description, falling back to empty string if not set
+    description = trait.desc or ""
+    
     return display_name, die_size, description
 
 def format_trait_section(title, traits, show_desc=False):
     """
-    Format a section of traits with a title and optional descriptions.
+    Format a section of traits for the character sheet.
     
     Args:
-        title: Section title (e.g., "Attributes", "Skills")
+        title: The section title
         traits: List of trait objects
-        show_desc: Whether to show descriptions (only used for Resources and Assets)
+        show_desc: Whether to show descriptions
+        
+    Returns:
+        Formatted string for the section
     """
     if not traits:
         return ""
@@ -194,31 +204,6 @@ class CmdSheet(Command):
         # Distinction Details
         if distinctions:
             sheet.append("\n" + format_distinctions_full(distinctions))
-            
-        # Organizations
-        if hasattr(char, 'db') and char.db.organisations:
-            sheet.append("\n|yOrganisations|n")
-            sheet.append("-" * 78 + "\n")
-            
-            table = evtable.EvTable(
-                "|wOrganisation|n",
-                "|wRank|n",
-                border="table",
-                width=78
-            )
-            
-            for org_id, rank in char.db.organisations.items():
-                orgs = search_object(f"#{org_id}")
-                if orgs:
-                    org = orgs[0]
-                    # Show if not secret, or if viewer is staff, or if viewer is the character
-                    if (not org.is_secret or 
-                        self.caller.check_permstring("Builder") or 
-                        self.caller == char):
-                        table.add_row(org.name, rank or "Member")
-            
-            if table.nrows > 0:
-                sheet.append(str(table))
         
         # Send the sheet
         self.caller.msg("\n".join(sheet))
