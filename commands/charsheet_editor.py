@@ -433,8 +433,9 @@ class CmdResource(MuxCommand):
     Examples:
         resource Ada                    - List Ada's resources
         resource Ada = add "Political Capital" d8
+        resource Ada = add "Political Capital" d8  # Adds another d8
         resource Ada = add "Political Capital" d6
-        resource Ada = del "Political Capital" d8
+        resource Ada = del "Political Capital" d8  # Removes one d8
         
     Resources are organizational dice pools that can have multiple instances
     of the same type with different die sizes. For example, a character might
@@ -496,27 +497,45 @@ class CmdResource(MuxCommand):
             name = name.strip('"').strip()
             die_size = int(die_size[1:])  # Remove 'd' prefix
             
-            # Create a unique key for this resource instance
+            # Create a unique key for this resource type and die size
             # Format: name_die_size (e.g., "Political Capital_d8")
             key = f"{name}_{die_size}"
             
             if cmd == 'add':
-                # Add the resource
-                char.resources.add(key, value=f"d{die_size}", name=name)
-                # Ensure .base is set correctly
+                # Get existing trait or create new one
                 trait = char.resources.get(key)
                 if trait:
-                    trait.base = die_size
-                self.caller.msg(f"Added {char.name}'s {name} (d{die_size}).")
-                char.msg(f"{self.caller.name} added your {name} (d{die_size}).")
+                    # Increment count
+                    count = trait.db.count if hasattr(trait, 'db') and trait.db.count else 1
+                    trait.db.count = count + 1
+                    self.caller.msg(f"Added another {name} (d{die_size}) to {char.name}. Now has {count + 1}.")
+                    char.msg(f"{self.caller.name} added another {name} (d{die_size}). You now have {count + 1}.")
+                else:
+                    # Create new trait with count=1
+                    char.resources.add(key, value=f"d{die_size}", name=name)
+                    trait = char.resources.get(key)
+                    if trait:
+                        trait.db.count = 1
+                        trait.base = die_size
+                    self.caller.msg(f"Added {char.name}'s first {name} (d{die_size}).")
+                    char.msg(f"{self.caller.name} added your first {name} (d{die_size}).")
             else:  # cmd == 'del'
-                # Delete the resource
-                if not char.resources.get(key):
-                    self.msg(f"{char.name} doesn't have a {name} resource of size d{die_size}.")
+                # Get existing trait
+                trait = char.resources.get(key)
+                if not trait:
+                    self.msg(f"{char.name} doesn't have any {name} resources of size d{die_size}.")
                     return
-                char.resources.remove(key)
-                self.caller.msg(f"Deleted {char.name}'s {name} (d{die_size}).")
-                char.msg(f"{self.caller.name} deleted your {name} (d{die_size}).")
+                    
+                # Decrement count or remove if last one
+                count = trait.db.count if hasattr(trait, 'db') and trait.db.count else 1
+                if count > 1:
+                    trait.db.count = count - 1
+                    self.caller.msg(f"Removed one {name} (d{die_size}) from {char.name}. Now has {count - 1}.")
+                    char.msg(f"{self.caller.name} removed one {name} (d{die_size}). You now have {count - 1}.")
+                else:
+                    char.resources.remove(key)
+                    self.caller.msg(f"Removed {char.name}'s last {name} (d{die_size}).")
+                    char.msg(f"{self.caller.name} removed your last {name} (d{die_size}).")
                 
         except ValueError:
             self.msg("Usage: resource <character> = add <name> d<size> or resource <character> = del <name> d<size>")
@@ -555,7 +574,8 @@ class CmdResource(MuxCommand):
             dice_counts = {}
             for trait in traits:
                 die_size = f"d{trait.base}"
-                dice_counts[die_size] = dice_counts.get(die_size, 0) + 1
+                count = trait.db.count if hasattr(trait, 'db') and trait.db.count else 1
+                dice_counts[die_size] = dice_counts.get(die_size, 0) + count
                 
             # Format dice string (e.g., "2d8, 1d6")
             dice_str = ", ".join(f"{count}{size}" for size, count in sorted(dice_counts.items()))
