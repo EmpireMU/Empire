@@ -67,7 +67,7 @@ class CmdOrg(MuxCommand):
             
         # Create the organization
         org = Organisation.objects.create(
-            key=self.args,
+            db_key=self.args,
             location=self.caller.location
         )
         
