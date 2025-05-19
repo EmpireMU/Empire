@@ -198,35 +198,39 @@ class CmdCortexRoll(Command):
                     exact_match = None
                     partial_matches = []
                     
-                    # Special handling for "very" prefix
-                    if diff_val == "very":
-                        self.msg("Please specify 'very easy' or 'very hard'.")
-                        self.dice = None
-                        return
-                        
-                    # Check for partial matches
+                    # First check for exact matches
                     for name, value in DIFFICULTIES.items():
-                        name_lower = name.lower()
-                        if diff_val == name_lower:
+                        if diff_val == name.lower():
                             exact_match = value
                             break
-                        elif diff_val in name_lower:
-                            # Only add to partial matches if it's not just the "very" prefix
-                            if not (diff_val == "very" and name_lower.startswith("very")):
-                                partial_matches.append(name)
                     
                     if exact_match is not None:
                         self.difficulty = exact_match
-                    elif len(partial_matches) == 1:
-                        self.difficulty = DIFFICULTIES[partial_matches[0]]
-                    elif len(partial_matches) > 1:
-                        self.msg(f"Ambiguous difficulty '{diff_val}'. Matches: {', '.join(partial_matches)}")
-                        self.dice = None
-                        return
                     else:
-                        self.msg(f"Unknown difficulty '{diff_val}'. Valid difficulties are: {', '.join(DIFFICULTIES.keys())}")
-                        self.dice = None
-                        return
+                        # Special handling for "very" prefix
+                        if diff_val == "very":
+                            self.msg("Please specify 'very easy' or 'very hard'.")
+                            self.dice = None
+                            return
+                            
+                        # Check for partial matches
+                        for name, value in DIFFICULTIES.items():
+                            name_lower = name.lower()
+                            if diff_val in name_lower:
+                                # Only add to partial matches if it's not just the "very" prefix
+                                if not (diff_val == "very" and name_lower.startswith("very")):
+                                    partial_matches.append(name)
+                        
+                        if len(partial_matches) == 1:
+                            self.difficulty = DIFFICULTIES[partial_matches[0]]
+                        elif len(partial_matches) > 1:
+                            self.msg(f"Ambiguous difficulty '{diff_val}'. Matches: {', '.join(partial_matches)}")
+                            self.dice = None
+                            return
+                        else:
+                            self.msg(f"Unknown difficulty '{diff_val}'. Valid difficulties are: {', '.join(DIFFICULTIES.keys())}")
+                            self.dice = None
+                            return
         except ValueError:
             # No "vs" found, that's fine
             pass
