@@ -162,13 +162,13 @@ class Character(ObjectParent, DefaultCharacter):
         # Call parent to set up basic object properties
         super().at_init()
         
-        # Ensure trait handlers are initialized
-        _ = self.traits
-        _ = self.distinctions
-        _ = self.character_attributes
-        _ = self.skills
-        _ = self.resources
-        _ = self.signature_assets
+        # Force initialize all trait handlers
+        self.traits
+        self.distinctions
+        self.character_attributes
+        self.skills
+        self.resources
+        self.signature_assets
 
     def at_post_puppet(self):
         """
