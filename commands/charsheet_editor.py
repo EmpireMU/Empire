@@ -235,10 +235,10 @@ class CmdInitTraits(Command):
     locks = "cmd:perm(Builder)"  # Builders and above can use this
     help_category = "Building"
     switch_options = ("all",)  # Define valid switches
-    aliases = ()
     
     def func(self):
         """Handle trait initialization."""
+        # Let Evennia handle switches - no need to check self.switches directly
         if "all" in self.switches:
             # Initialize all characters
             from evennia.objects.models import ObjectDB
@@ -252,22 +252,23 @@ class CmdInitTraits(Command):
                         count += 1
                         self.caller.msg(f"{char.name}: {msg}")
             self.caller.msg(f"\nInitialized traits for {count} character{'s' if count != 1 else ''}.")
-        else:
-            # Initialize specific character
-            if not self.args:
-                self.caller.msg("Usage: inittraits <character> or inittraits/all")
-                return
-                
-            char = self.caller.search(self.args)
-            if not char:
-                return
-                
-            if not hasattr(char, 'traits'):
-                self.caller.msg(f"{char.name} does not support traits (wrong typeclass?).")
-                return
-                
-            success, msg = initialize_traits(char)
-            self.caller.msg(f"{char.name}: {msg}")
+            return
+            
+        # Initialize specific character
+        if not self.args:
+            self.caller.msg("Usage: inittraits <character> or inittraits/all")
+            return
+            
+        char = self.caller.search(self.args)
+        if not char:
+            return
+            
+        if not hasattr(char, 'traits'):
+            self.caller.msg(f"{char.name} does not support traits (wrong typeclass?).")
+            return
+            
+        success, msg = initialize_traits(char)
+        self.caller.msg(f"{char.name}: {msg}")
 
 class CharSheetEditorCmdSet(CmdSet):
     """
