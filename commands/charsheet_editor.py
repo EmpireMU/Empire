@@ -508,21 +508,18 @@ class CmdResource(MuxCommand):
                     # Increment count
                     count = trait.value
                     new_count = count + 1
-                    new_value = new_count
-                    self.msg(f"Debug: Setting new value to {new_value}")  # Debug message
-                    trait.value = new_value
-                    trait.base = die_size  # Ensure base is set
+                    trait.value = die_size  # Store die size in value
+                    trait.base = die_size   # Store die size in base
+                    trait.count = new_count # Store count separately
                     self.caller.msg(f"Added another {name} (d{die_size}) to {char.name}. Now has {new_count}.")
                     char.msg(f"{self.caller.name} added another {name} (d{die_size}). You now have {new_count}.")
                 else:
                     # Create new trait with count=1
-                    initial_value = 1
-                    self.msg(f"Debug: Creating new trait with value {initial_value}")  # Debug message
-                    char.resources.add(key, value=initial_value, name=name)
+                    char.resources.add(key, value=die_size, name=name)  # Store die size in value
                     trait = char.resources.get(key)
                     if trait:
-                        trait.base = die_size
-                        trait.value = initial_value
+                        trait.base = die_size   # Store die size in base
+                        trait.count = 1         # Store count separately
                     self.caller.msg(f"Added {char.name}'s first {name} (d{die_size}).")
                     char.msg(f"{self.caller.name} added your first {name} (d{die_size}).")
             else:  # cmd == 'del'
@@ -533,13 +530,10 @@ class CmdResource(MuxCommand):
                     return
                     
                 # Decrement count or remove if last one
-                count = trait.value
+                count = trait.count
                 if count > 1:
                     new_count = count - 1
-                    new_value = new_count
-                    self.msg(f"Debug: Setting new value to {new_value}")  # Debug message
-                    trait.value = new_value
-                    trait.base = die_size  # Ensure base is set
+                    trait.count = new_count  # Update count
                     self.caller.msg(f"Removed one {name} (d{die_size}) from {char.name}. Now has {new_count}.")
                     char.msg(f"{self.caller.name} removed one {name} (d{die_size}). You now have {new_count}.")
                 else:
@@ -585,7 +579,7 @@ class CmdResource(MuxCommand):
             dice_counts = {}
             for trait in traits:
                 die_size = f"d{trait.base}"
-                count = trait.value
+                count = trait.count
                 dice_counts[die_size] = dice_counts.get(die_size, 0) + count
                 
             # Format dice string (e.g., "2d8, 1d6")
