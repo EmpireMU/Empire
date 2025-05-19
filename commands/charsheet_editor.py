@@ -47,11 +47,6 @@ class CmdSetTrait(MuxCommand):
         if not char:
             return
             
-        # Check if character supports traits
-        if not hasattr(char, 'traits'):
-            self.caller.msg(f"{char.name} does not support traits (wrong typeclass?).")
-            return
-            
         # Parse trait information
         try:
             category, trait_key, die_value = self.rhs.split(" ", 2)
@@ -63,12 +58,14 @@ class CmdSetTrait(MuxCommand):
             return
             
         # Validate category
-        if category not in ('attributes', 'skills', 'distinctions', 'resources', 'signature_assets'):
-            self.msg("Category must be one of: attributes, skills, distinctions, resources, signature_assets")
+        valid_categories = ['attributes', 'skills', 'resources', 'signature_assets']
+        if category not in valid_categories:
+            self.msg(f"Category must be one of: {', '.join(valid_categories)}")
             return
             
         # Get appropriate trait handler
-        handler = getattr(char, category)
+        handler_name = 'character_attributes' if category == 'attributes' else category
+        handler = getattr(char, handler_name)
         if not handler:
             self.msg(f"Could not get {category} trait handler for {char.name}")
             return
