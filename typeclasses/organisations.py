@@ -112,7 +112,9 @@ class Organisation(DefaultObject):
         if not isinstance(rank, int) or rank < 1 or rank > self.MAX_RANKS:
             raise ValueError(f"Rank must be a number between 1 and {self.MAX_RANKS}")
             
-        if character.id in self.db.members:
+        if character.id not in self.db.members:
+            self.add_member(character, rank)
+        else:
             self.db.members[character.id] = rank
             character.db.organisations[self.id] = rank
     
