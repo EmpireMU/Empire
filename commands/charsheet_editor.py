@@ -509,7 +509,10 @@ class CmdResource(MuxCommand):
                     value_str = str(trait.value)
                     count = 1
                     if value_str[0].isdigit():
-                        count = int(value_str.split('d')[0])
+                        try:
+                            count = int(float(value_str.split('d')[0]))
+                        except ValueError:
+                            count = 1
                     trait.value = f"{count + 1}d{die_size}"
                     self.caller.msg(f"Added another {name} (d{die_size}) to {char.name}. Now has {count + 1}.")
                     char.msg(f"{self.caller.name} added another {name} (d{die_size}). You now have {count + 1}.")
@@ -532,7 +535,10 @@ class CmdResource(MuxCommand):
                 value_str = str(trait.value)
                 count = 1
                 if value_str[0].isdigit():
-                    count = int(value_str.split('d')[0])
+                    try:
+                        count = int(float(value_str.split('d')[0]))
+                    except ValueError:
+                        count = 1
                 if count > 1:
                     trait.value = f"{count - 1}d{die_size}"
                     self.caller.msg(f"Removed one {name} (d{die_size}) from {char.name}. Now has {count - 1}.")
@@ -583,7 +589,10 @@ class CmdResource(MuxCommand):
                 value_str = str(trait.value)
                 count = 1
                 if value_str[0].isdigit():
-                    count = int(value_str.split('d')[0])
+                    try:
+                        count = int(float(value_str.split('d')[0]))
+                    except ValueError:
+                        count = 1
                 dice_counts[die_size] = dice_counts.get(die_size, 0) + count
                 
             # Format dice string (e.g., "2d8, 1d6")
