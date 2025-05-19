@@ -179,48 +179,6 @@ class CmdOrgAdmin(MuxCommand):
         except ValueError:
             self.caller.msg("Value must be 'True' or 'False'")
     
-    def add_member(self):
-        """Add a member to an organisation."""
-        if not self.args or "=" not in self.args:
-            self.caller.msg("Usage: orgadmin/add <organisation> = <character>[,rank]")
-            return
-            
-        org_name, rest = [part.strip() for part in self.args.split("=", 1)]
-        
-        # Parse character and optional rank
-        if "," in rest:
-            char_name, rank = [part.strip() for part in rest.split(",", 1)]
-            try:
-                rank = int(rank)
-            except ValueError:
-                self.caller.msg("Rank must be a number between 1 and 10")
-                return
-        else:
-            char_name = rest
-            rank = None
-        
-        # Find the organisation
-        orgs = search_object(org_name, typeclass=Organisation)
-        if not orgs:
-            self.caller.msg(f"No organisation found matching '{org_name}'")
-            return
-        org = orgs[0]
-        
-        # Find the character
-        chars = search_object(char_name)
-        if not chars:
-            self.caller.msg(f"No character found matching '{char_name}'")
-            return
-        char = chars[0]
-        
-        # Add the member
-        try:
-            org.add_member(char, rank)
-            rank_info = org.get_rank(char)
-            self.caller.msg(f"Added {char.key} to {org.key} as {rank_info[1]}")
-        except ValueError as e:
-            self.caller.msg(str(e))
-    
     def remove_member(self):
         """Remove a member from an organisation."""
         if not self.args or "=" not in self.args:
