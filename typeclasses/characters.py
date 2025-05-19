@@ -156,7 +156,7 @@ class Character(ObjectParent, DefaultCharacter):
         _ = self.signature_assets
 
         # Clean up organization memberships for deleted organizations
-        if hasattr(self, 'db.organisations'):
+        if hasattr(self.db, 'organisations'):
             for org_id in list(self.db.organisations.keys()):
                 orgs = search_object(f"#{org_id}")
                 if not orgs:
