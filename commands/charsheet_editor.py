@@ -71,14 +71,11 @@ class CmdSetTrait(MuxCommand):
         }[category]
         
         try:
-            self.msg(f"Debug: Trying to get {handler_name} handler for {char.name}")
             handler = getattr(char, handler_name)
-            self.msg(f"Debug: Got handler: {handler}")
             if handler is None:  # Only return if handler is None, not if it's empty
                 self.msg(f"Could not get {category} trait handler for {char.name}")
                 return
         except AttributeError as e:
-            self.msg(f"Debug: AttributeError: {e}")
             self.msg(f"Could not get {category} trait handler for {char.name}")
             return
             
@@ -88,11 +85,12 @@ class CmdSetTrait(MuxCommand):
             if trait:
                 trait.base = die_size
             else:
-                handler.add(trait_key, value=die_size)
+                handler.add(trait_key, value=f"d{die_size}")
+                # Ensure .base is set correctly
+                handler.get(trait_key).base = die_size
             self.caller.msg(f"Set {char.name}'s {category} trait '{trait_key}' to d{die_size}.")
             char.msg(f"{self.caller.name} sets your {category} trait '{trait_key}' to d{die_size}.")
         except Exception as e:
-            self.msg(f"Debug: Error setting trait: {e}")
             self.msg(f"Error setting trait: {e}")
 
 class CmdDeleteTrait(MuxCommand):
