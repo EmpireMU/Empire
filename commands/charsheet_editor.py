@@ -63,7 +63,13 @@ class CmdSetTrait(MuxCommand):
             return
             
         # Get appropriate trait handler
-        handler_name = 'character_attributes' if category == 'attributes' else category
+        handler_name = {
+            'attributes': 'character_attributes',
+            'skills': 'skills',
+            'resources': 'resources',
+            'signature_assets': 'signature_assets'
+        }[category]
+        
         handler = getattr(char, handler_name)
         if not handler:
             self.msg(f"Could not get {category} trait handler for {char.name}")
