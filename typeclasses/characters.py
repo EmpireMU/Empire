@@ -105,30 +105,42 @@ class Character(ObjectParent, DefaultCharacter):
 
         # Initialize attributes
         for trait in ATTRIBUTES:
-            self.character_attributes.add(
-                trait.key,
-                value=trait.default_value,  # Pass die size as an integer
-                desc=trait.description,
-                name=trait.name
-            )
+            existing = self.character_attributes.get(trait.key)
+            if existing:
+                existing.base = trait.default_value
+            else:
+                self.character_attributes.add(
+                    trait.key,
+                    value=trait.default_value,
+                    desc=trait.description,
+                    name=trait.name
+                )
 
         # Initialize skills
         for trait in SKILLS:
-            self.skills.add(
-                trait.key,
-                value=trait.default_value,  # Pass die size as an integer
-                desc=trait.description,
-                name=trait.name
-            )
+            existing = self.skills.get(trait.key)
+            if existing:
+                existing.base = trait.default_value
+            else:
+                self.skills.add(
+                    trait.key,
+                    value=trait.default_value,
+                    desc=trait.description,
+                    name=trait.name
+                )
 
         # Initialize distinctions
         for trait in DISTINCTIONS:
-            self.distinctions.add(
-                trait.key,
-                value=trait.default_value,  # Pass die size as an integer
-                desc=trait.description,
-                name=trait.name
-            )
+            existing = self.distinctions.get(trait.key)
+            if existing:
+                existing.base = trait.default_value
+            else:
+                self.distinctions.add(
+                    trait.key,
+                    value=trait.default_value,
+                    desc=trait.description,
+                    name=trait.name
+                )
 
     def at_init(self):
         """
