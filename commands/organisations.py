@@ -70,7 +70,7 @@ class CmdOrgAdmin(MuxCommand):
     """
     key = "orgadmin"
     help_category = "Organisations"
-    switch_options = ("create", "head", "desc", "secret", "add", "remove", "rank", "rankname", "delete")
+    switch_options = ("create", "head", "desc", "secret", "remove", "rank", "rankname", "delete")
     
     def func(self):
         """Execute the command."""
@@ -91,8 +91,6 @@ class CmdOrgAdmin(MuxCommand):
                 self.set_desc()
             elif self.switches[0] == "secret":
                 self.set_secret()
-            elif self.switches[0] == "add":
-                self.add_member()
             elif self.switches[0] == "remove":
                 self.remove_member()
             elif self.switches[0] == "rank":
