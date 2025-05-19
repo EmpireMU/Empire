@@ -147,11 +147,10 @@ class CmdWipeTraits(MuxCommand):
             _ = char.distinctions
             _ = char.character_attributes
             _ = char.skills
-            _ = char.resources
             _ = char.signature_assets
             
             # Wipe all traits
-            for handler_name in ['traits', 'distinctions', 'character_attributes', 'skills', 'resources', 'signature_assets']:
+            for handler_name in ['traits', 'distinctions', 'character_attributes', 'skills', 'signature_assets']:
                 handler = getattr(char, handler_name, None)
                 if handler:
                     # Get all trait keys and remove them
