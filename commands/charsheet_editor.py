@@ -238,11 +238,7 @@ class CmdInitTraits(Command):
     
     def func(self):
         """Handle trait initialization."""
-        if not self.args and "all" not in self.switches:
-            self.caller.msg("Usage: inittraits <character> or inittraits/all")
-            return
-            
-        if self.cmdstring == "inittraits" and "all" in self.switches:
+        if "all" in self.switches:
             # Initialize all characters
             from evennia.objects.models import ObjectDB
             from typeclasses.characters import Character
@@ -257,6 +253,10 @@ class CmdInitTraits(Command):
             self.caller.msg(f"\nInitialized traits for {count} character{'s' if count != 1 else ''}.")
         else:
             # Initialize specific character
+            if not self.args:
+                self.caller.msg("Usage: inittraits <character> or inittraits/all")
+                return
+                
             char = self.caller.search(self.args)
             if not char:
                 return
