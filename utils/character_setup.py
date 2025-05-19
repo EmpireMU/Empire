@@ -59,7 +59,6 @@ def initialize_traits(character: Any, force: bool = False) -> Tuple[bool, str]:
         _ = character.distinctions
         _ = character.character_attributes
         _ = character.skills
-        _ = character.resources
         _ = character.signature_assets
     except AttributeError:
         return False, f"{character.name} does not support traits (wrong typeclass?)"
