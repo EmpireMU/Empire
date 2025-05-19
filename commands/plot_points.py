@@ -2,7 +2,8 @@
 Commands for managing Cortex Prime plot points.
 """
 
-from evennia.commands.command import Command, MuxCommand
+from evennia.commands.command import Command
+from evennia.commands.default.muxcommand import MuxCommand
 from evennia import CmdSet
 
 class CmdGivePlotPoint(Command):
