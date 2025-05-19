@@ -32,7 +32,7 @@ class Character(ObjectParent, DefaultCharacter):
     @lazy_property
     def traits(self):
         """Main trait handler for general traits like plot points."""
-        return TraitHandler(self)
+        return TraitHandler(self, db_attribute_key="char_traits")
         
     @lazy_property
     def distinctions(self):
@@ -43,7 +43,7 @@ class Character(ObjectParent, DefaultCharacter):
         2. Cultural background
         3. How they are perceived by others
         """
-        return TraitHandler(self, db_attribute_key="distinctions")
+        return TraitHandler(self, db_attribute_key="char_distinctions")
         
     @lazy_property
     def attributes(self):
@@ -55,7 +55,7 @@ class Character(ObjectParent, DefaultCharacter):
         - d10: Rarely-surpassed excellence
         - d12: Peak of human performance
         """
-        return TraitHandler(self, db_attribute_key="attributes")
+        return TraitHandler(self, db_attribute_key="char_attributes")
         
     @lazy_property
     def skills(self):
@@ -67,7 +67,7 @@ class Character(ObjectParent, DefaultCharacter):
         - d10: Top of their field
         - d12: Legendary
         """
-        return TraitHandler(self, db_attribute_key="skills")
+        return TraitHandler(self, db_attribute_key="char_skills")
         
     @lazy_property
     def resources(self):
@@ -77,7 +77,7 @@ class Character(ObjectParent, DefaultCharacter):
         - Wealth
         - Military
         """
-        return TraitHandler(self, db_attribute_key="resources")
+        return TraitHandler(self, db_attribute_key="char_resources")
         
     @lazy_property
     def signature_assets(self):
@@ -85,7 +85,7 @@ class Character(ObjectParent, DefaultCharacter):
         Signature Assets are remarkable items or NPC companions.
         Usually d8, sometimes d6, rarely d10 or d12.
         """
-        return TraitHandler(self, db_attribute_key="signature_assets")
+        return TraitHandler(self, db_attribute_key="char_signature_assets")
         
     def at_object_creation(self):
         """
