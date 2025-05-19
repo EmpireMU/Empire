@@ -29,10 +29,14 @@ class CmdOrg(MuxCommand):
             
         # Search for organisation by name (case-insensitive)
         from evennia.objects.models import ObjectDB
-        org = ObjectDB.objects.filter(
-            db_key__iexact=self.args,
+        orgs = ObjectDB.objects.filter(
             db_typeclass_path__contains="organisations.Organisation"
-        ).first()
+        )
+        self.caller.msg(f"Debug: Found {orgs.count()} organisations")
+        for o in orgs:
+            self.caller.msg(f"Debug: {o.db_key} ({o.db_typeclass_path})")
+            
+        org = orgs.filter(db_key__iexact=self.args).first()
         
         if not org:
             self.caller.msg(f"Could not find organisation '{self.args}'.")
