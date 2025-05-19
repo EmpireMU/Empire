@@ -58,9 +58,9 @@ def format_colored_roll(value, die, trait_info, extra_value=None):
         
         # If we have an extra die from doubling, include both values
         if extra_value is not None:
-            return f"|cd{value}, {extra_value}|n(d{die} {category_name}: {display_name}{mod_suffix} |c(Doubled)|n)"
-        return f"|cd{value}|n(d{die} {category_name}: {display_name}{mod_suffix})"
-    return f"|cd{value}|n(d{die})"
+            return f"|c{value}, {extra_value}|n(d{die} {category_name}: {display_name}{mod_suffix} |c(Doubled)|n)"
+        return f"|c{value}|n(d{die} {category_name}: {display_name}{mod_suffix})"
+    return f"|c{value}|n(d{die})"
 
 class CmdCortexRoll(Command):
     """
