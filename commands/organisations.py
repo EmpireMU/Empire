@@ -86,6 +86,7 @@ class CmdOrgAdmin(Command):
     aliases = ["orga"]
     locks = "cmd:perm(Builder)"
     help_category = "Organisations"
+    switch_options = ("create", "head", "desc", "secret", "add", "remove", "rank", "addrank", "removerank")
     
     def func(self):
         """Handle organisation administration."""
