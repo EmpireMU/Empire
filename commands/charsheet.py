@@ -166,7 +166,6 @@ class CmdSheet(Command):
         distinctions = [char.distinctions.get(key) for key in char.distinctions.all()]
         attributes = [char.character_attributes.get(key) for key in char.character_attributes.all()]
         skills = [char.skills.get(key) for key in char.skills.all()]
-        resources = [char.resources.get(key) for key in char.resources.all()]
         assets = [char.signature_assets.get(key) for key in char.signature_assets.all()]
         
         # Format each section
@@ -186,9 +185,6 @@ class CmdSheet(Command):
         # Additional Sets
         sheet.append("\n|gAdditional Sets|n")
         sheet.append("-" * 78 + "\n")
-        
-        if resources:
-            sheet.append(format_trait_section("Resources", resources, show_desc=True))
         
         if assets:
             sheet.append(format_trait_section("Signature Assets", assets, show_desc=True))
