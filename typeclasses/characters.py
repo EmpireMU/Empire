@@ -87,23 +87,29 @@ class Character(ObjectParent, DefaultCharacter):
         """
         return TraitHandler(self, db_attribute_key="signature_assets")
         
-    def at_object_creation(self):
+    def at_first_save(self):
         """
-        Called only once when object is first created.
-        Access each trait handler once to ensure they're initialized.
+        Called after very first save of object.
+        This is when we should initialize traits, as the object is fully created.
         """
-        # Just access each handler to ensure it's created
-        # The lazy_property decorator will handle the actual creation
+        super().at_first_save()
+        
+        # Initialize trait handlers
         _ = self.traits
         _ = self.distinctions
         _ = self.attributes
         _ = self.skills
         _ = self.resources
         _ = self.signature_assets
-
+        
+    def at_init(self):
+        """
+        Called when object is first created and after it is loaded from cache.
+        """
+        super().at_init()
+        
     def at_post_puppet(self):
         """
         Called just after puppeting has completed.
         """
         super().at_post_puppet()
-        # The handlers will be created on first access through lazy_property

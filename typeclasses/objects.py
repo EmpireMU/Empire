@@ -21,6 +21,25 @@ class ObjectParent:
     take precedence.
 
     """
+    
+    def at_init(self):
+        """
+        Called when object is first created and after it is loaded from cache.
+        """
+        super().at_init()
+        
+    def at_first_save(self):
+        """
+        Called after very first save of object.
+        """
+        super().at_first_save()
+        
+    def at_post_puppet(self):
+        """
+        Called just after puppeting has been completed and all
+        Account<->Object links have been established.
+        """
+        super().at_post_puppet()
 
 
 class Object(ObjectParent, DefaultObject):
