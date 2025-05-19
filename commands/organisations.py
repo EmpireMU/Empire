@@ -5,7 +5,7 @@ from evennia.commands.default.muxcommand import MuxCommand
 from evennia import CmdSet
 from evennia.utils import evtable
 from evennia.utils.utils import lazy_property
-from evennia.utils import create_object
+from evennia.utils.create import create_object
 
 class CmdOrg(MuxCommand):
     """

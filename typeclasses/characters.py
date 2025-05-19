@@ -12,8 +12,6 @@ from evennia.objects.objects import DefaultCharacter
 from evennia.utils import lazy_property
 from evennia.contrib.rpg.traits import TraitHandler
 from .objects import ObjectParent
-from commands.cortex_roll import CortexCmdSet
-from commands.organisations import OrgCmdSet
 from utils.trait_definitions import ATTRIBUTES, SKILLS, DISTINCTIONS
 
 
@@ -76,12 +74,6 @@ class Character(ObjectParent, DefaultCharacter):
         """
         # Call parent to set up basic character properties and permissions
         super().at_object_creation()
-
-        # Add Cortex Prime command set
-        self.cmdset.add(CortexCmdSet, persistent=True)
-        
-        # Add Organisation command set
-        self.cmdset.add(OrgCmdSet, persistent=True)
 
         # Initialize plot points
         self.traits.add("plot_points", value=1, min=0)
@@ -173,9 +165,3 @@ class Character(ObjectParent, DefaultCharacter):
         _ = self.character_attributes
         _ = self.skills
         _ = self.signature_assets
-        
-        # Ensure Cortex Prime command set is available
-        self.cmdset.add(CortexCmdSet, persistent=True)
-        
-        # Ensure Organisation command set is available
-        self.cmdset.add(OrgCmdSet, persistent=True)
