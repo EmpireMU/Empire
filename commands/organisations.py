@@ -350,9 +350,15 @@ class CmdClearOrgMemberships(MuxCommand):
             self.caller.msg(f"{char.name} does not have any organization memberships.")
             return
             
+        # Debug message before initialization
+        self.caller.msg(f"Before initialization: {char.db.organisations}")
+            
         # Ensure db.organisations is initialized
         if char.db.organisations is None:
             char.db.organisations = {}
+            
+        # Debug message after initialization
+        self.caller.msg(f"After initialization: {char.db.organisations}")
             
         # Debug output
         self.caller.msg(f"\nDebug Information for {char.name}:")
