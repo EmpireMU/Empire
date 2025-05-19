@@ -89,12 +89,10 @@ class Organisation(DefaultObject):
         # Store character ID as integer
         self.db.members[character.id] = rank
         
-        # Get current organizations or initialize empty dict
+        # Update character's organizations using Evennia's attribute system
         orgs = character.attributes.get('organisations', default={})
-        # Update the organizations dict
         orgs[self.id] = rank
-        # Save back to attributes
-        character.attributes.add('organisations', orgs)
+        character.attributes.add('organisations', orgs, category='organisations')
     
     def remove_member(self, character):
         """
@@ -105,13 +103,11 @@ class Organisation(DefaultObject):
         """
         if character.id in self.db.members:
             del self.db.members[character.id]
-            # Get current organizations
-            orgs = character.attributes.get('organisations', default={})
-            # Remove this organization
+            # Remove from character's organizations using Evennia's attribute system
+            orgs = character.attributes.get('organisations', default={}, category='organisations')
             if self.id in orgs:
                 del orgs[self.id]
-                # Save back to attributes
-                character.attributes.add('organisations', orgs)
+                character.attributes.add('organisations', orgs, category='organisations')
     
     def set_rank(self, character, rank):
         """
@@ -128,12 +124,10 @@ class Organisation(DefaultObject):
             self.add_member(character, rank)
         else:
             self.db.members[character.id] = rank
-            # Get current organizations
-            orgs = character.attributes.get('organisations', default={})
-            # Update the rank
+            # Update character's organizations using Evennia's attribute system
+            orgs = character.attributes.get('organisations', default={}, category='organisations')
             orgs[self.id] = rank
-            # Save back to attributes
-            character.attributes.add('organisations', orgs)
+            character.attributes.add('organisations', orgs, category='organisations')
     
     def get_rank(self, character):
         """

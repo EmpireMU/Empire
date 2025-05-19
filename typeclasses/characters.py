@@ -83,8 +83,8 @@ class Character(ObjectParent, DefaultCharacter):
         self.db.background = "No background has been set."
         self.db.personality = "No personality has been set."
 
-        # Initialize organization memberships
-        self.db.organisations = {}
+        # Initialize organization memberships using Evennia's attribute system
+        self.attributes.add('organisations', {}, category='organisations')
 
         # Initialize attributes
         for trait in ATTRIBUTES:
@@ -156,11 +156,13 @@ class Character(ObjectParent, DefaultCharacter):
         _ = self.signature_assets
 
         # Clean up organization memberships for deleted organizations
-        if hasattr(self, 'db.organisations'):
-            for org_id in list(self.db.organisations.keys()):
-                orgs = search_object(f"#{org_id}")
-                if not orgs:
-                    del self.db.organisations[org_id]
+        orgs = self.attributes.get('organisations', default={}, category='organisations')
+        if orgs:
+            for org_id in list(orgs.keys()):
+                orgs_search = search_object(f"#{org_id}")
+                if not orgs_search:
+                    del orgs[org_id]
+            self.attributes.add('organisations', orgs, category='organisations')
 
     def at_post_puppet(self):
         """
