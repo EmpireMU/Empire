@@ -86,17 +86,30 @@ class CmdDeleteTrait(MuxCommand):
     Delete a trait from a character's sheet.
     
     Usage:
-        @deltrait <character> = <trait_key>
+        deltrait <character> = <category> <trait>
+        
+    Examples:
+        deltrait Bob = resources wealth
+        deltrait Jane = signature_assets "Magic Sword"
+        
+    Categories:
+        attributes       - Core attributes (d4-d12)
+        skills          - Learned abilities (d4-d12)
+        resources       - Organizational resources (d4-d12)
+        signature_assets - Notable items/allies (d4-d12)
+        
+    Warning: Deleting traits from Prime Sets (attributes, skills, distinctions)
+    may affect character balance. Use with caution.
     """
     
-    key = "@deltrait"
-    locks = "cmd:all()"
-    help_category = "Character"
+    key = "deltrait"
+    locks = "cmd:perm(Admin)"  # Admin and above can use this
+    help_category = "Building"
     
     def func(self):
         """Execute the command."""
         if not self.args:
-            self.msg("Usage: @deltrait <character> = <trait_key>")
+            self.msg("Usage: deltrait <character> = <category> <trait_key>")
             return
             
         # Get character
@@ -104,18 +117,47 @@ class CmdDeleteTrait(MuxCommand):
         if not char:
             return
             
-        # Get trait key
-        trait_key = self.rhs.strip()
-        
-        # Try to remove from each category
-        for category in ('attributes', 'skills', 'distinctions', 'resources', 'signature_assets'):
-            handler = getattr(char, category, None)
-            if handler and handler.get(trait_key):
-                if handler.remove(trait_key):
-                    self.caller.msg(f"Deleted {trait_key} from {char.name}'s character sheet.")
-                    return
-                    
-        self.caller.msg(f"{char.name} doesn't have a trait called '{trait_key}'.")
+        # Parse trait information
+        try:
+            category, trait_key = self.rhs.split(" ", 1)
+            category = category.lower()
+            trait_key = str(trait_key.strip('"').strip())  # Ensure trait key is a string
+        except ValueError:
+            self.msg("Usage: deltrait <character> = <category> <trait_key>")
+            return
+            
+        # Validate category
+        valid_categories = ['attributes', 'skills', 'resources', 'signature_assets']
+        if category not in valid_categories:
+            self.msg(f"Category must be one of: {', '.join(valid_categories)}")
+            return
+            
+        # Get appropriate trait handler
+        handler_name = 'character_attributes' if category == 'attributes' else category
+        handler = getattr(char, handler_name)
+        if not handler:
+            self.msg(f"Could not get {category} trait handler for {char.name}")
+            return
+            
+        # Check if trait exists
+        trait = handler.get(trait_key)
+        if not trait:
+            self.msg(f"{char.name} doesn't have a {category} trait called '{trait_key}'.")
+            return
+            
+        # Warn about Prime Set traits
+        if category in ['attributes', 'skills']:
+            self.msg(f"|rWARNING: You are about to delete a Prime Set trait ({category}). This may affect character balance.|n")
+            self.msg("Type 'deltrait' again to confirm.")
+            return
+            
+        # Delete the trait
+        try:
+            handler.remove(trait_key)
+            self.caller.msg(f"Deleted {char.name}'s {category} trait '{trait_key}'.")
+            char.msg(f"{self.caller.name} deleted your {category} trait '{trait_key}'.")
+        except Exception as e:
+            self.msg(f"Error deleting trait: {e}")
 
 class CmdSetDistinction(MuxCommand):
     """
