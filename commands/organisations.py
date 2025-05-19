@@ -1,13 +1,14 @@
 """
 Organisation commands for managing noble houses, orders, guilds, etc.
 """
-from evennia import Command, CmdSet
+from evennia.commands.default.muxcommand import MuxCommand
+from evennia import CmdSet
 from evennia.utils.create import create_object
 from evennia.utils.search import search_object
 from evennia.utils.utils import inherits_from
 from typeclasses.organisations import Organisation
 
-class CmdOrg(Command):
+class CmdOrg(MuxCommand):
     """
     View organisation information.
     
@@ -44,7 +45,7 @@ class CmdOrg(Command):
         else:
             self.caller.msg("\nNo members.")
 
-class CmdOrgAdmin(Command):
+class CmdOrgAdmin(MuxCommand):
     """
     Administer organisations.
     
@@ -73,24 +74,27 @@ class CmdOrgAdmin(Command):
             self.caller.msg("You don't have permission to use this command.")
             return
             
-        if self.switches[0] == "create":
-            self.create_org()
-        elif self.switches[0] == "head":
-            self.set_head()
-        elif self.switches[0] == "desc":
-            self.set_desc()
-        elif self.switches[0] == "secret":
-            self.set_secret()
-        elif self.switches[0] == "add":
-            self.add_member()
-        elif self.switches[0] == "remove":
-            self.remove_member()
-        elif self.switches[0] == "rank":
-            self.set_rank()
-        elif self.switches[0] == "rankname":
-            self.set_rank_name()
-        elif self.switches[0] == "delete":
-            self.delete_org()
+        try:
+            if self.switches[0] == "create":
+                self.create_org()
+            elif self.switches[0] == "head":
+                self.set_head()
+            elif self.switches[0] == "desc":
+                self.set_desc()
+            elif self.switches[0] == "secret":
+                self.set_secret()
+            elif self.switches[0] == "add":
+                self.add_member()
+            elif self.switches[0] == "remove":
+                self.remove_member()
+            elif self.switches[0] == "rank":
+                self.set_rank()
+            elif self.switches[0] == "rankname":
+                self.set_rank_name()
+            elif self.switches[0] == "delete":
+                self.delete_org()
+        except Exception as e:
+            self.caller.msg(f"Error: {str(e)}")
     
     def create_org(self):
         """Create a new organisation."""
