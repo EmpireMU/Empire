@@ -23,15 +23,16 @@ def initialize_trait_group(
     
     for trait in trait_definitions:
         existing = handler.get(trait.key)
-        if force and existing:
-            handler.remove(trait.key)
         if force or not existing:
-            handler.add(
-                trait.key,
-                value=trait.default_value,
-                desc=trait.description,
-                name=trait.name
-            )
+            if existing:
+                existing.base = trait.default_value
+            else:
+                handler.add(
+                    trait.key,
+                    value=trait.default_value,
+                    desc=trait.description,
+                    name=trait.name
+                )
             changes.append(f"Added or updated {handler_name[:-1]}: {trait.name}")
     
     return changes
