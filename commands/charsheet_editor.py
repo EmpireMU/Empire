@@ -217,12 +217,7 @@ class CmdSetDistinction(MuxCommand):
             
         try:
             # All distinctions are d8
-            char.distinctions.add(
-                key=slot,
-                value=8,
-                desc=desc,
-                name=name
-            )
+            char.distinctions.add(slot, value=8, desc=desc, name=name)
             
             # Notify relevant parties
             self.caller.msg(f"Set {char.name}'s {slot} distinction to '{name}'.")
