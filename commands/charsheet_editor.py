@@ -506,13 +506,16 @@ class CmdResource(MuxCommand):
                 trait = char.resources.get(key)
                 if trait:
                     # Increment count
-                    count = int(trait.value[1:]) if trait.value.startswith('d') else 1
-                    trait.value = f"d{die_size}x{count + 1}"
+                    value_str = str(trait.value)
+                    count = 1
+                    if value_str[0].isdigit():
+                        count = int(value_str.split('d')[0])
+                    trait.value = f"{count + 1}d{die_size}"
                     self.caller.msg(f"Added another {name} (d{die_size}) to {char.name}. Now has {count + 1}.")
                     char.msg(f"{self.caller.name} added another {name} (d{die_size}). You now have {count + 1}.")
                 else:
                     # Create new trait with count=1
-                    char.resources.add(key, value=f"d{die_size}x1", name=name)
+                    char.resources.add(key, value=f"1d{die_size}", name=name)
                     trait = char.resources.get(key)
                     if trait:
                         trait.base = die_size
@@ -526,9 +529,12 @@ class CmdResource(MuxCommand):
                     return
                     
                 # Decrement count or remove if last one
-                count = int(trait.value.split('x')[1]) if 'x' in trait.value else 1
+                value_str = str(trait.value)
+                count = 1
+                if value_str[0].isdigit():
+                    count = int(value_str.split('d')[0])
                 if count > 1:
-                    trait.value = f"d{die_size}x{count - 1}"
+                    trait.value = f"{count - 1}d{die_size}"
                     self.caller.msg(f"Removed one {name} (d{die_size}) from {char.name}. Now has {count - 1}.")
                     char.msg(f"{self.caller.name} removed one {name} (d{die_size}). You now have {count - 1}.")
                 else:
@@ -573,7 +579,10 @@ class CmdResource(MuxCommand):
             dice_counts = {}
             for trait in traits:
                 die_size = f"d{trait.base}"
-                count = int(trait.value.split('x')[1]) if 'x' in trait.value else 1
+                value_str = str(trait.value)
+                count = 1
+                if value_str[0].isdigit():
+                    count = int(value_str.split('d')[0])
                 dice_counts[die_size] = dice_counts.get(die_size, 0) + count
                 
             # Format dice string (e.g., "2d8, 1d6")
