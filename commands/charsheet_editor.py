@@ -66,7 +66,7 @@ class CmdSetTrait(Command):
             
         # Validate category
         valid_categories = {
-            'attributes': char.attributes,
+            'attributes': char.character_attributes,
             'skills': char.skills,
             'resources': char.resources,
             'signature_assets': char.signature_assets

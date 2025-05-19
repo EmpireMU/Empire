@@ -46,7 +46,7 @@ class Character(ObjectParent, DefaultCharacter):
         return TraitHandler(self, db_attribute_key="char_distinctions")
         
     @lazy_property
-    def attributes(self):
+    def character_attributes(self):
         """
         Attributes represent raw ability (d4-d12):
         - d4: Notable deficiency
@@ -95,7 +95,7 @@ class Character(ObjectParent, DefaultCharacter):
         # Initialize all trait handlers
         _ = self.traits
         _ = self.distinctions
-        _ = self.attributes
+        _ = self.character_attributes
         _ = self.skills
         _ = self.resources
         _ = self.signature_assets
@@ -108,7 +108,7 @@ class Character(ObjectParent, DefaultCharacter):
         # Ensure trait handlers are initialized
         _ = self.traits
         _ = self.distinctions
-        _ = self.attributes
+        _ = self.character_attributes
         _ = self.skills
         _ = self.resources
         _ = self.signature_assets
@@ -121,7 +121,7 @@ class Character(ObjectParent, DefaultCharacter):
         # Ensure trait handlers are initialized
         _ = self.traits
         _ = self.distinctions
-        _ = self.attributes
+        _ = self.character_attributes
         _ = self.skills
         _ = self.resources
         _ = self.signature_assets

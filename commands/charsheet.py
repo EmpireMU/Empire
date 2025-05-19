@@ -145,7 +145,7 @@ class CmdSheet(Command):
         sheet.append("-" * 78 + "\n")
         
         # Attributes
-        attributes = list(char.attributes.all())
+        attributes = list(char.character_attributes.all())
         if attributes:
             sheet.append(format_trait_section("Attributes", attributes))
             

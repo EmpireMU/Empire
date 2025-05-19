@@ -57,7 +57,7 @@ def get_trait_die(character, trait_spec: str) -> Optional[Tuple[str, str, str, b
         Tuple of (die_size, category_name, step_mod, doubled) or None if not found
         doubled indicates if an extra die of the same size should be added
     """
-    if not hasattr(character, 'attributes'):
+    if not hasattr(character, 'character_attributes'):
         return None
         
     # Parse trait specification for modifiers
@@ -75,7 +75,7 @@ def get_trait_die(character, trait_spec: str) -> Optional[Tuple[str, str, str, b
         
     # Try each trait category in order
     categories = [
-        ('attributes', character.attributes),
+        ('attributes', character.character_attributes),
         ('skills', character.skills),
         ('distinctions', character.distinctions),
         ('resources', character.resources),

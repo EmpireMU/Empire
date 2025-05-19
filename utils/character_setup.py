@@ -34,8 +34,8 @@ def initialize_traits(character):
     ]
     
     for attr_key, attr_name, attr_desc in ATTRIBUTES:
-        if not character.attributes.get(attr_key):
-            character.attributes.add(attr_key, attr_name, trait_type="static", base=6,
+        if not character.character_attributes.get(attr_key):
+            character.character_attributes.add(attr_key, attr_name, trait_type="static", base=6,
                                   desc=attr_desc)
             changes.append(f"Added attribute: {attr_name}")
             
