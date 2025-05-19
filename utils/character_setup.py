@@ -7,7 +7,7 @@ from .trait_definitions import TraitDefinition, ATTRIBUTES, SKILLS, DISTINCTIONS
 def initialize_plot_points(character: Any, force: bool) -> Optional[str]:
     """Initialize plot points for a character."""
     if force or not character.traits.get("plot_points"):
-        character.traits.add("plot_points", 1, min=0)
+        character.traits.add("plot_points", value=1, min=0)
         return "Added plot points"
     return None
 
@@ -24,7 +24,7 @@ def initialize_trait_group(
     for trait in trait_definitions:
         if force or not handler.get(trait.key):
             handler.add(
-                key=trait.key,
+                trait.key,
                 value=trait.default_value,
                 desc=trait.description,
                 name=trait.name

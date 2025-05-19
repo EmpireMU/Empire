@@ -45,7 +45,7 @@ class CmdGivePlotPoint(Command):
                 
             # Add one plot point
             current = int(pp_trait.base)
-            char.traits.add(key="plot_points", value=current + 1)
+            char.traits.add("plot_points", value=current + 1)
             
             # Notify relevant parties
             self.caller.msg(f"You give a plot point to {char.name}.")
@@ -213,7 +213,7 @@ class CmdSetRoomPlotPoints(MuxCommand):
                 if not pp_trait:
                     continue
                     
-                char.traits.add(key="plot_points", value=amount)
+                char.traits.add("plot_points", value=amount)
                 success_count += 1
                 
                 # Notify the character if they're not the one setting
@@ -280,7 +280,7 @@ class CmdSetCharacterPlotPoints(MuxCommand):
                 self.caller.msg(f"{char.name} does not have a plot points trait.")
                 return
                 
-            char.traits.add("plot_points", amount)
+            char.traits.add("plot_points", value=amount)
             
             # Notify relevant parties
             self.caller.msg(f"Set {char.name}'s plot points to {amount}.")
