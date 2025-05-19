@@ -251,6 +251,26 @@ class CmdBiography(MuxCommand):
         msg += f"\n\n|wBackground:|n\n{char.db.background}"
         msg += f"\n\n|wPersonality:|n\n{char.db.personality}"
         
+        # Add organization memberships
+        orgs = char.organisations
+        if orgs:
+            msg += "\n\n|wOrganizations:|n"
+            table = evtable.EvTable(
+                "|wOrganization|n",
+                "|wRank|n",
+                border="table",
+                width=78
+            )
+            
+            # Add each organization and rank
+            for org_id, rank in orgs.items():
+                org = self.caller.search(org_id, global_search=True)
+                if org:
+                    rank_name = org.get_member_rank_name(char)
+                    table.add_row(org.name, rank_name)
+            
+            msg += f"\n{str(table)}"
+        
         self.msg(msg)
 
 class CmdBackground(MuxCommand):
