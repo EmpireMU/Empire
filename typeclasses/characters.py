@@ -154,6 +154,13 @@ class Character(ObjectParent, DefaultCharacter):
         _ = self.skills
         _ = self.signature_assets
 
+        # Clean up organization memberships for deleted organizations
+        if hasattr(self, 'db.organisations'):
+            for org_id in list(self.db.organisations.keys()):
+                org = self.search(org_id, global_search=True)
+                if not org:
+                    del self.db.organisations[org_id]
+
     def at_post_puppet(self):
         """
         Called just after puppeting has completed.

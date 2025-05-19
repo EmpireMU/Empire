@@ -354,6 +354,12 @@ class CmdClearOrgMemberships(MuxCommand):
         self.caller.msg(f"\nDebug Information for {char.name}:")
         self.caller.msg(f"Current Organizations: {char.db.organisations}")
             
+        # Clean up organization memberships for deleted organizations
+        for org_id in list(char.db.organisations.keys()):
+            org = char.search(org_id, global_search=True)
+            if not org:
+                del char.db.organisations[org_id]
+            
         # Clear organization memberships
         char.db.organisations = {}
         self.caller.msg(f"Cleared organization memberships for {char.name}.")
