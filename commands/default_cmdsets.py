@@ -17,6 +17,7 @@ own cmdsets by inheriting from them or directly from `evennia.CmdSet`.
 from evennia import default_cmds
 from commands.charsheet import CharSheetCmdSet
 from commands.charsheet_editor import CharSheetEditorCmdSet
+from commands.charsheet_admin import CharSheetAdminCmdSet
 from commands.plot_points import PlotPointCmdSet
 
 
@@ -60,6 +61,7 @@ class AccountCmdSet(default_cmds.AccountCmdSet):
         # any commands you add below will overload the default ones.
         #
         self.add(CharSheetEditorCmdSet)  # Add sheet editing for staff accounts
+        self.add(CharSheetAdminCmdSet)  # Add administrative commands for staff
         self.add(PlotPointCmdSet)  # Add plot point commands
 
 

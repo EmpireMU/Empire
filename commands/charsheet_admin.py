@@ -25,11 +25,11 @@ class CmdInitTraits(MuxCommand):
     - Distinction slots (all d8)
     
     Existing traits will not be modified.
-    Only staff members can use this command.
+    Only administrators can use this command.
     """
     
     key = "inittraits"
-    locks = "cmd:perm(Builder)"  # Builders and above can use this
+    locks = "cmd:perm(Admin)"  # Admin and above can use this
     help_category = "Building"
     switch_options = ("all",)  # Define valid switches
     
@@ -86,11 +86,11 @@ class CmdWipeTraits(MuxCommand):
        - Skills (all start at d4)
        - Distinction slots (all d8)
     
-    Only staff members can use this command.
+    Only administrators can use this command.
     """
     
     key = "wipetraits"
-    locks = "cmd:perm(Builder)"  # Builders and above can use this
+    locks = "cmd:perm(Admin)"  # Admin and above can use this
     help_category = "Building"
     switch_options = ("all",)  # Define valid switches
     
