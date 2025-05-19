@@ -518,7 +518,9 @@ class CmdResource(MuxCommand):
                     new_count = count + 1
                     new_value = f"{new_count}d{die_size}"
                     self.msg(f"Debug: Setting new value to {new_value}")  # Debug message
+                    # Store the value in a way that prevents float conversion
                     trait.value = new_value
+                    trait.db.value = new_value  # Store in db to prevent float conversion
                     trait.base = die_size  # Ensure base is set
                     self.caller.msg(f"Added another {name} (d{die_size}) to {char.name}. Now has {new_count}.")
                     char.msg(f"{self.caller.name} added another {name} (d{die_size}). You now have {new_count}.")
@@ -526,11 +528,13 @@ class CmdResource(MuxCommand):
                     # Create new trait with count=1
                     initial_value = f"1d{die_size}"
                     self.msg(f"Debug: Creating new trait with value {initial_value}")  # Debug message
+                    # Store the value in a way that prevents float conversion
                     char.resources.add(key, value=initial_value, name=name)
                     trait = char.resources.get(key)
                     if trait:
                         trait.base = die_size
                         trait.value = initial_value  # Ensure value is set as string
+                        trait.db.value = initial_value  # Store in db to prevent float conversion
                     self.caller.msg(f"Added {char.name}'s first {name} (d{die_size}).")
                     char.msg(f"{self.caller.name} added your first {name} (d{die_size}).")
             else:  # cmd == 'del'
@@ -555,6 +559,7 @@ class CmdResource(MuxCommand):
                     new_value = f"{new_count}d{die_size}"
                     self.msg(f"Debug: Setting new value to {new_value}")  # Debug message
                     trait.value = new_value
+                    trait.db.value = new_value  # Store in db to prevent float conversion
                     trait.base = die_size  # Ensure base is set
                     self.caller.msg(f"Removed one {name} (d{die_size}) from {char.name}. Now has {new_count}.")
                     char.msg(f"{self.caller.name} removed one {name} (d{die_size}). You now have {new_count}.")
