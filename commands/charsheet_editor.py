@@ -3,7 +3,7 @@ Staff commands for editing character sheets.
 """
 from evennia.commands.command import Command
 from evennia.commands.default.muxcommand import MuxCommand
-from evennia import CmdSet
+from evennia import CmdSet, create_object
 from utils.character_setup import initialize_traits
 
 UNDELETABLE_TRAITS = ["attributes", "skills"]
