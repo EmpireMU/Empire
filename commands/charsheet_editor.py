@@ -264,8 +264,10 @@ class CmdBiography(MuxCommand):
             
             # Add each organization and rank
             for org_id, rank in orgs.items():
-                org = self.caller.search(org_id, global_search=True)
-                if org:
+                # Search for organization using its ID
+                orgs_found = search_object(f"#{org_id}")
+                if orgs_found:
+                    org = orgs_found[0]
                     rank_name = org.get_member_rank_name(char)
                     table.add_row(org.name, rank_name)
             
