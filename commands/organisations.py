@@ -1,11 +1,12 @@
 """
 Commands for managing organisations.
 """
-from evennia import Command, CmdSet
+from evennia.commands.default.muxcommand import MuxCommand
+from evennia import CmdSet
 from evennia.utils import evtable
 from evennia.utils.utils import lazy_property
 
-class CmdOrg(Command):
+class CmdOrg(MuxCommand):
     """
     View information about an organisation.
     
@@ -66,7 +67,7 @@ class CmdOrg(Command):
         
         self.caller.msg("\n".join(display))
 
-class CmdOrgAdmin(Command):
+class CmdOrgAdmin(MuxCommand):
     """
     Administer organisations.
     
@@ -90,39 +91,34 @@ class CmdOrgAdmin(Command):
     
     def func(self):
         """Handle organisation administration."""
-        if not self.args:
+        if not self.args and not self.switches:
             self.caller.msg("Usage: orgadmin/[create|head|desc|secret|add|remove|rank|addrank|removerank]")
             return
             
-        # Parse the command
-        parts = self.args.split(" ", 1)
-        if len(parts) != 2:
-            self.caller.msg("Usage: orgadmin/[create|head|desc|secret|add|remove|rank|addrank|removerank]")
-            return
-            
-        switch, args = parts
-        
         # Handle different switches
-        if switch == "create":
-            self.create_org(args)
-        elif switch == "head":
-            self.set_head(args)
-        elif switch == "desc":
-            self.set_desc(args)
-        elif switch == "secret":
-            self.set_secret(args)
-        elif switch == "add":
-            self.add_member(args)
-        elif switch == "remove":
-            self.remove_member(args)
-        elif switch == "rank":
-            self.set_rank(args)
-        elif switch == "addrank":
-            self.add_rank(args)
-        elif switch == "removerank":
-            self.remove_rank(args)
-        else:
-            self.caller.msg("Invalid switch. See help orgadmin for usage.")
+        try:
+            if "create" in self.switches:
+                self.create_org(self.args)
+            elif "head" in self.switches:
+                self.set_head(self.args)
+            elif "desc" in self.switches:
+                self.set_desc(self.args)
+            elif "secret" in self.switches:
+                self.set_secret(self.args)
+            elif "add" in self.switches:
+                self.add_member(self.args)
+            elif "remove" in self.switches:
+                self.remove_member(self.args)
+            elif "rank" in self.switches:
+                self.set_rank(self.args)
+            elif "addrank" in self.switches:
+                self.add_rank(self.args)
+            elif "removerank" in self.switches:
+                self.remove_rank(self.args)
+            else:
+                self.caller.msg("Invalid switch. See help orgadmin for usage.")
+        except Exception as e:
+            self.caller.msg(f"Error: {e}")
     
     def create_org(self, name):
         """Create a new organisation."""
