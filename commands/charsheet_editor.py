@@ -5,6 +5,7 @@ from evennia.commands.command import Command
 from evennia.commands.default.muxcommand import MuxCommand
 from evennia import CmdSet, create_object
 from evennia.utils import dbserialize
+from evennia.utils import evtable
 
 UNDELETABLE_TRAITS = ["attributes", "skills"]
 
