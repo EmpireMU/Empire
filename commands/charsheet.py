@@ -138,8 +138,15 @@ class CmdSheet(Command):
         if not self.args:
             # View own sheet
             char = self.caller
-            if not hasattr(self.caller, 'traits'):
+            # If caller is an account, get their character
+            if hasattr(self.caller, 'char'):
                 char = self.caller.char
+            # If caller is a DefaultObject, try to get the character
+            elif hasattr(self.caller, 'get_display_desc'):
+                char = self.caller
+            else:
+                self.caller.msg("You must be a character to view a character sheet.")
+                return
         else:
             # Staff checking other character
             if not self.caller.check_permstring("Builder"):
