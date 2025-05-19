@@ -94,6 +94,7 @@ class Character(ObjectParent, DefaultCharacter):
         Called only once when object is first created.
         Initialize all trait handlers and set up default traits.
         """
+        # Call parent to set up basic character properties and permissions
         super().at_object_creation()
 
         # Add Cortex Prime command set
@@ -104,21 +105,39 @@ class Character(ObjectParent, DefaultCharacter):
 
         # Initialize attributes (d6 - "typical person")
         for trait in ATTRIBUTES:
-            self.character_attributes.add(trait.key, trait.default_value, desc=trait.description)
+            self.character_attributes.add(
+                trait.key,
+                trait.default_value,
+                name=trait.name,
+                desc=trait.description
+            )
 
         # Initialize skills (d4 - "untrained")
         for trait in SKILLS:
-            self.skills.add(trait.key, trait.default_value, desc=trait.description)
+            self.skills.add(
+                trait.key,
+                trait.default_value,
+                name=trait.name,
+                desc=trait.description
+            )
 
         # Initialize distinction slots (d8)
         for trait in DISTINCTIONS:
-            self.distinctions.add(trait.key, trait.default_value, desc=trait.description)
+            self.distinctions.add(
+                trait.key,
+                trait.default_value,
+                name=trait.name,
+                desc=trait.description
+            )
 
     def at_init(self):
         """
         Called when object is first created and after it is loaded from cache.
+        Ensures trait handlers are initialized.
         """
+        # Call parent to set up basic object properties
         super().at_init()
+        
         # Ensure trait handlers are initialized
         _ = self.traits
         _ = self.distinctions
@@ -130,8 +149,11 @@ class Character(ObjectParent, DefaultCharacter):
     def at_post_puppet(self):
         """
         Called just after puppeting has completed.
+        Ensures trait handlers and command set are available.
         """
+        # Call parent to handle account-character connection
         super().at_post_puppet()
+        
         # Ensure trait handlers are initialized
         _ = self.traits
         _ = self.distinctions
