@@ -4,6 +4,7 @@ Staff commands for editing character sheets.
 from evennia.commands.command import Command
 from evennia.commands.default.muxcommand import MuxCommand
 from evennia import CmdSet, create_object
+from evennia.utils import dbserialize
 from utils.character_setup import initialize_traits
 
 UNDELETABLE_TRAITS = ["attributes", "skills"]
@@ -38,7 +39,7 @@ class CmdSetTrait(MuxCommand):
     def func(self):
         """Execute the command."""
         if not self.args:
-            self.msg("Usage: @trait <character> = <category> <trait_key> <die_size>")
+            self.msg("Usage: settrait <character> = <category> <trait_key> <die_size>")
             return
             
         # Get character
@@ -58,7 +59,7 @@ class CmdSetTrait(MuxCommand):
             trait_key = trait_key.strip('"').strip()
             die_size = int(die_value[1:])  # Remove 'd' prefix
         except ValueError:
-            self.msg("Usage: @trait <character> = <category> <trait_key> <die_size>")
+            self.msg("Usage: settrait <character> = <category> <trait_key> <die_size>")
             return
             
         # Validate category
@@ -68,7 +69,10 @@ class CmdSetTrait(MuxCommand):
             
         # Get appropriate trait handler
         handler = getattr(char, category)
-        
+        if not handler:
+            self.msg(f"Could not get {category} trait handler for {char.name}")
+            return
+            
         # Add or update trait
         try:
             handler.add(key=trait_key, value=die_size)
