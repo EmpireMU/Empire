@@ -252,6 +252,11 @@ class CmdOrgAdmin(MuxCommand):
             self.caller.msg(f"Set {char.key}'s rank in {org.key} to {rank_info[1]}")
         except ValueError as e:
             self.caller.msg(str(e))
+
+        # Debug output
+        self.caller.msg("\nDebug Information:")
+        self.caller.msg(f"Organization Members: {org.db.members}")
+        self.caller.msg(f"Character {char.key} Organizations: {char.db.organisations}")
     
     def set_rank_name(self):
         """Set the name for a rank number."""
