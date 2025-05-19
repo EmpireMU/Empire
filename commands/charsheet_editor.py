@@ -506,16 +506,15 @@ class CmdResource(MuxCommand):
                 trait = char.resources.get(key)
                 if trait:
                     # Increment count
-                    count = trait.db.count if hasattr(trait, 'db') and trait.db.count else 1
-                    trait.db.count = count + 1
+                    count = int(trait.value[1:]) if trait.value.startswith('d') else 1
+                    trait.value = f"d{die_size}x{count + 1}"
                     self.caller.msg(f"Added another {name} (d{die_size}) to {char.name}. Now has {count + 1}.")
                     char.msg(f"{self.caller.name} added another {name} (d{die_size}). You now have {count + 1}.")
                 else:
                     # Create new trait with count=1
-                    char.resources.add(key, value=f"d{die_size}", name=name)
+                    char.resources.add(key, value=f"d{die_size}x1", name=name)
                     trait = char.resources.get(key)
                     if trait:
-                        trait.db.count = 1
                         trait.base = die_size
                     self.caller.msg(f"Added {char.name}'s first {name} (d{die_size}).")
                     char.msg(f"{self.caller.name} added your first {name} (d{die_size}).")
@@ -527,9 +526,9 @@ class CmdResource(MuxCommand):
                     return
                     
                 # Decrement count or remove if last one
-                count = trait.db.count if hasattr(trait, 'db') and trait.db.count else 1
+                count = int(trait.value.split('x')[1]) if 'x' in trait.value else 1
                 if count > 1:
-                    trait.db.count = count - 1
+                    trait.value = f"d{die_size}x{count - 1}"
                     self.caller.msg(f"Removed one {name} (d{die_size}) from {char.name}. Now has {count - 1}.")
                     char.msg(f"{self.caller.name} removed one {name} (d{die_size}). You now have {count - 1}.")
                 else:
@@ -574,7 +573,7 @@ class CmdResource(MuxCommand):
             dice_counts = {}
             for trait in traits:
                 die_size = f"d{trait.base}"
-                count = trait.db.count if hasattr(trait, 'db') and trait.db.count else 1
+                count = int(trait.value.split('x')[1]) if 'x' in trait.value else 1
                 dice_counts[die_size] = dice_counts.get(die_size, 0) + count
                 
             # Format dice string (e.g., "2d8, 1d6")
