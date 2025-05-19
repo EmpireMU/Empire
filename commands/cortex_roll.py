@@ -31,7 +31,16 @@ def format_colored_roll(value, die, trait_info, extra_value=None):
         extra_value: If not None, this is the value of the extra die from doubling
     """
     if trait_info.key:  # Changed from trait_name to key to match TraitDie NamedTuple
-        category_name = trait_info.category.title().rstrip('s') if trait_info.category else "Raw"
+        # Display name mapping
+        display_names = {
+            'distinctions': 'Distinction',
+            'attributes': 'Attribute',
+            'skills': 'Skill',
+            'resources': 'Resource',
+            'signature_assets': 'Signature Asset'
+        }
+        category_name = display_names.get(trait_info.category, trait_info.category.title().rstrip('s')) if trait_info.category else "Raw"
+        
         # Build modifier suffix
         modifiers = []
         if trait_info.step_mod == 'U':
