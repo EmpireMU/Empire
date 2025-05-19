@@ -22,15 +22,19 @@ def initialize_trait_group(
     handler = getattr(character, handler_name)
     
     for trait in trait_definitions:
-        if force or not handler.get(trait.key):
-            handler.add(
-                trait.key,
-                value=trait.default_value,
-                desc=trait.description,
-                name=trait.name
-            )
-            changes.append(f"Added {handler_name[:-1]}: {trait.name}")
-            
+        existing = handler.get(trait.key)
+        if force or not existing:
+            if existing:
+                existing.base = trait.default_value
+            else:
+                handler.add(
+                    trait.key,
+                    value=trait.default_value,
+                    desc=trait.description,
+                    name=trait.name
+                )
+            changes.append(f"Added or updated {handler_name[:-1]}: {trait.name}")
+    
     return changes
 
 def initialize_traits(character: Any, force: bool = False) -> Tuple[bool, str]:

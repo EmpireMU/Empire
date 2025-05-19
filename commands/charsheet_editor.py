@@ -71,7 +71,11 @@ class CmdSetTrait(MuxCommand):
             
         # Add or update trait
         try:
-            handler.add(trait_key, value=die_size)
+            trait = handler.get(trait_key)
+            if trait:
+                trait.base = die_size
+            else:
+                handler.add(trait_key, value=die_size)
             self.caller.msg(f"Set {char.name}'s {category} trait '{trait_key}' to d{die_size}.")
             char.msg(f"{self.caller.name} sets your {category} trait '{trait_key}' to d{die_size}.")
         except Exception as e:
