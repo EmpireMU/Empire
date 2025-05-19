@@ -40,19 +40,19 @@ class CmdOrg(MuxCommand):
         members = org.get_members()
         if members:
             self.caller.msg("\nMembers:")
+            # Group members by rank
+            rank_groups = {}
             for char, rank_num, rank_name in members:
-                self.caller.msg(f"{char.key} - {rank_name}")
+                if rank_name not in rank_groups:
+                    rank_groups[rank_name] = []
+                rank_groups[rank_name].append(char.key)
+            
+            # Display members grouped by rank
+            for rank_name in sorted(rank_groups.keys(), key=lambda x: org.get_rank_number(x)):
+                members_list = ", ".join(rank_groups[rank_name])
+                self.caller.msg(f"{rank_name}: {members_list}")
         else:
             self.caller.msg("\nNo members.")
-
-        # Debug output
-        self.caller.msg("\nDebug Information:")
-        self.caller.msg(f"Organization Members: {org.db.members}")
-        for char_id in org.db.members:
-            chars = search_object(f"#{char_id}")
-            if chars:
-                char = chars[0]
-                self.caller.msg(f"Character {char.key} Organizations: {char.db.organisations}")
 
 class CmdOrgAdmin(MuxCommand):
     """
