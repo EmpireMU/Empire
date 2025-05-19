@@ -542,7 +542,8 @@ class CmdResource(MuxCommand):
                     self.caller.msg(f"Removed {char.name}'s last {name} (d{die_size}).")
                     char.msg(f"{self.caller.name} removed your last {name} (d{die_size}).")
                 
-        except ValueError:
+        except ValueError as e:
+            self.msg(f"Error: {str(e)}")
             self.msg("Usage: resource <character> = add <name> d<size> or resource <character> = del <name> d<size>")
             return
             
