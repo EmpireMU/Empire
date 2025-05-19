@@ -30,7 +30,7 @@ def format_colored_roll(value, die, trait_info, extra_value=None):
         trait_info: The TraitDie object with trait information
         extra_value: If not None, this is the value of the extra die from doubling
     """
-    if trait_info.name:  # Changed from trait_name to name to match TraitDie NamedTuple
+    if trait_info.key:  # Changed from trait_name to key to match TraitDie NamedTuple
         category_name = trait_info.category.title().rstrip('s') if trait_info.category else "Raw"
         # Build modifier suffix
         modifiers = []
@@ -42,8 +42,8 @@ def format_colored_roll(value, die, trait_info, extra_value=None):
         
         # If we have an extra die from doubling, include both values
         if extra_value is not None:
-            return f"|cd{value}, {extra_value}|n(d{die} {category_name}: {trait_info.name}{mod_suffix} |c(Doubled)|n)"
-        return f"|cd{value}|n(d{die} {category_name}: {trait_info.name}{mod_suffix})"
+            return f"|cd{value}, {extra_value}|n(d{die} {category_name}: {trait_info.key}{mod_suffix} |c(Doubled)|n)"
+        return f"|cd{value}|n(d{die} {category_name}: {trait_info.key}{mod_suffix})"
     return f"|cd{value}|n(d{die})"
 
 class CmdCortexRoll(Command):
@@ -244,7 +244,7 @@ class CmdCortexRoll(Command):
                 i = 0
                 while i < len(rolls):
                     trait_info = self.trait_info[rolls[i][2]]
-                    if i + 1 < len(rolls) and trait_info.name and not self.trait_info[rolls[i+1][2]].name:
+                    if i + 1 < len(rolls) and trait_info.key and not self.trait_info[rolls[i+1][2]].key:
                         # This is a doubled trait
                         formatted_rolls.append(format_colored_roll(rolls[i][0], rolls[i][1], trait_info, rolls[i+1][0]))
                         i += 2
@@ -264,7 +264,7 @@ class CmdCortexRoll(Command):
             i = 0
             while i < len(rolls):
                 trait_info = self.trait_info[rolls[i][2]]
-                if i + 1 < len(rolls) and trait_info.name and not self.trait_info[rolls[i+1][2]].name:
+                if i + 1 < len(rolls) and trait_info.key and not self.trait_info[rolls[i+1][2]].key:
                     # This is a doubled trait
                     roll_results.append(format_colored_roll(rolls[i][0], rolls[i][1], trait_info, rolls[i+1][0]))
                     i += 2
@@ -284,9 +284,9 @@ class CmdCortexRoll(Command):
             category_count = defaultdict(int)
             category_names = defaultdict(list)
             for trait in self.trait_info:
-                if trait.category and trait.name:  # Skip raw dice and doubled dice (which have no category/name)
+                if trait.category and trait.key:  # Skip raw dice and doubled dice (which have no category/key)
                     category_count[trait.category] += 1
-                    category_names[trait.category].append(trait.name)
+                    category_names[trait.category].append(trait.key)
             
             # Send private notifications about multiple traits from same category
             for category, count in category_count.items():

@@ -36,108 +36,82 @@ class CmdSetTrait(MuxCommand):
     help_category = "Building"
     
     def func(self):
-        """Handle the trait setting."""
-        if not self.args or not self.rhs:
-            self.caller.msg(self.__doc__.strip())
+        """Execute the command."""
+        if not self.args:
+            self.msg("Usage: @trait <character> = <category> <trait_key> <die_size>")
             return
             
+        # Get character
         char = self.caller.search(self.lhs)
         if not char:
             return
             
-        # Parse the trait info
-        try:
-            category, trait_name, die_value = self.rhs.split(" ", 2)
-            category = category.lower()
-            trait_name = trait_name.strip('"').strip()
+        # Check if character supports traits
+        if not hasattr(char, 'traits'):
+            self.caller.msg(f"{char.name} does not support traits (wrong typeclass?).")
+            return
             
-            # Parse die value (should be in format 'd6', 'd8', etc.)
-            if die_value.startswith('d'):
-                die_size = int(die_value[1:])
-            else:
-                die_size = int(die_value)
-                
-            if die_size not in [4, 6, 8, 10, 12]:
-                self.caller.msg("Die size must be d4, d6, d8, d10, or d12.")
-                return
-                
+        # Parse trait information
+        try:
+            category, trait_key, die_value = self.rhs.split(" ", 2)
+            category = category.lower()
+            trait_key = trait_key.strip('"').strip()
+            die_size = int(die_value[1:])  # Remove 'd' prefix
         except ValueError:
-            self.caller.msg("Usage: settrait <character> = <category> <trait> <die>")
+            self.msg("Usage: @trait <character> = <category> <trait_key> <die_size>")
             return
             
         # Validate category
-        valid_categories = {
-            'attributes': char.character_attributes,
-            'skills': char.skills,
-            'resources': char.resources,
-            'signature_assets': char.signature_assets
-        }
-        
-        if category not in valid_categories:
-            self.caller.msg(f"Invalid category. Must be one of: {', '.join(valid_categories.keys())}")
+        if category not in ('attributes', 'skills', 'distinctions', 'resources', 'signature_assets'):
+            self.msg("Category must be one of: attributes, skills, distinctions, resources, signature_assets")
             return
             
-        # Get the trait handler for this category
-        handler = valid_categories[category]
+        # Get appropriate trait handler
+        handler = getattr(char, category)
         
+        # Add or update trait
         try:
-            # Add/update the trait
-            handler.add(trait_name, trait_name.title(), trait_type="static", base=die_size)
-            
-            # Notify relevant parties
-            self.caller.msg(f"Set {char.name}'s {category} trait '{trait_name}' to d{die_size}.")
-            if char != self.caller:
-                char.msg(f"{self.caller.name} sets your {category} trait '{trait_name}' to d{die_size}.")
+            handler.add(trait_key, trait_key.title(), trait_type="static", base=die_size)
+            self.caller.msg(f"Set {char.name}'s {category} trait '{trait_key}' to d{die_size}.")
+            char.msg(f"{self.caller.name} sets your {category} trait '{trait_key}' to d{die_size}.")
         except Exception as e:
-            self.caller.msg(f"Error setting trait: {e}")
+            self.msg(f"Error setting trait: {e}")
 
 class CmdDeleteTrait(MuxCommand):
     """
     Delete a trait from a character's sheet.
     
     Usage:
-        deletetrait <character> = <trait>
-        
-    Example:
-        deletetrait Bob = "Old Wound"
-        
-    Note: Attributes and Skills cannot be deleted.
-    Only staff members with Builder permissions or higher can use this command.
+        @deltrait <character> = <trait_key>
     """
     
-    key = "deletetrait"
-    locks = "cmd:perm(Builder)"
-    help_category = "Building"
+    key = "@deltrait"
+    locks = "cmd:all()"
+    help_category = "Character"
     
     def func(self):
-        """Handle the trait deletion."""
-        if not self.args or not self.rhs:
-            self.caller.msg("Usage: deletetrait <character> = <trait>")
+        """Execute the command."""
+        if not self.args:
+            self.msg("Usage: @deltrait <character> = <trait_key>")
             return
             
+        # Get character
         char = self.caller.search(self.lhs)
         if not char:
             return
             
-        trait_name = self.rhs.strip()
+        # Get trait key
+        trait_key = self.rhs.strip()
         
-        # Check if this is a protected trait type
-        trait_type = trait_name.lower().split()[0]
-        if trait_type in UNDELETABLE_TRAITS:
-            self.caller.msg(f"You cannot delete {trait_type}. These are fundamental character traits.")
-            return
-            
-        # Try to delete the trait
-        if hasattr(char, 'traits'):
-            try:
-                if char.traits.remove(trait_name):
-                    self.caller.msg(f"Deleted {trait_name} from {char.name}'s character sheet.")
-                else:
-                    self.caller.msg(f"{char.name} doesn't have a trait called '{trait_name}'.")
-            except Exception as e:
-                self.caller.msg(f"Error deleting trait: {e}")
-        else:
-            self.caller.msg(f"{char.name} does not have trait support.")
+        # Try to remove from each category
+        for category in ('attributes', 'skills', 'distinctions', 'resources', 'signature_assets'):
+            handler = getattr(char, category, None)
+            if handler and handler.get(trait_key):
+                if handler.remove(trait_key):
+                    self.caller.msg(f"Deleted {trait_key} from {char.name}'s character sheet.")
+                    return
+                    
+        self.caller.msg(f"{char.name} doesn't have a trait called '{trait_key}'.")
 
 class CmdSetDistinction(MuxCommand):
     """

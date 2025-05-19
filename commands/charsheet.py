@@ -27,16 +27,16 @@ def format_trait_section(title, traits, show_desc=False):
     )
     
     # Add rows
-    for trait in sorted(traits, key=lambda x: x.name):
+    for trait in sorted(traits, key=lambda x: x.key):
         if show_desc:
             table.add_row(
-                trait.name.title(),
+                trait.key.title(),
                 f"d{trait.base}",
                 trait.desc if hasattr(trait, 'desc') else ""
             )
         else:
             table.add_row(
-                trait.name.title(),
+                trait.key.title(),
                 f"d{trait.base}"
             )
     
@@ -54,7 +54,7 @@ def format_distinctions_short(distinctions):
     table = evtable.EvTable(border="table", width=78)
     
     # Add all distinctions in one row
-    dist_list = [f"{d.name.title()} (d8)" for d in sorted(distinctions, key=lambda x: x.name)]
+    dist_list = [f"{d.key.title()} (d8)" for d in sorted(distinctions, key=lambda x: x.key)]
     table.add_row(*dist_list)
     
     return section + str(table) + "\n"
@@ -76,9 +76,9 @@ def format_distinctions_full(distinctions):
     )
     
     # Add rows
-    for dist in sorted(distinctions, key=lambda x: x.name):
+    for dist in sorted(distinctions, key=lambda x: x.key):
         table.add_row(
-            dist.name.title(),
+            dist.key.title(),
             dist.desc if hasattr(dist, 'desc') else ""
         )
     

@@ -40,14 +40,14 @@ class TraitDie(NamedTuple):
     """Represents a die in the pool with its trait information."""
     size: str  # The die size (e.g., "8" for d8)
     category: Optional[str]  # The trait category (e.g., "attributes")
-    name: Optional[str]  # The trait name (e.g., "prowess")
+    key: Optional[str]  # The trait key (e.g., "prowess")
     step_mod: Optional[str]  # Step modifier (U for up, D for down, None for no mod)
 
 def get_trait_die(character, trait_spec: str) -> Optional[Tuple[str, str, str, bool]]:
     """
     Get the die size and category for a trait specification.
-    Handles step up/down modifiers in the form trait_name(U) or trait_name(D),
-    and doubling in the form trait_name(double).
+    Handles step up/down modifiers in the form trait_key(U) or trait_key(D),
+    and doubling in the form trait_key(double).
     
     Args:
         character: The character object to check traits on
@@ -61,17 +61,17 @@ def get_trait_die(character, trait_spec: str) -> Optional[Tuple[str, str, str, b
         return None
         
     # Parse trait specification for modifiers
-    trait_name = trait_spec
+    trait_key = trait_spec
     step_mod = None
     doubled = False
     if '(' in trait_spec and ')' in trait_spec:
-        trait_name, mod = trait_spec.split('(', 1)
+        trait_key, mod = trait_spec.split('(', 1)
         mod = mod.rstrip(')')
         if mod in ('U', 'D'):
             step_mod = mod
         elif mod.lower() == 'double':
             doubled = True
-        trait_name = trait_name.strip()
+        trait_key = trait_key.strip()
         
     # Try each trait category in order
     categories = [
@@ -83,7 +83,7 @@ def get_trait_die(character, trait_spec: str) -> Optional[Tuple[str, str, str, b
     ]
     
     for category_name, handler in categories:
-        trait = handler.get(trait_name)
+        trait = handler.get(trait_key)
         if trait:
             die_size = str(trait.base)
             # Apply step modification if present
@@ -227,5 +227,5 @@ def format_roll_result(value: int, die: str, trait: TraitDie) -> str:
     """
     if trait.category:
         category_name = trait.category.title().rstrip('s')  # Remove trailing 's' and capitalize
-        return f"{value}(d{die} {category_name}: {trait.name})"
+        return f"{value}(d{die} {category_name}: {trait.key})"
     return f"{value}(d{die})" 
