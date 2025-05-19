@@ -513,9 +513,10 @@ class CmdResource(MuxCommand):
                             count = int(float(value_str.split('d')[0]))
                         except ValueError:
                             count = 1
-                    trait.value = f"{count + 1}d{die_size}"
-                    self.caller.msg(f"Added another {name} (d{die_size}) to {char.name}. Now has {count + 1}.")
-                    char.msg(f"{self.caller.name} added another {name} (d{die_size}). You now have {count + 1}.")
+                    new_count = count + 1
+                    trait.value = f"{new_count}d{die_size}"
+                    self.caller.msg(f"Added another {name} (d{die_size}) to {char.name}. Now has {new_count}.")
+                    char.msg(f"{self.caller.name} added another {name} (d{die_size}). You now have {new_count}.")
                 else:
                     # Create new trait with count=1
                     char.resources.add(key, value=f"1d{die_size}", name=name)
@@ -540,9 +541,10 @@ class CmdResource(MuxCommand):
                     except ValueError:
                         count = 1
                 if count > 1:
-                    trait.value = f"{count - 1}d{die_size}"
-                    self.caller.msg(f"Removed one {name} (d{die_size}) from {char.name}. Now has {count - 1}.")
-                    char.msg(f"{self.caller.name} removed one {name} (d{die_size}). You now have {count - 1}.")
+                    new_count = count - 1
+                    trait.value = f"{new_count}d{die_size}"
+                    self.caller.msg(f"Removed one {name} (d{die_size}) from {char.name}. Now has {new_count}.")
+                    char.msg(f"{self.caller.name} removed one {name} (d{die_size}). You now have {new_count}.")
                 else:
                     char.resources.remove(key)
                     self.caller.msg(f"Removed {char.name}'s last {name} (d{die_size}).")
