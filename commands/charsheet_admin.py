@@ -130,6 +130,14 @@ class CmdWipeTraits(MuxCommand):
     def _wipe_and_init(self, char):
         """Helper method to wipe and reinitialize traits for a character."""
         try:
+            # Ensure trait handlers are initialized
+            _ = char.traits
+            _ = char.distinctions
+            _ = char.character_attributes
+            _ = char.skills
+            _ = char.resources
+            _ = char.signature_assets
+            
             # Wipe all traits
             for handler_name in ['traits', 'distinctions', 'character_attributes', 'skills', 'resources', 'signature_assets']:
                 handler = getattr(char, handler_name, None)
