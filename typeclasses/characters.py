@@ -12,7 +12,6 @@ from evennia.objects.objects import DefaultCharacter
 from evennia.utils import lazy_property
 from evennia.contrib.rpg.traits import TraitHandler
 from .objects import ObjectParent
-from utils.character_setup import initialize_traits
 
 
 class Character(ObjectParent, DefaultCharacter):
@@ -33,7 +32,7 @@ class Character(ObjectParent, DefaultCharacter):
     @lazy_property
     def traits(self):
         """Main trait handler for general traits like plot points."""
-        return self._traits if hasattr(self, '_traits') else TraitHandler(self)
+        return TraitHandler(self)
         
     @lazy_property
     def distinctions(self):
@@ -44,7 +43,7 @@ class Character(ObjectParent, DefaultCharacter):
         2. Cultural background
         3. How they are perceived by others
         """
-        return self._distinctions if hasattr(self, '_distinctions') else TraitHandler(self, db_attribute_key="distinctions")
+        return TraitHandler(self, db_attribute_key="distinctions")
         
     @lazy_property
     def attributes(self):
@@ -56,7 +55,7 @@ class Character(ObjectParent, DefaultCharacter):
         - d10: Rarely-surpassed excellence
         - d12: Peak of human performance
         """
-        return self._attributes if hasattr(self, '_attributes') else TraitHandler(self, db_attribute_key="attributes")
+        return TraitHandler(self, db_attribute_key="attributes")
         
     @lazy_property
     def skills(self):
@@ -68,7 +67,7 @@ class Character(ObjectParent, DefaultCharacter):
         - d10: Top of their field
         - d12: Legendary
         """
-        return self._skills if hasattr(self, '_skills') else TraitHandler(self, db_attribute_key="skills")
+        return TraitHandler(self, db_attribute_key="skills")
         
     @lazy_property
     def resources(self):
@@ -78,7 +77,7 @@ class Character(ObjectParent, DefaultCharacter):
         - Wealth
         - Military
         """
-        return self._resources if hasattr(self, '_resources') else TraitHandler(self, db_attribute_key="resources")
+        return TraitHandler(self, db_attribute_key="resources")
         
     @lazy_property
     def signature_assets(self):
@@ -86,28 +85,25 @@ class Character(ObjectParent, DefaultCharacter):
         Signature Assets are remarkable items or NPC companions.
         Usually d8, sometimes d6, rarely d10 or d12.
         """
-        return self._signature_assets if hasattr(self, '_signature_assets') else TraitHandler(self, db_attribute_key="signature_assets")
+        return TraitHandler(self, db_attribute_key="signature_assets")
         
     def at_object_creation(self):
         """
         Called only once when object is first created.
-        Initialize all traits using the standard initialization function.
+        Access each trait handler once to ensure they're initialized.
         """
-        success, message = initialize_traits(self)
-        if not success:
-            self.msg(f"Warning: Failed to initialize traits: {message}")
-    
+        # Just access each handler to ensure it's created
+        # The lazy_property decorator will handle the actual creation
+        _ = self.traits
+        _ = self.distinctions
+        _ = self.attributes
+        _ = self.skills
+        _ = self.resources
+        _ = self.signature_assets
+
     def at_post_puppet(self):
         """
         Called just after puppeting has completed.
-        Ensures traits are properly initialized.
         """
         super().at_post_puppet()
-        
-        # Make sure traits are initialized
-        if not all(hasattr(self, attr) for attr in ['_traits', '_attributes', '_skills', '_distinctions', '_resources', '_signature_assets']):
-            success, message = initialize_traits(self)
-            if not success:
-                self.msg(f"Warning: Failed to initialize traits: {message}")
-    
-    # Resources and Signature Assets start empty - added through play
+        # The handlers will be created on first access through lazy_property
