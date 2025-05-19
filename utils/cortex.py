@@ -2,7 +2,7 @@
 Cortex Prime game system utilities.
 """
 
-from typing import List, Tuple, Optional, Dict, NamedTuple
+from typing import List, Tuple, Optional, Dict, NamedTuple, Any
 from collections import defaultdict
 from random import randint
 
@@ -42,6 +42,7 @@ class TraitDie(NamedTuple):
     category: Optional[str]  # The trait category (e.g., "attributes")
     key: Optional[str]  # The trait key (e.g., "prowess")
     step_mod: Optional[str]  # Step modifier (U for up, D for down, None for no mod)
+    caller: Optional[Any] = None  # Reference to the character object
 
 def get_trait_die(character, trait_spec: str) -> Optional[Tuple[str, str, str, bool]]:
     """
@@ -83,7 +84,22 @@ def get_trait_die(character, trait_spec: str) -> Optional[Tuple[str, str, str, b
     ]
     
     for category_name, handler in categories:
-        trait = handler.get(trait_key)
+        # For distinctions, check both key and name
+        if category_name == 'distinctions':
+            # First try by key
+            trait = handler.get(trait_key)
+            if not trait:
+                # If not found by key, try to find by name
+                for key in handler.all():
+                    trait = handler.get(key)
+                    if hasattr(trait, 'name') and trait.name.lower() == trait_key.lower():
+                        trait_key = key  # Use the actual key for the trait
+                        break
+                else:
+                    trait = None
+        else:
+            trait = handler.get(trait_key)
+            
         if trait:
             die_size = str(trait.base)
             # Apply step modification if present

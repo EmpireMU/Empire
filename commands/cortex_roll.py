@@ -40,10 +40,26 @@ def format_colored_roll(value, die, trait_info, extra_value=None):
             modifiers.append("|r(D)|n")
         mod_suffix = "".join(modifiers)
         
+        # Get the trait object to check for name
+        trait = None
+        if trait_info.category == 'distinctions':
+            trait = trait_info.caller.distinctions.get(trait_info.key)
+        elif trait_info.category == 'attributes':
+            trait = trait_info.caller.character_attributes.get(trait_info.key)
+        elif trait_info.category == 'skills':
+            trait = trait_info.caller.skills.get(trait_info.key)
+        elif trait_info.category == 'resources':
+            trait = trait_info.caller.resources.get(trait_info.key)
+        elif trait_info.category == 'signature_assets':
+            trait = trait_info.caller.signature_assets.get(trait_info.key)
+            
+        # Use trait name if available, otherwise use key
+        display_name = trait.name if trait and hasattr(trait, 'name') else trait_info.key
+        
         # If we have an extra die from doubling, include both values
         if extra_value is not None:
-            return f"|cd{value}, {extra_value}|n(d{die} {category_name}: {trait_info.key}{mod_suffix} |c(Doubled)|n)"
-        return f"|cd{value}|n(d{die} {category_name}: {trait_info.key}{mod_suffix})"
+            return f"|cd{value}, {extra_value}|n(d{die} {category_name}: {display_name}{mod_suffix} |c(Doubled)|n)"
+        return f"|cd{value}|n(d{die} {category_name}: {display_name}{mod_suffix})"
     return f"|cd{value}|n(d{die})"
 
 class CmdCortexRoll(Command):
@@ -214,11 +230,11 @@ class CmdCortexRoll(Command):
                     die_size, category, step_mod, doubled = trait_info
                     # Add the main trait die
                     base_arg = arg.split('(')[0].strip()
-                    trait_die = TraitDie(die_size, category, base_arg, step_mod)
+                    trait_die = TraitDie(die_size, category, base_arg, step_mod, self.caller)
                     dice_pool.append(trait_die)
                     # If doubled, add an extra die of the same size (without trait info)
                     if doubled:
-                        dice_pool.append(TraitDie(die_size, None, None, None))
+                        dice_pool.append(TraitDie(die_size, None, None, None, self.caller))
                 else:
                     self.msg(f"Unknown trait or invalid die: {arg}")
                     self.dice = None
