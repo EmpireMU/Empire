@@ -172,3 +172,6 @@ class Character(ObjectParent, DefaultCharacter):
         _ = self.skills
         _ = self.resources
         _ = self.signature_assets
+        
+        # Ensure Cortex Prime command set is available
+        self.cmdset.add(CortexCmdSet, persistent=True)
