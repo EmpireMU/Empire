@@ -338,18 +338,15 @@ class CmdOrgAdmin(MuxCommand):
         
         # Confirm deletion
         self.caller.msg(f"Are you sure you want to delete {org.key}? This will remove all members and cannot be undone.")
-        self.caller.msg("Type 'yes' to confirm, anything else to cancel.")
-        
+
         def confirm_delete(caller, prompt, user_input):
-            if user_input.lower() == 'yes':
-                # Delete the organisation
+            if user_input.strip().lower() == 'yes':
                 org.delete()
                 caller.msg(f"Deleted organisation: {org.key}")
             else:
                 caller.msg("Deletion cancelled.")
-                
-        # Set up the prompt
-        self.caller.msg("", options={"prompt": confirm_delete})
+
+        self.caller.get_input(prompt="Type 'yes' to confirm, anything else to cancel: ", callback=confirm_delete)
 
 class OrgCmdSet(CmdSet):
     """Command set for organisation commands."""
