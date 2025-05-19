@@ -109,7 +109,6 @@ class CmdCortexRoll(Command):
     locks = "cmd:all()"  # Everyone can use this command
     help_category = "Game"
     switch_options = ()  # No switches for this command
-    arg_regex = r"\s.+|$"  # Require space between command and arguments, or no arguments
     
     def at_pre_cmd(self):
         """
