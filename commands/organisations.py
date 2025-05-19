@@ -318,6 +318,42 @@ class CmdOrgAdmin(MuxCommand):
         self.caller.msg("|yType the same command again to confirm deletion.|n")
         self.caller.db.org_delete_confirming = org.key
 
+class CmdClearOrgMemberships(MuxCommand):
+    """
+    Clear a character's organization memberships.
+    
+    Usage:
+        clearorgs <character>
+        
+    Examples:
+        clearorgs Bob     - Clear Bob's organization memberships
+    """
+    
+    key = "clearorgs"
+    help_category = "Organisations"
+    
+    def func(self):
+        """Execute the command."""
+        if not self.caller.check_permstring("Admin"):
+            self.caller.msg("You don't have permission to use this command.")
+            return
+            
+        if not self.args:
+            self.caller.msg("Usage: clearorgs <character>")
+            return
+            
+        char = self.caller.search(self.args)
+        if not char:
+            return
+            
+        if not hasattr(char, 'db.organisations'):
+            self.caller.msg(f"{char.name} does not have any organization memberships.")
+            return
+            
+        # Clear organization memberships
+        char.db.organisations = {}
+        self.caller.msg(f"Cleared organization memberships for {char.name}.")
+
 class OrgCmdSet(CmdSet):
     """Command set for organisation commands."""
     key = "OrgCmdSet"
@@ -325,4 +361,5 @@ class OrgCmdSet(CmdSet):
     def at_cmdset_creation(self):
         """Populate the command set."""
         self.add(CmdOrg())
-        self.add(CmdOrgAdmin()) 
+        self.add(CmdOrgAdmin())
+        self.add(CmdClearOrgMemberships()) 
