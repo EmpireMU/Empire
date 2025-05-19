@@ -45,7 +45,7 @@ class CmdGivePlotPoint(Command):
                 
             # Add one plot point
             current = int(pp_trait.base)
-            char.traits.add("plot_points", current + 1)
+            char.traits.add(key="plot_points", value=current + 1)
             
             # Notify relevant parties
             self.caller.msg(f"You give a plot point to {char.name}.")
@@ -156,19 +156,17 @@ class CmdCheckPlotPoints(Command):
 
 class CmdSetRoomPlotPoints(MuxCommand):
     """
-    Set plot points for all characters in a room.
+    Set plot points for all characters in the current room.
     
     Usage:
-        setroompp <amount>          - Set plot points for all characters in room
-        setroompp <character>=<amount>  - Set plot points for specific character
+        setroompp <amount>
+        setroompp <character> = <amount>
         
     Examples:
-        setroompp 1        - Set all characters in room to 1 plot point
-        setroompp Bob=2    - Set Bob's plot points to 2
+        setroompp 3     - Set plot points to 3 for all characters in the room
+        setroompp Bob = 5  - Set Bob's plot points to 5
         
     Only staff members can use this command.
-    Useful for starting sessions or events where everyone needs the same
-    number of plot points.
     """
     
     key = "setroompp"
@@ -178,33 +176,33 @@ class CmdSetRoomPlotPoints(MuxCommand):
     def func(self):
         """Handle the plot point setting."""
         if not self.args:
-            self.caller.msg("Usage: setroompp <amount> or setroompp <character>=<amount>")
+            self.caller.msg("Usage: setroompp <amount> or setroompp <character> = <amount>")
             return
             
-        # Check if setting for specific character or whole room
-        if self.rhs:  # Using = syntax
-            char = self.caller.search(self.lhs)
-            if not char:
-                return
-            chars = [char]
-            amount = self.rhs.strip()
-        else:
-            # Setting for whole room
-            amount = self.args.strip()
-            chars = [obj for obj in self.caller.location.contents 
-                    if obj.has_account and hasattr(obj, 'traits')]
-            
-        # Validate amount
+        # Parse arguments
         try:
-            amount = int(amount)
+            if "=" in self.args:
+                # Setting for specific character
+                char_name, amount = self.args.split("=", 1)
+                char = self.caller.search(char_name.strip())
+                if not char:
+                    return
+                chars = [char]
+            else:
+                # Setting for all characters in room
+                amount = self.args
+                chars = [obj for obj in self.caller.location.contents if hasattr(obj, 'traits')]
+                
+            amount = int(amount.strip())
             if amount < 0:
                 self.caller.msg("Plot points cannot be negative.")
                 return
+                
         except ValueError:
-            self.caller.msg("Plot point amount must be a number.")
+            self.caller.msg("Amount must be a number.")
             return
             
-        # Set plot points for each character
+        # Set plot points
         success_count = 0
         for char in chars:
             try:
@@ -215,7 +213,7 @@ class CmdSetRoomPlotPoints(MuxCommand):
                 if not pp_trait:
                     continue
                     
-                char.traits.add("plot_points", amount)
+                char.traits.add(key="plot_points", value=amount)
                 success_count += 1
                 
                 # Notify the character if they're not the one setting
@@ -298,7 +296,9 @@ class PlotPointCmdSet(CmdSet):
     """
     
     def at_cmdset_creation(self):
-        """Add commands to the command set."""
+        """
+        Add commands to the command set
+        """
         self.add(CmdGivePlotPoint())
         self.add(CmdSpendPlotPoint())
         self.add(CmdCheckPlotPoints())
