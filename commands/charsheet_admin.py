@@ -142,18 +142,9 @@ class CmdWipeTraits(MuxCommand):
             for handler_name in ['traits', 'distinctions', 'character_attributes', 'skills', 'resources', 'signature_assets']:
                 handler = getattr(char, handler_name, None)
                 if handler:
-                    # Get all trait keys before removing them
-                    trait_keys = list(handler.all())
-                    for key in trait_keys:
-                        try:
-                            handler.remove(key)
-                        except Exception:
-                            # Skip if trait doesn't exist
-                            continue
-            
-            # Ensure removal is complete
-            import time
-            time.sleep(0.1)  # Small delay to ensure removal is complete
+                    # Get all trait keys and remove them
+                    for key in handler.all():
+                        handler.remove(key)
             
             # Force reinitialize traits
             success, msg = initialize_traits(char, force=True)
