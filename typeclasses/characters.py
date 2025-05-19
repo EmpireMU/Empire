@@ -48,7 +48,7 @@ class Character(ObjectParent, DefaultCharacter):
         return TraitHandler(self, db_attribute_key="char_distinctions")
         
     @lazy_property
-    def attributes(self):
+    def character_attributes(self):
         """
         Character attributes (d4-d12)
         """
@@ -88,20 +88,20 @@ class Character(ObjectParent, DefaultCharacter):
 
         # Initialize attributes
         for trait in ATTRIBUTES:
-            existing = self.attributes.get(trait.key)
+            existing = self.character_attributes.get(trait.key)
             if existing:
                 existing.base = trait.default_value
             else:
-                self.attributes.add(
+                self.character_attributes.add(
                     trait.key,
                     value=trait.default_value,
                     desc=trait.description,
                     name=trait.name
                 )
                 # Ensure .base is set correctly
-                self.attributes.get(trait.key).base = trait.default_value
+                self.character_attributes.get(trait.key).base = trait.default_value
             # Debug print
-            self.msg(f"Attribute {trait.key}: default_value={trait.default_value}, base={self.attributes.get(trait.key).base}")
+            self.msg(f"Attribute {trait.key}: default_value={trait.default_value}, base={self.character_attributes.get(trait.key).base}")
 
         # Initialize skills
         for trait in SKILLS:
@@ -148,13 +148,12 @@ class Character(ObjectParent, DefaultCharacter):
         # Call parent to set up basic object properties
         super().at_init()
         
-        # Force initialize all trait handlers
-        self.msg(f"Debug: Initializing trait handlers for {self.name}")
-        self.msg(f"Debug: traits = {self.traits}")
-        self.msg(f"Debug: distinctions = {self.distinctions}")
-        self.msg(f"Debug: attributes = {self.attributes}")
-        self.msg(f"Debug: skills = {self.skills}")
-        self.msg(f"Debug: signature_assets = {self.signature_assets}")
+        # Force initialize all trait handlers without sending messages
+        _ = self.traits
+        _ = self.distinctions
+        _ = self.character_attributes
+        _ = self.skills
+        _ = self.signature_assets
 
     def at_post_puppet(self):
         """
@@ -167,7 +166,7 @@ class Character(ObjectParent, DefaultCharacter):
         # Ensure trait handlers are initialized
         _ = self.traits
         _ = self.distinctions
-        _ = self.attributes
+        _ = self.character_attributes
         _ = self.skills
         _ = self.signature_assets
         
