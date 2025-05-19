@@ -6,8 +6,12 @@ from .trait_definitions import TraitDefinition, ATTRIBUTES, SKILLS, DISTINCTIONS
 
 def initialize_plot_points(character: Any, force: bool) -> Optional[str]:
     """Initialize plot points for a character."""
-    if force or not character.traits.get("plot_points"):
-        character.traits.add("plot_points", value=1, min=0)
+    existing = character.traits.get("plot_points")
+    if force or not existing:
+        if existing:
+            existing.base = 1
+        else:
+            character.traits.add("plot_points", value=1, min=0)
         return "Added plot points"
     return None
 

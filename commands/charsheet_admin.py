@@ -151,6 +151,10 @@ class CmdWipeTraits(MuxCommand):
                             # Skip if trait doesn't exist
                             continue
             
+            # Ensure removal is complete
+            import time
+            time.sleep(0.1)  # Small delay to ensure removal is complete
+            
             # Force reinitialize traits
             success, msg = initialize_traits(char, force=True)
             if success:
