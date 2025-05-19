@@ -502,6 +502,10 @@ class CmdResource(MuxCommand):
             if cmd == 'add':
                 # Add the resource
                 char.resources.add(key, value=f"d{die_size}", name=name)
+                # Ensure .base is set correctly
+                trait = char.resources.get(key)
+                if trait:
+                    trait.base = die_size
                 self.caller.msg(f"Added {char.name}'s {name} (d{die_size}).")
                 char.msg(f"{self.caller.name} added your {name} (d{die_size}).")
             else:  # cmd == 'del'
@@ -525,7 +529,7 @@ class CmdResource(MuxCommand):
             
         # Group resources by name
         resources_by_name = {}
-        for key, trait in char.resources.all().items():
+        for trait in char.resources.all():
             name = trait.name
             if name not in resources_by_name:
                 resources_by_name[name] = []
