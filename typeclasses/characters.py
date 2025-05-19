@@ -33,7 +33,7 @@ class Character(ObjectParent, DefaultCharacter):
     @lazy_property
     def traits(self):
         """Main trait handler for general traits like plot points."""
-        return TraitHandler(self)
+        return self._traits if hasattr(self, '_traits') else TraitHandler(self)
         
     @lazy_property
     def distinctions(self):
@@ -44,7 +44,7 @@ class Character(ObjectParent, DefaultCharacter):
         2. Cultural background
         3. How they are perceived by others
         """
-        return TraitHandler(self, db_attribute_key="distinctions")
+        return self._distinctions if hasattr(self, '_distinctions') else TraitHandler(self, db_attribute_key="distinctions")
         
     @lazy_property
     def attributes(self):
@@ -56,7 +56,7 @@ class Character(ObjectParent, DefaultCharacter):
         - d10: Rarely-surpassed excellence
         - d12: Peak of human performance
         """
-        return TraitHandler(self, db_attribute_key="attributes")
+        return self._attributes if hasattr(self, '_attributes') else TraitHandler(self, db_attribute_key="attributes")
         
     @lazy_property
     def skills(self):
@@ -68,7 +68,7 @@ class Character(ObjectParent, DefaultCharacter):
         - d10: Top of their field
         - d12: Legendary
         """
-        return TraitHandler(self, db_attribute_key="skills")
+        return self._skills if hasattr(self, '_skills') else TraitHandler(self, db_attribute_key="skills")
         
     @lazy_property
     def resources(self):
@@ -78,7 +78,7 @@ class Character(ObjectParent, DefaultCharacter):
         - Wealth
         - Military
         """
-        return TraitHandler(self, db_attribute_key="resources")
+        return self._resources if hasattr(self, '_resources') else TraitHandler(self, db_attribute_key="resources")
         
     @lazy_property
     def signature_assets(self):
@@ -86,7 +86,7 @@ class Character(ObjectParent, DefaultCharacter):
         Signature Assets are remarkable items or NPC companions.
         Usually d8, sometimes d6, rarely d10 or d12.
         """
-        return TraitHandler(self, db_attribute_key="signature_assets")
+        return self._signature_assets if hasattr(self, '_signature_assets') else TraitHandler(self, db_attribute_key="signature_assets")
         
     def at_object_creation(self):
         """
@@ -96,5 +96,18 @@ class Character(ObjectParent, DefaultCharacter):
         success, message = initialize_traits(self)
         if not success:
             self.msg(f"Warning: Failed to initialize traits: {message}")
+    
+    def at_post_puppet(self):
+        """
+        Called just after puppeting has completed.
+        Ensures traits are properly initialized.
+        """
+        super().at_post_puppet()
         
-        # Resources and Signature Assets start empty - added through play
+        # Make sure traits are initialized
+        if not all(hasattr(self, attr) for attr in ['_traits', '_attributes', '_skills', '_distinctions', '_resources', '_signature_assets']):
+            success, message = initialize_traits(self)
+            if not success:
+                self.msg(f"Warning: Failed to initialize traits: {message}")
+    
+    # Resources and Signature Assets start empty - added through play
