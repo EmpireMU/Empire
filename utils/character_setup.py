@@ -20,7 +20,7 @@ def initialize_traits(character, force=False):
     
     # Initialize plot points
     if force or not character.traits.get("plot_points"):
-        character.traits.add(key="plot_points", value=1, min=0)
+        character.traits.add("plot_points", 1, min=0)
         changes.append("Added plot points")
         
     # Initialize attributes (all start at d6 - "typical person")
@@ -35,7 +35,7 @@ def initialize_traits(character, force=False):
     
     for attr_key, attr_name, attr_desc in ATTRIBUTES:
         if force or not character.character_attributes.get(attr_key):
-            character.character_attributes.add(key=attr_key, value=6, desc=attr_desc)
+            character.character_attributes.add(attr_key, 6, desc=attr_desc)
             changes.append(f"Added attribute: {attr_name}")
             
     # Initialize skills (start at d4 - "untrained")
@@ -63,7 +63,7 @@ def initialize_traits(character, force=False):
     
     for skill_key, skill_name, skill_desc in SKILLS:
         if force or not character.skills.get(skill_key):
-            character.skills.add(key=skill_key, value=4, desc=skill_desc)
+            character.skills.add(skill_key, 4, desc=skill_desc)
             changes.append(f"Added skill: {skill_name}")
             
     # Initialize distinction slots (all d8)
@@ -75,7 +75,7 @@ def initialize_traits(character, force=False):
     
     for dist_key, dist_name, dist_desc in DISTINCTIONS:
         if force or not character.distinctions.get(dist_key):
-            character.distinctions.add(key=dist_key, value=8, desc=dist_desc)
+            character.distinctions.add(dist_key, 8, desc=dist_desc)
             changes.append(f"Added distinction slot: {dist_name}")
             
     if not changes:
