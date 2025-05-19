@@ -5,7 +5,6 @@ from evennia.commands.command import Command
 from evennia.commands.default.muxcommand import MuxCommand
 from evennia import CmdSet, create_object
 from evennia.utils import dbserialize
-from utils.character_setup import initialize_traits
 
 UNDELETABLE_TRAITS = ["attributes", "skills"]
 
@@ -182,160 +181,6 @@ class CmdSetDistinction(MuxCommand):
         except Exception as e:
             self.caller.msg(f"Error setting distinction: {e}")
 
-class CmdInitTraits(MuxCommand):
-    """
-    Initialize or reinitialize a character's traits.
-    
-    Usage:
-        inittraits <character>
-        inittraits/all
-        
-    Examples:
-        inittraits Bob     - Initialize Bob's traits
-        inittraits/all     - Initialize all characters' traits
-        
-    This will set up default traits if they don't exist:
-    - Plot Points (starts at 1)
-    - Attributes (all start at d6)
-    - Skills (all start at d4)
-    - Distinction slots (all d8)
-    
-    Existing traits will not be modified.
-    Only staff members can use this command.
-    """
-    
-    key = "inittraits"
-    locks = "cmd:perm(Builder)"  # Builders and above can use this
-    help_category = "Building"
-    switch_options = ("all",)  # Define valid switches
-    
-    def func(self):
-        """Handle trait initialization."""
-        if "all" in self.switches:
-            # Initialize all characters
-            from evennia.objects.models import ObjectDB
-            from typeclasses.characters import Character
-            chars = ObjectDB.objects.filter(db_typeclass_path__contains="characters.Character")
-            count = 0
-            for char in chars:
-                if hasattr(char, 'traits'):  # Verify it's actually a character
-                    success, msg = initialize_traits(char)
-                    if success:
-                        count += 1
-                        self.caller.msg(f"{char.name}: {msg}")
-            self.caller.msg(f"\nInitialized traits for {count} character{'s' if count != 1 else ''}.")
-            return
-            
-        # Initialize specific character
-        if not self.args:
-            self.caller.msg("Usage: inittraits <character> or inittraits/all")
-            return
-            
-        char = self.caller.search(self.args)
-        if not char:
-            return
-            
-        if not hasattr(char, 'traits'):
-            self.caller.msg(f"{char.name} does not support traits (wrong typeclass?).")
-            return
-            
-        success, msg = initialize_traits(char)
-        self.caller.msg(msg)
-
-class CmdFixTraitKeys(MuxCommand):
-    """
-    Fix trait key data types to ensure they are all strings.
-    
-    Usage:
-        fixtraitkeys <character>
-        fixtraitkeys/all
-        
-    This command will:
-    1. Find all traits with non-string keys
-    2. Convert them to string keys
-    3. Preserve all trait values and descriptions
-    4. Report any changes made
-    
-    Only staff members can use this command.
-    """
-    
-    key = "fixtraitkeys"
-    locks = "cmd:perm(Builder)"  # Builders and above can use this
-    help_category = "Building"
-    switch_options = ("all",)  # Define valid switches
-    
-    def func(self):
-        """Execute the command."""
-        if "all" in self.switches:
-            # Fix all characters
-            from evennia.objects.models import ObjectDB
-            from typeclasses.characters import Character
-            chars = ObjectDB.objects.filter(db_typeclass_path__contains="characters.Character")
-            count = 0
-            for char in chars:
-                if hasattr(char, 'traits'):  # Verify it's actually a character
-                    changes = self._fix_character_traits(char)
-                    if changes:
-                        count += 1
-                        self.caller.msg(f"{char.name}: {', '.join(changes)}")
-            self.caller.msg(f"\nFixed trait keys for {count} character{'s' if count != 1 else ''}.")
-            return
-            
-        # Fix specific character
-        if not self.args:
-            self.caller.msg("Usage: fixtraitkeys <character> or fixtraitkeys/all")
-            return
-            
-        char = self.caller.search(self.args)
-        if not char:
-            return
-            
-        if not hasattr(char, 'traits'):
-            self.caller.msg(f"{char.name} does not support traits (wrong typeclass?).")
-            return
-            
-        changes = self._fix_character_traits(char)
-        if changes:
-            self.caller.msg(f"Fixed trait keys for {char.name}: {', '.join(changes)}")
-        else:
-            self.caller.msg(f"No trait key fixes needed for {char.name}.")
-            
-    def _fix_character_traits(self, char):
-        """Helper method to fix trait keys for a character."""
-        changes = []
-        
-        # Check each trait handler
-        handlers = {
-            'attributes': char.character_attributes,
-            'skills': char.skills,
-            'distinctions': char.distinctions,
-            'resources': char.resources,
-            'signature_assets': char.signature_assets
-        }
-        
-        for category, handler in handlers.items():
-            # Get all traits
-            traits = handler.all()
-            for key in traits:
-                # Skip if key is already a string
-                if isinstance(key, str):
-                    continue
-                    
-                # Get trait data
-                trait = handler.get(key)
-                if not trait:
-                    continue
-                    
-                # Create new string key
-                new_key = str(key)
-                
-                # Remove old trait and add with new key
-                handler.remove(key)
-                handler.add(key=new_key, value=trait.base, desc=trait.desc if hasattr(trait, 'desc') else None)
-                changes.append(f"Fixed {category} key: {key} -> {new_key}")
-                
-        return changes
-
 class CharSheetEditorCmdSet(CmdSet):
     """
     Command set for editing character sheets.
@@ -347,6 +192,4 @@ class CharSheetEditorCmdSet(CmdSet):
         """
         self.add(CmdSetTrait())
         self.add(CmdDeleteTrait())
-        self.add(CmdSetDistinction())
-        self.add(CmdInitTraits())
-        self.add(CmdFixTraitKeys()) 
+        self.add(CmdSetDistinction()) 
