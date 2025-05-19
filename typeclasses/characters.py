@@ -103,29 +103,29 @@ class Character(ObjectParent, DefaultCharacter):
         # Initialize plot points
         self.traits.add("plot_points", value=1, min=0)
 
-        # Initialize attributes (d6 - "typical person")
+        # Initialize attributes
         for trait in ATTRIBUTES:
             self.character_attributes.add(
-                trait.key,  # trait_key must be first positional argument
-                value=int(trait.default_value),  # Ensure value is an integer
+                trait.key,
+                value=int(trait.default_value),  # Pass die size as an integer
                 desc=trait.description,
                 name=trait.name
             )
 
-        # Initialize skills (d4 - "untrained")
+        # Initialize skills
         for trait in SKILLS:
             self.skills.add(
-                trait.key,  # trait_key must be first positional argument
-                value=int(trait.default_value),  # Ensure value is an integer
+                trait.key,
+                value=int(trait.default_value),  # Pass die size as an integer
                 desc=trait.description,
                 name=trait.name
             )
 
-        # Initialize distinction slots (d8)
+        # Initialize distinctions
         for trait in DISTINCTIONS:
             self.distinctions.add(
-                trait.key,  # trait_key must be first positional argument
-                value=int(trait.default_value),  # Ensure value is an integer
+                trait.key,
+                value=int(trait.default_value),  # Pass die size as an integer
                 desc=trait.description,
                 name=trait.name
             )
