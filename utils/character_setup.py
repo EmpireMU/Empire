@@ -24,8 +24,8 @@ def initialize_trait_group(
     for trait in trait_definitions:
         if force or not handler.get(trait.key):
             handler.add(
-                trait.key,
-                trait.default_value,
+                key=trait.key,
+                value=trait.default_value,
                 desc=trait.description,
                 name=trait.name
             )

@@ -101,13 +101,13 @@ class Character(ObjectParent, DefaultCharacter):
         self.cmdset.add(CortexCmdSet, persistent=True)
 
         # Initialize plot points
-        self.traits.add("plot_points", 1, min=0)
+        self.traits.add(key="plot_points", value=1, min=0)
 
         # Initialize attributes (d6 - "typical person")
         for trait in ATTRIBUTES:
             self.character_attributes.add(
-                trait.key,
-                trait.default_value,
+                key=trait.key,
+                value=trait.default_value,
                 desc=trait.description,
                 name=trait.name
             )
@@ -115,8 +115,8 @@ class Character(ObjectParent, DefaultCharacter):
         # Initialize skills (d4 - "untrained")
         for trait in SKILLS:
             self.skills.add(
-                trait.key,
-                trait.default_value,
+                key=trait.key,
+                value=trait.default_value,
                 desc=trait.description,
                 name=trait.name
             )
@@ -124,8 +124,8 @@ class Character(ObjectParent, DefaultCharacter):
         # Initialize distinction slots (d8)
         for trait in DISTINCTIONS:
             self.distinctions.add(
-                trait.key,
-                trait.default_value,
+                key=trait.key,
+                value=trait.default_value,
                 desc=trait.description,
                 name=trait.name
             )
