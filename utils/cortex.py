@@ -220,18 +220,23 @@ def get_success_level(total: int, difficulty: Optional[int]) -> Tuple[bool, bool
     Returns:
         Tuple of (success, heroic) where:
         - success is True if total >= difficulty
-        - heroic is True if total >= difficulty + 5
+        - heroic is True if total >= difficulty + 5 AND difficulty >= 11 (challenging)
         
-    Example: Against difficulty 11
+    Example: Against difficulty 11 (challenging)
     - 10 or less = Failure
     - 11-15 = Success
     - 16+ = Heroic Success
+    
+    Example: Against difficulty 7 (easy)
+    - 6 or less = Failure
+    - 7+ = Success (no heroic possible)
     """
     if difficulty is None:
         return True, False
         
     success = total >= difficulty
-    heroic = total >= (difficulty + 5)
+    # Only allow heroic successes on challenging (11) or higher difficulties
+    heroic = total >= (difficulty + 5) and difficulty >= 11
     return success, heroic
 
 def format_roll_result(value: int, die: str, trait: TraitDie) -> str:
