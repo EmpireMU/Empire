@@ -90,15 +90,58 @@ class Character(ObjectParent, DefaultCharacter):
     def at_object_creation(self):
         """
         Called only once when object is first created.
+        Initialize all trait handlers and set up default traits.
         """
         super().at_object_creation()
-        # Initialize all trait handlers
-        _ = self.traits
-        _ = self.distinctions
-        _ = self.character_attributes
-        _ = self.skills
-        _ = self.resources
-        _ = self.signature_assets
+
+        # Initialize plot points
+        self.traits.add("plot_points", "Plot Points", trait_type="counter", base=1, min=0)
+
+        # Initialize default attributes (d6 - "typical person")
+        ATTRIBUTES = [
+            ("prowess", "Prowess", "Strength, endurance and ability to fight"),
+            ("finesse", "Finesse", "Dexterity and agility"),
+            ("leadership", "Leadership", "Capacity as a leader"),
+            ("social", "Social", "Charisma and social navigation"),
+            ("acuity", "Acuity", "Perception and information processing"),
+            ("erudition", "Erudition", "Learning and recall ability")
+        ]
+        for key, name, desc in ATTRIBUTES:
+            self.character_attributes.add(key, name, trait_type="static", base=6, desc=desc)
+
+        # Initialize default skills (d4 - "untrained")
+        SKILLS = [
+            ("administration", "Administration", "Organizing affairs of large groups"),
+            ("arcana", "Arcana", "Knowledge of magic"),
+            ("athletics", "Athletics", "General physical feats"),
+            ("dexterity", "Dexterity", "Precision physical feats"),
+            ("diplomacy", "Diplomacy", "Protocol and high politics"),
+            ("direction", "Direction", "Leading in non-combat"),
+            ("exploration", "Exploration", "Wilderness and ruins"),
+            ("fighting", "Fighting", "Melee combat"),
+            ("influence", "Influence", "Personal persuasion"),
+            ("learning", "Learning", "Education and research"),
+            ("making", "Making", "Crafting and building"),
+            ("medicine", "Medicine", "Healing and medical knowledge"),
+            ("perception", "Perception", "Awareness and searching"),
+            ("performance", "Performance", "Entertainment arts"),
+            ("presentation", "Presentation", "Style and bearing"),
+            ("rhetoric", "Rhetoric", "Public speaking"),
+            ("seafaring", "Seafaring", "Sailing and navigation"),
+            ("shooting", "Shooting", "Ranged combat"),
+            ("warfare", "Warfare", "Military leadership and strategy")
+        ]
+        for key, name, desc in SKILLS:
+            self.skills.add(key, name, trait_type="static", base=4, desc=desc)
+
+        # Initialize distinction slots (d8)
+        DISTINCTIONS = [
+            ("concept", "Character Concept", "Core character concept (e.g. Bold Adventurer)"),
+            ("culture", "Cultural Background", "Character's cultural origin"),
+            ("reputation", "Reputation", "How others perceive the character")
+        ]
+        for key, name, desc in DISTINCTIONS:
+            self.distinctions.add(key, name, trait_type="static", base=8, desc=desc)
 
     def at_init(self):
         """

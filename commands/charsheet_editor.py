@@ -206,6 +206,64 @@ class CmdSetDistinction(Command):
         except Exception as e:
             self.caller.msg(f"Error setting distinction: {e}")
 
+class CmdInitTraits(Command):
+    """
+    Initialize or reinitialize a character's traits.
+    
+    Usage:
+        inittraits <character>
+        inittraits/all
+        
+    Examples:
+        inittraits Bob     - Initialize Bob's traits
+        inittraits/all     - Initialize all characters' traits
+        
+    This will set up default traits if they don't exist:
+    - Plot Points (starts at 1)
+    - Attributes (all start at d6)
+    - Skills (all start at d4)
+    - Distinction slots (all d8)
+    
+    Existing traits will not be modified.
+    Only staff members can use this command.
+    """
+    
+    key = "inittraits"
+    locks = "cmd:perm(Builder)"  # Builders and above can use this
+    help_category = "Building"
+    
+    def func(self):
+        """Handle trait initialization."""
+        if not self.args and "all" not in self.switches:
+            self.caller.msg("Usage: inittraits <character> or inittraits/all")
+            return
+            
+        if "all" in self.switches:
+            # Initialize all characters
+            from evennia.objects.models import ObjectDB
+            from typeclasses.characters import Character
+            chars = ObjectDB.objects.filter(db_typeclass_path__contains="characters.Character")
+            count = 0
+            for char in chars:
+                if hasattr(char, 'traits'):  # Verify it's actually a character
+                    success, msg = initialize_traits(char)
+                    if success:
+                        count += 1
+                        self.caller.msg(f"{char.name}: {msg}")
+            self.caller.msg(f"\nInitialized traits for {count} character{'s' if count != 1 else ''}.")
+        else:
+            # Initialize specific character
+            char = self.caller.search(self.args)
+            if not char:
+                return
+                
+            if not hasattr(char, 'traits'):
+                self.caller.msg(f"{char.name} does not support traits (wrong typeclass?).")
+                return
+                
+            success, msg = initialize_traits(char)
+            self.caller.msg(f"{char.name}: {msg}")
+
 class CharSheetEditorCmdSet(CmdSet):
     """
     Command set for editing character sheets.
@@ -218,5 +276,4 @@ class CharSheetEditorCmdSet(CmdSet):
         self.add(CmdSetTrait())
         self.add(CmdDeleteTrait())
         self.add(CmdSetDistinction())
-        # Commenting out trait initialization command for now
-        # self.add(CmdInitTraits()) 
+        self.add(CmdInitTraits()) 
