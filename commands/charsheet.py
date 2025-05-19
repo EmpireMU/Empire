@@ -4,7 +4,7 @@ Character sheet commands for viewing and editing character information.
 
 from evennia import Command, CmdSet
 from evennia.utils import evtable
-from evennia.objects.models import search_object
+from evennia.utils.search import search_object
 
 def get_trait_display(trait):
     """
