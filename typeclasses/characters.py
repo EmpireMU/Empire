@@ -13,6 +13,7 @@ from evennia.utils import lazy_property
 from evennia.contrib.rpg.traits import TraitHandler
 from .objects import ObjectParent
 from commands.cortex_roll import CortexCmdSet
+from utils.trait_definitions import ATTRIBUTES, SKILLS, DISTINCTIONS
 
 
 class Character(ObjectParent, DefaultCharacter):
@@ -99,53 +100,19 @@ class Character(ObjectParent, DefaultCharacter):
         self.cmdset.add(CortexCmdSet, persistent=True)
 
         # Initialize plot points
-        self.traits.add(key="plot_points", value=1, min=0)
+        self.traits.add("plot_points", 1, min=0)
 
-        # Initialize default attributes (d6 - "typical person")
-        ATTRIBUTES = [
-            ("prowess", "Prowess", "Strength, endurance and ability to fight"),
-            ("finesse", "Finesse", "Dexterity and agility"),
-            ("leadership", "Leadership", "Capacity as a leader"),
-            ("social", "Social", "Charisma and social navigation"),
-            ("acuity", "Acuity", "Perception and information processing"),
-            ("erudition", "Erudition", "Learning and recall ability")
-        ]
-        for key, name, desc in ATTRIBUTES:
-            self.character_attributes.add(key=key, value=6, desc=desc)
+        # Initialize attributes (d6 - "typical person")
+        for trait in ATTRIBUTES:
+            self.character_attributes.add(trait.key, trait.default_value, desc=trait.description)
 
-        # Initialize default skills (d4 - "untrained")
-        SKILLS = [
-            ("administration", "Administration", "Organizing affairs of large groups"),
-            ("arcana", "Arcana", "Knowledge of magic"),
-            ("athletics", "Athletics", "General physical feats"),
-            ("dexterity", "Dexterity", "Precision physical feats"),
-            ("diplomacy", "Diplomacy", "Protocol and high politics"),
-            ("direction", "Direction", "Leading in non-combat"),
-            ("exploration", "Exploration", "Wilderness and ruins"),
-            ("fighting", "Fighting", "Melee combat"),
-            ("influence", "Influence", "Personal persuasion"),
-            ("learning", "Learning", "Education and research"),
-            ("making", "Making", "Crafting and building"),
-            ("medicine", "Medicine", "Healing and medical knowledge"),
-            ("perception", "Perception", "Awareness and searching"),
-            ("performance", "Performance", "Entertainment arts"),
-            ("presentation", "Presentation", "Style and bearing"),
-            ("rhetoric", "Rhetoric", "Public speaking"),
-            ("seafaring", "Seafaring", "Sailing and navigation"),
-            ("shooting", "Shooting", "Ranged combat"),
-            ("warfare", "Warfare", "Military leadership and strategy")
-        ]
-        for key, name, desc in SKILLS:
-            self.skills.add(key=key, value=4, desc=desc)
+        # Initialize skills (d4 - "untrained")
+        for trait in SKILLS:
+            self.skills.add(trait.key, trait.default_value, desc=trait.description)
 
         # Initialize distinction slots (d8)
-        DISTINCTIONS = [
-            ("concept", "Character Concept", "Core character concept (e.g. Bold Adventurer)"),
-            ("culture", "Cultural Background", "Character's cultural origin"),
-            ("reputation", "Reputation", "How others perceive the character")
-        ]
-        for key, name, desc in DISTINCTIONS:
-            self.distinctions.add(key=key, value=8, desc=desc)
+        for trait in DISTINCTIONS:
+            self.distinctions.add(trait.key, trait.default_value, desc=trait.description)
 
     def at_init(self):
         """

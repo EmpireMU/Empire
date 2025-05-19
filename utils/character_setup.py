@@ -1,8 +1,34 @@
 """
 Utility functions for character setup and initialization.
 """
+from typing import List, Tuple, Optional, Any
+from .trait_definitions import TraitDefinition, ATTRIBUTES, SKILLS, DISTINCTIONS
 
-def initialize_traits(character, force=False):
+def initialize_plot_points(character: Any, force: bool) -> Optional[str]:
+    """Initialize plot points for a character."""
+    if force or not character.traits.get("plot_points"):
+        character.traits.add("plot_points", 1, min=0)
+        return "Added plot points"
+    return None
+
+def initialize_trait_group(
+    character: Any,
+    trait_definitions: List[TraitDefinition],
+    handler_name: str,
+    force: bool
+) -> List[str]:
+    """Initialize a group of traits (attributes, skills, or distinctions)."""
+    changes = []
+    handler = getattr(character, handler_name)
+    
+    for trait in trait_definitions:
+        if force or not handler.get(trait.key):
+            handler.add(trait.key, trait.default_value, desc=trait.description)
+            changes.append(f"Added {handler_name[:-1]}: {trait.name}")
+            
+    return changes
+
+def initialize_traits(character: Any, force: bool = False) -> Tuple[bool, str]:
     """
     Initialize or reinitialize all traits on a character.
     
@@ -19,64 +45,18 @@ def initialize_traits(character, force=False):
     changes = []
     
     # Initialize plot points
-    if force or not character.traits.get("plot_points"):
-        character.traits.add("plot_points", 1, min=0)
-        changes.append("Added plot points")
-        
-    # Initialize attributes (all start at d6 - "typical person")
-    ATTRIBUTES = [
-        ("prowess", "Prowess", "Strength, endurance and ability to fight"),
-        ("finesse", "Finesse", "Dexterity and agility"),
-        ("leadership", "Leadership", "Capacity as a leader"),
-        ("social", "Social", "Charisma and social navigation"),
-        ("acuity", "Acuity", "Perception and information processing"),
-        ("erudition", "Erudition", "Learning and recall ability")
-    ]
+    plot_point_change = initialize_plot_points(character, force)
+    if plot_point_change:
+        changes.append(plot_point_change)
     
-    for attr_key, attr_name, attr_desc in ATTRIBUTES:
-        if force or not character.character_attributes.get(attr_key):
-            character.character_attributes.add(attr_key, 6, desc=attr_desc)
-            changes.append(f"Added attribute: {attr_name}")
-            
-    # Initialize skills (start at d4 - "untrained")
-    SKILLS = [
-        ("administration", "Administration", "Organizing affairs of large groups"),
-        ("arcana", "Arcana", "Knowledge of magic"),
-        ("athletics", "Athletics", "General physical feats"),
-        ("dexterity", "Dexterity", "Precision physical feats"),
-        ("diplomacy", "Diplomacy", "Protocol and high politics"),
-        ("direction", "Direction", "Leading in non-combat"),
-        ("exploration", "Exploration", "Wilderness and ruins"),
-        ("fighting", "Fighting", "Melee combat"),
-        ("influence", "Influence", "Personal persuasion"),
-        ("learning", "Learning", "Education and research"),
-        ("making", "Making", "Crafting and building"),
-        ("medicine", "Medicine", "Healing and medical knowledge"),
-        ("perception", "Perception", "Awareness and searching"),
-        ("performance", "Performance", "Entertainment arts"),
-        ("presentation", "Presentation", "Style and bearing"),
-        ("rhetoric", "Rhetoric", "Public speaking"),
-        ("seafaring", "Seafaring", "Sailing and navigation"),
-        ("shooting", "Shooting", "Ranged combat"),
-        ("warfare", "Warfare", "Military leadership and strategy")
-    ]
+    # Initialize attributes
+    changes.extend(initialize_trait_group(character, ATTRIBUTES, "character_attributes", force))
     
-    for skill_key, skill_name, skill_desc in SKILLS:
-        if force or not character.skills.get(skill_key):
-            character.skills.add(skill_key, 4, desc=skill_desc)
-            changes.append(f"Added skill: {skill_name}")
-            
-    # Initialize distinction slots (all d8)
-    DISTINCTIONS = [
-        ("concept", "Character Concept", "Core character concept (e.g. Bold Adventurer)"),
-        ("culture", "Cultural Background", "Character's cultural origin"),
-        ("reputation", "Reputation", "How others perceive the character")
-    ]
+    # Initialize skills
+    changes.extend(initialize_trait_group(character, SKILLS, "skills", force))
     
-    for dist_key, dist_name, dist_desc in DISTINCTIONS:
-        if force or not character.distinctions.get(dist_key):
-            character.distinctions.add(dist_key, 8, desc=dist_desc)
-            changes.append(f"Added distinction slot: {dist_name}")
+    # Initialize distinctions
+    changes.extend(initialize_trait_group(character, DISTINCTIONS, "distinctions", force))
             
     if not changes:
         return True, "Character traits were already fully initialized"
