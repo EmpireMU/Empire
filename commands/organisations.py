@@ -346,6 +346,9 @@ class CmdClearOrgMemberships(MuxCommand):
         if not char:
             return
             
+        # Debug message to verify character
+        self.caller.msg(f"Character found: {char.name}")
+            
         if not hasattr(char, 'db.organisations'):
             self.caller.msg(f"{char.name} does not have any organization memberships.")
             return
