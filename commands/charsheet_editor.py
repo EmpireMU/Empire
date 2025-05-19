@@ -71,7 +71,7 @@ class CmdSetTrait(MuxCommand):
         
         # Add or update trait
         try:
-            handler.add(key=trait_key, name=trait_key.title(), value=die_size)
+            handler.add(key=trait_key, value=die_size)
             self.caller.msg(f"Set {char.name}'s {category} trait '{trait_key}' to d{die_size}.")
             char.msg(f"{self.caller.name} sets your {category} trait '{trait_key}' to d{die_size}.")
         except Exception as e:
@@ -171,7 +171,7 @@ class CmdSetDistinction(MuxCommand):
             
         try:
             # All distinctions are d8
-            char.distinctions.add(key=slot, name=name, value=8, desc=desc)
+            char.distinctions.add(key=slot, value=8, desc=desc)
             
             # Notify relevant parties
             self.caller.msg(f"Set {char.name}'s {slot} distinction to '{name}'.")
