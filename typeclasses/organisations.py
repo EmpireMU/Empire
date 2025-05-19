@@ -1,162 +1,178 @@
 """
-Organisation typeclass for managing noble houses, orders, guilds, etc.
-"""
-from evennia import DefaultObject
-from evennia.typeclasses.tags import TagProperty
-from evennia.utils.dbserialize import dbserialize
-from evennia.utils.utils import lazy_property
-from evennia.utils.search import search_object
+Organizations
 
-class Organisation(DefaultObject):
+Organizations represent groups like noble houses, guilds, or factions.
+They can have members with different ranks and provide resources to their members.
+"""
+
+from evennia.objects.objects import DefaultObject
+from evennia.utils import lazy_property
+from evennia.utils.search import search_object
+from .objects import ObjectParent
+
+
+class Organisation(ObjectParent, DefaultObject):
     """
-    An organisation represents a group like a noble house, knightly order, or guild.
-    
-    Organisations have:
-    - A head (character)
-    - Members with ranks (1-10, with custom names)
-    - A public description
-    - Optional secret status
+    An organization that characters can join.
+    Organizations can have different ranks and provide resources to members.
     """
     
     MAX_RANKS = 10
     
     @lazy_property
     def members(self):
-        """Get all members of this organisation."""
-        return self.db.members
-    
-    @lazy_property
-    def ranks(self):
-        """Get all ranks in this organisation."""
-        return self.db.ranks
-    
-    @property
-    def head(self):
-        """Get the head of this organisation."""
-        return self.db.head
-    
-    @head.setter
-    def head(self, value):
-        """Set the head of this organisation."""
-        self.db.head = value
-    
-    @property
-    def description(self):
-        """Get the public description of this organisation."""
-        return self.db.description or "No description available."
-    
-    @description.setter
-    def description(self, value):
-        """Set the public description of this organisation."""
-        self.db.description = value
-    
-    @property
-    def is_secret(self):
-        """Check if this organisation is secret."""
-        return self.db.is_secret or False
-    
-    @is_secret.setter
-    def is_secret(self, value):
-        """Set whether this organisation is secret."""
-        self.db.is_secret = bool(value)
-    
-    def at_object_creation(self):
-        """Initialize the organisation."""
-        self.db.members = {}  # {character_id: rank_number}
-        self.db.ranks = {}    # {rank_number: rank_name}
-        self.db.head = None
-        self.db.description = ""
-        self.db.is_secret = False
-    
-    def add_member(self, character, rank=None):
         """
-        Add a member to the organisation.
+        Get all members of this organization.
+        Returns a dict of {char_id: rank_number}
+        """
+        return self.attributes.get('members', default={}, category='organisation')
+        
+    def at_object_creation(self):
+        """
+        Called when the organization is first created.
+        """
+        super().at_object_creation()
+        
+        # Initialize member list
+        self.attributes.add('members', {}, category='organisation')
+        
+        # Set up organization properties
+        self.db.description = "No description has been set."
+        
+        # Initialize default ranks
+        self.db.ranks = {
+            1: "Head of House",
+            2: "Minister",
+            3: "Noble Family",
+            4: "Senior Servant"
+        }
+        
+    def add_member(self, character, rank=4):
+        """
+        Add a character to the organization.
         
         Args:
             character: The character to add
-            rank: Optional rank number (1-10) to assign
+            rank: The rank to give them (default: Senior Servant)
         """
-        if not rank and self.ranks:
-            # If no rank specified but ranks exist, use the lowest rank
-            rank = min(self.ranks.keys())
-        elif not rank:
-            # If no ranks exist, use rank 1
-            rank = 1
+        if not character.check_permstring("Admin"):
+            return False
             
-        if not isinstance(rank, int) or rank < 1 or rank > self.MAX_RANKS:
-            raise ValueError(f"Rank must be a number between 1 and {self.MAX_RANKS}")
+        # Add to organization's member list
+        members = self.members
+        members[character.id] = rank
+        self.attributes.add('members', members, category='organisation')
         
-        # Store character ID as integer
-        self.db.members[character.id] = rank
-        
-        # Update character's organizations using Evennia's attribute system
-        orgs = character.attributes.get('organisations', default={})
+        # Add to character's organization list
+        orgs = character.organisations
         orgs[self.id] = rank
         character.attributes.add('organisations', orgs, category='organisations')
-    
+        return True
+        
     def remove_member(self, character):
         """
-        Remove a member from the organisation.
+        Remove a character from the organization.
         
         Args:
             character: The character to remove
         """
-        if character.id in self.db.members:
-            del self.db.members[character.id]
-            # Remove from character's organizations using Evennia's attribute system
-            orgs = character.attributes.get('organisations', default={}, category='organisations')
-            if self.id in orgs:
-                del orgs[self.id]
-                character.attributes.add('organisations', orgs, category='organisations')
-    
+        if not character.check_permstring("Admin"):
+            return False
+            
+        # Remove from organization's member list
+        members = self.members
+        if character.id in members:
+            del members[character.id]
+            self.attributes.add('members', members, category='organisation')
+        
+        # Remove from character's organization list
+        orgs = character.organisations
+        if self.id in orgs:
+            del orgs[self.id]
+            character.attributes.add('organisations', orgs, category='organisations')
+        return True
+            
     def set_rank(self, character, rank):
         """
-        Set a member's rank.
+        Set a character's rank in the organization.
         
         Args:
             character: The character to set rank for
-            rank: The rank number (1-10) to set
+            rank: The new rank number (1-10)
         """
-        if not isinstance(rank, int) or rank < 1 or rank > self.MAX_RANKS:
-            raise ValueError(f"Rank must be a number between 1 and {self.MAX_RANKS}")
+        if not character.check_permstring("Admin"):
+            return False
             
-        if character.id not in self.db.members:
-            self.add_member(character, rank)
-        else:
-            self.db.members[character.id] = rank
-            # Update character's organizations using Evennia's attribute system
-            orgs = character.attributes.get('organisations', default={}, category='organisations')
+        if not isinstance(rank, int) or rank < 1 or rank > self.MAX_RANKS:
+            return False
+            
+        # Update organization's member list
+        members = self.members
+        if character.id in members:
+            members[character.id] = rank
+            self.attributes.add('members', members, category='organisation')
+            
+            # Update character's organization list
+            orgs = character.organisations
             orgs[self.id] = rank
             character.attributes.add('organisations', orgs, category='organisations')
-    
-    def get_rank(self, character):
-        """
-        Get a member's rank.
-        
-        Args:
-            character: The character to get rank for
+            return True
             
-        Returns:
-            Tuple of (rank_number, rank_name) or None if not a member
-        """
-        rank_num = self.db.members.get(character.id)
-        if rank_num:
-            return (rank_num, self.ranks.get(rank_num, f"Rank {rank_num}"))
-        return None
-    
-    def set_rank_name(self, rank_num, rank_name):
+        return False
+        
+    def set_rank_name(self, rank, name):
         """
         Set the name for a rank number.
         
         Args:
-            rank_num: The rank number (1-10)
-            rank_name: The name to give this rank
+            rank: The rank number (1-10)
+            name: The name to give this rank
         """
-        if not isinstance(rank_num, int) or rank_num < 1 or rank_num > self.MAX_RANKS:
-            raise ValueError(f"Rank must be a number between 1 and {self.MAX_RANKS}")
+        if not isinstance(rank, int) or rank < 1 or rank > self.MAX_RANKS:
+            return False
             
-        self.db.ranks[rank_num] = rank_name
-    
+        self.db.ranks[rank] = name
+        return True
+        
+    def get_rank_name(self, rank):
+        """
+        Get the name of a rank number.
+        
+        Args:
+            rank: The rank number
+            
+        Returns:
+            The rank name or None if invalid
+        """
+        return self.db.ranks.get(rank)
+        
+    def get_member_rank(self, character):
+        """
+        Get a character's rank in the organization.
+        
+        Args:
+            character: The character to check
+            
+        Returns:
+            The rank number or None if not a member
+        """
+        return self.members.get(character.id)
+        
+    def get_member_rank_name(self, character):
+        """
+        Get a character's rank name in the organization.
+        
+        Args:
+            character: The character to check
+            
+        Returns:
+            The rank name or None if not a member
+        """
+        rank = self.get_member_rank(character)
+        if rank is not None:
+            return self.get_rank_name(rank)
+        return None
+
     def get_members(self):
         """
         Get all members of the organisation.
@@ -165,32 +181,24 @@ class Organisation(DefaultObject):
             List of (character, rank_number, rank_name) tuples
         """
         members = []
-        for char_id, rank_num in self.db.members.items():
+        for char_id, rank_num in self.members.items():
             # Search for character using Evennia's search with dbref
             chars = search_object(f"#{char_id}")
             if chars:
                 char = chars[0]
-                rank_name = self.ranks.get(rank_num, f"Rank {rank_num}")
+                rank_name = self.get_rank_name(rank_num) or f"Rank {rank_num}"
                 members.append((char, rank_num, rank_name))
         return sorted(members, key=lambda x: x[1])  # Sort by rank number
         
     def delete(self):
         """
         Delete the organisation and clean up all references.
-        This will:
-        1. Remove all members from the organisation
-        2. Clear the head reference
-        3. Delete the organisation object
         """
         # Remove all members
-        for char_id in list(self.db.members.keys()):
+        for char_id in list(self.members.keys()):
             chars = search_object(f"#{char_id}")
             if chars:
                 self.remove_member(chars[0])
         
-        # Clear head reference
-        if self.head:
-            self.head = None
-            
         # Delete the organisation
         super().delete() 

@@ -1,377 +1,239 @@
 """
-Organisation commands for managing noble houses, orders, guilds, etc.
+Organization commands for managing organizations and their members.
 """
-from evennia.commands.default.muxcommand import MuxCommand
-from evennia import CmdSet
-from evennia.utils.create import create_object
+
+from evennia import Command, CmdSet
+from evennia.utils import evtable
 from evennia.utils.search import search_object
-from evennia.utils.utils import inherits_from
 from typeclasses.organisations import Organisation
 
-class CmdOrg(MuxCommand):
+
+class CmdOrg(Command):
     """
-    View organisation information.
+    View and manage organizations.
     
     Usage:
-        org <organisation>
+        org <organization>                    - View organization info
+        org/create <name>                     - Create new organization
+        org/member <organization> = <character>[,rank] - Add/set member
+        org/remove <organization> = <character> - Remove member from organization
+        org/rankname <organization> = <rank>,<name> - Set rank name
+        
+    Examples:
+        org House Otrese
+        org/create House Anadun
+        org/member House Otrese = Koline,3    - Add Koline as Noble Family
+        org/member House Otrese = Koline,2    - Promote Koline to Minister
+        org/remove House Otrese = Koline
+        org/rankname House Otrese = 5,Knight
     """
+    
     key = "org"
-    help_category = "Organisations"
+    locks = "cmd:all()"
+    help_category = "Organizations"
+    switch_options = ("create", "member", "remove", "rankname")
     
     def func(self):
         """Execute the command."""
         if not self.args:
-            self.caller.msg("Usage: org <organisation>")
+            self.caller.msg("Usage: org <organization>")
             return
             
-        # Search for the organisation
-        orgs = search_object(self.args, typeclass=Organisation)
-        if not orgs:
-            self.caller.msg(f"No organisation found matching '{self.args}'")
+        # Handle switches
+        if self.switches:
+            if self.switches[0] == "create":
+                self.create_org()
+            elif self.switches[0] == "member":
+                self.manage_member()
+            elif self.switches[0] == "remove":
+                self.remove_member()
+            elif self.switches[0] == "rankname":
+                self.set_rank_name()
             return
             
-        org = orgs[0]
+        # Default: show organization info
+        self.show_org_info()
         
-        # Display organisation info
-        self.caller.msg(f"\n{org.key}\n")
-        self.caller.msg(f"\nDescription:\n{org.description}\n")
-        
-        # Get members sorted by rank
-        members = org.get_members()
-        if members:
-            self.caller.msg("\nMembers:")
-            # Group members by rank
-            rank_groups = {}
-            for char, rank_num, rank_name in members:
-                if rank_name not in rank_groups:
-                    rank_groups[rank_name] = []
-                rank_groups[rank_name].append(char.key)
-            
-            # Display members grouped by rank, sorted by rank number
-            for char, rank_num, rank_name in sorted(members, key=lambda x: x[1]):
-                if rank_name in rank_groups:
-                    members_list = ", ".join(rank_groups[rank_name])
-                    self.caller.msg(f"{rank_name}: {members_list}")
-                    # Remove this rank from groups to avoid duplicate display
-                    del rank_groups[rank_name]
-        else:
-            self.caller.msg("\nNo members.")
-
-class CmdOrgAdmin(MuxCommand):
-    """
-    Administer organisations.
-    
-    Usage:
-        orgadmin/create <name>
-        orgadmin/head <organisation> = <character>
-        orgadmin/desc <organisation> = <description>
-        orgadmin/secret <organisation> = <True/False>
-        orgadmin/add <organisation> = <character>[,rank]
-        orgadmin/remove <organisation> = <character>
-        orgadmin/rank <organisation> = <character>,<rank>
-        orgadmin/rankname <organisation> = <rank>,<name>
-        orgadmin/delete <organisation>
-    """
-    key = "orgadmin"
-    help_category = "Organisations"
-    switch_options = ("create", "head", "desc", "secret", "remove", "rank", "rankname", "delete")
-    
-    def func(self):
-        """Execute the command."""
-        if not self.switches:
-            self.caller.msg("Usage: orgadmin/<switch> <args>")
+    def create_org(self):
+        """Create a new organization."""
+        if not self.args:
+            self.caller.msg("Usage: org/create <name>")
             return
             
         if not self.caller.check_permstring("Admin"):
-            self.caller.msg("You don't have permission to use this command.")
+            self.caller.msg("You don't have permission to create organizations.")
             return
             
-        try:
-            if self.switches[0] == "create":
-                self.create_org()
-            elif self.switches[0] == "head":
-                self.set_head()
-            elif self.switches[0] == "desc":
-                self.set_desc()
-            elif self.switches[0] == "secret":
-                self.set_secret()
-            elif self.switches[0] == "remove":
-                self.remove_member()
-            elif self.switches[0] == "rank":
-                self.set_rank()
-            elif self.switches[0] == "rankname":
-                self.set_rank_name()
-            elif self.switches[0] == "delete":
-                self.delete_org()
-        except Exception as e:
-            self.caller.msg(f"Error: {str(e)}")
-    
-    def create_org(self):
-        """Create a new organisation."""
-        if not self.args:
-            self.caller.msg("Usage: orgadmin/create <name>")
-            return
-            
-        # Check if org already exists
-        existing = search_object(self.args, typeclass=Organisation)
-        if existing:
-            self.caller.msg(f"An organisation named '{self.args}' already exists.")
-            return
-            
-        # Create the organisation
-        org = create_object(typeclass="typeclasses.organisations.Organisation", key=self.args)
-        self.caller.msg(f"Created organisation: {org.key}")
-    
-    def set_head(self):
-        """Set the head of an organisation."""
+        # Create the organization
+        org = Organisation.objects.create(
+            key=self.args,
+            location=self.caller.location
+        )
+        
+        self.caller.msg(f"Created organization: {org.name}")
+        
+    def manage_member(self):
+        """Add or update a member's rank."""
         if not self.args or "=" not in self.args:
-            self.caller.msg("Usage: orgadmin/head <organisation> = <character>")
+            self.caller.msg("Usage: org/member <organization> = <character>[,rank]")
             return
             
-        org_name, char_name = [part.strip() for part in self.args.split("=", 1)]
-        
-        # Find the organisation
-        orgs = search_object(org_name, typeclass=Organisation)
-        if not orgs:
-            self.caller.msg(f"No organisation found matching '{org_name}'")
-            return
-        org = orgs[0]
-        
-        # Find the character
-        chars = search_object(char_name)
-        if not chars:
-            self.caller.msg(f"No character found matching '{char_name}'")
-            return
-        char = chars[0]
-        
-        # Set the head
-        org.head = char
-        self.caller.msg(f"Set {char.key} as head of {org.key}")
-    
-    def set_desc(self):
-        """Set an organisation's description."""
-        if not self.args or "=" not in self.args:
-            self.caller.msg("Usage: orgadmin/desc <organisation> = <description>")
+        if not self.caller.check_permstring("Admin"):
+            self.caller.msg("You don't have permission to manage members.")
             return
             
-        org_name, desc = [part.strip() for part in self.args.split("=", 1)]
-        
-        # Find the organisation
-        orgs = search_object(org_name, typeclass=Organisation)
-        if not orgs:
-            self.caller.msg(f"No organisation found matching '{org_name}'")
-            return
-        org = orgs[0]
-        
-        # Set the description
-        org.description = desc
-        self.caller.msg(f"Updated description for {org.key}")
-    
-    def set_secret(self):
-        """Set an organisation's secret status."""
-        if not self.args or "=" not in self.args:
-            self.caller.msg("Usage: orgadmin/secret <organisation> = <True/False>")
-            return
-            
-        org_name, value = [part.strip() for part in self.args.split("=", 1)]
-        
-        # Find the organisation
-        orgs = search_object(org_name, typeclass=Organisation)
-        if not orgs:
-            self.caller.msg(f"No organisation found matching '{org_name}'")
-            return
-        org = orgs[0]
-        
-        # Set the secret status
-        try:
-            org.is_secret = value.lower() == "true"
-            self.caller.msg(f"Set {org.key} secret status to {org.is_secret}")
-        except ValueError:
-            self.caller.msg("Value must be 'True' or 'False'")
-    
-    def remove_member(self):
-        """Remove a member from an organisation."""
-        if not self.args or "=" not in self.args:
-            self.caller.msg("Usage: orgadmin/remove <organisation> = <character>")
-            return
-            
-        org_name, char_name = [part.strip() for part in self.args.split("=", 1)]
-        
-        # Find the organisation
-        orgs = search_object(org_name, typeclass=Organisation)
-        if not orgs:
-            self.caller.msg(f"No organisation found matching '{org_name}'")
-            return
-        org = orgs[0]
-        
-        # Find the character
-        chars = search_object(char_name)
-        if not chars:
-            self.caller.msg(f"No character found matching '{char_name}'")
-            return
-        char = chars[0]
-        
-        # Remove the member
-        org.remove_member(char)
-        self.caller.msg(f"Removed {char.key} from {org.key}")
-    
-    def set_rank(self):
-        """Set a member's rank."""
-        if not self.args or "=" not in self.args:
-            self.caller.msg("Usage: orgadmin/rank <organisation> = <character>,<rank>")
-            return
-            
+        # Parse arguments
         org_name, rest = [part.strip() for part in self.args.split("=", 1)]
         
-        # Parse character and rank
-        if "," not in rest:
-            self.caller.msg("Usage: orgadmin/rank <organisation> = <character>,<rank>")
+        # Parse character and optional rank
+        if "," in rest:
+            char_name, rank = [part.strip() for part in rest.split(",", 1)]
+            try:
+                rank = int(rank)
+            except ValueError:
+                self.caller.msg("Rank must be a number between 1 and 10.")
+                return
+        else:
+            char_name = rest
+            rank = 4  # Default to Senior Servant
+            
+        # Find the organization
+        org = self.caller.search(org_name, global_search=True)
+        if not org:
             return
             
-        char_name, rank = [part.strip() for part in rest.split(",", 1)]
-        try:
-            rank = int(rank)
-        except ValueError:
-            self.caller.msg("Rank must be a number between 1 and 10")
+        if not isinstance(org, Organisation):
+            self.caller.msg(f"{org.name} is not an organization.")
             return
-        
-        # Find the organisation
-        orgs = search_object(org_name, typeclass=Organisation)
-        if not orgs:
-            self.caller.msg(f"No organisation found matching '{org_name}'")
-            return
-        org = orgs[0]
-        
+            
         # Find the character
-        chars = search_object(char_name)
-        if not chars:
-            self.caller.msg(f"No character found matching '{char_name}'")
-            return
-        char = chars[0]
-        
-        # Set the rank
-        try:
-            org.set_rank(char, rank)
-            rank_info = org.get_rank(char)
-            self.caller.msg(f"Set {char.key}'s rank in {org.key} to {rank_info[1]}")
-        except ValueError as e:
-            self.caller.msg(str(e))
-
-        # Debug output
-        self.caller.msg("\nDebug Information:")
-        self.caller.msg(f"Organization Members: {org.db.members}")
-        self.caller.msg(f"Character {char.key} Organizations: {char.db.organisations}")
-    
-    def set_rank_name(self):
-        """Set the name for a rank number."""
-        if not self.args or "=" not in self.args:
-            self.caller.msg("Usage: orgadmin/rankname <organisation> = <rank>,<name>")
+        char = self.caller.search(char_name, global_search=True)
+        if not char:
             return
             
+        # Check if already a member
+        current_rank = org.get_member_rank(char)
+        if current_rank:
+            # Update rank
+            if org.set_rank(char, rank):
+                self.caller.msg(f"Changed {char.name}'s rank to {org.get_member_rank_name(char)}.")
+            else:
+                self.caller.msg("Failed to set rank.")
+        else:
+            # Add new member
+            if org.add_member(char, rank):
+                self.caller.msg(f"Added {char.name} to {org.name} as {org.get_member_rank_name(char)}.")
+            else:
+                self.caller.msg("Failed to add member.")
+            
+    def remove_member(self):
+        """Remove a member from an organization."""
+        if not self.args or "=" not in self.args:
+            self.caller.msg("Usage: org/remove <organization> = <character>")
+            return
+            
+        if not self.caller.check_permstring("Admin"):
+            self.caller.msg("You don't have permission to remove members.")
+            return
+            
+        # Parse arguments
+        org_name, char_name = [part.strip() for part in self.args.split("=", 1)]
+        
+        # Find the organization
+        org = self.caller.search(org_name, global_search=True)
+        if not org:
+            return
+            
+        if not isinstance(org, Organisation):
+            self.caller.msg(f"{org.name} is not an organization.")
+            return
+            
+        # Find the character
+        char = self.caller.search(char_name, global_search=True)
+        if not char:
+            return
+            
+        # Remove member
+        if org.remove_member(char):
+            self.caller.msg(f"Removed {char.name} from {org.name}.")
+        else:
+            self.caller.msg("Failed to remove member.")
+            
+    def set_rank_name(self):
+        """Set the name for a rank."""
+        if not self.args or "=" not in self.args:
+            self.caller.msg("Usage: org/rankname <organization> = <rank>,<name>")
+            return
+            
+        if not self.caller.check_permstring("Admin"):
+            self.caller.msg("You don't have permission to set rank names.")
+            return
+            
+        # Parse arguments
         org_name, rest = [part.strip() for part in self.args.split("=", 1)]
         
         # Parse rank and name
         if "," not in rest:
-            self.caller.msg("Usage: orgadmin/rankname <organisation> = <rank>,<name>")
+            self.caller.msg("Usage: org/rankname <organization> = <rank>,<name>")
             return
             
         rank, name = [part.strip() for part in rest.split(",", 1)]
         try:
             rank = int(rank)
         except ValueError:
-            self.caller.msg("Rank must be a number between 1 and 10")
+            self.caller.msg("Rank must be a number between 1 and 10.")
             return
+            
+        # Find the organization
+        org = self.caller.search(org_name, global_search=True)
+        if not org:
+            return
+            
+        if not isinstance(org, Organisation):
+            self.caller.msg(f"{org.name} is not an organization.")
+            return
+            
+        # Set rank name
+        if org.set_rank_name(rank, name):
+            self.caller.msg(f"Set rank {rank} to '{name}' in {org.name}.")
+        else:
+            self.caller.msg("Failed to set rank name.")
+            
+    def show_org_info(self):
+        """Show organization information."""
+        # Find the organization
+        org = self.caller.search(self.args, global_search=True)
+        if not org:
+            return
+            
+        if not isinstance(org, Organisation):
+            self.caller.msg(f"{org.name} is not an organization.")
+            return
+            
+        # Create info table
+        table = evtable.EvTable(
+            "|wName|n",
+            "|wRank|n",
+            border="table",
+            width=78
+        )
         
-        # Find the organisation
-        orgs = search_object(org_name, typeclass=Organisation)
-        if not orgs:
-            self.caller.msg(f"No organisation found matching '{org_name}'")
-            return
-        org = orgs[0]
-        
-        # Set the rank name
-        try:
-            org.set_rank_name(rank, name)
-            self.caller.msg(f"Set rank {rank} in {org.key} to '{name}'")
-        except ValueError as e:
-            self.caller.msg(str(e))
+        # Add members
+        for member, rank_num, rank_name in org.get_members():
+            table.add_row(member.name, rank_name)
             
-    def delete_org(self):
-        """Delete an organisation and clean up all references."""
-        if not self.args:
-            self.caller.msg("Usage: orgadmin/delete <organisation>")
-            return
+        # Show info
+        self.caller.msg(f"\n|y{org.name}|n")
+        self.caller.msg(f"Description: {org.db.description}")
+        self.caller.msg("\nMembers:")
+        self.caller.msg(str(table))
 
-        # Find the organisation
-        orgs = search_object(self.args, typeclass=Organisation)
-        if not orgs:
-            self.caller.msg(f"No organisation found matching '{self.args}'")
-            return
-        org = orgs[0]
-
-        # Check for confirmation flag
-        confirming = self.caller.db.org_delete_confirming
-        if confirming and confirming == org.key:
-            org.delete()
-            self.caller.msg(f"Deleted organisation: {org.key}")
-            del self.caller.db.org_delete_confirming
-            return
-
-        # First time: warn and set flag
-        self.caller.msg(f"|yWARNING: This will delete {org.key} and remove all members. This cannot be undone!|n")
-        self.caller.msg("|yType the same command again to confirm deletion.|n")
-        self.caller.db.org_delete_confirming = org.key
-
-class CmdClearOrgMemberships(MuxCommand):
-    """
-    Clear a character's organization memberships.
-    
-    Usage:
-        clearorgs <character>
-        
-    Examples:
-        clearorgs Bob     - Clear Bob's organization memberships
-    """
-    
-    key = "clearorgs"
-    help_category = "Organisations"
-    
-    def func(self):
-        """Clear all organization memberships for a character."""
-        if not self.args:
-            self.caller.msg("Usage: clearorgs <character>")
-            return
-            
-        char = self.caller.search(self.args)
-        if not char:
-            return
-            
-        if not char.db.organisations:
-            self.caller.msg(f"{char.key} does not have any organization memberships.")
-            return
-            
-        # Clean up any deleted organizations
-        for org_id in list(char.db.organisations.keys()):
-            org = self.caller.search(org_id, global_search=True)
-            if not org:
-                # Organization doesn't exist but is referenced - it's orphaned
-                self.caller.msg(f"Found orphaned organization reference (ID: {org_id}). Cleaning up...")
-                del char.db.organisations[org_id]
-            else:
-                # Organization exists but might be in an invalid state - delete it properly
-                self.caller.msg(f"Found organization {org.key} in invalid state. Deleting...")
-                org.delete()
-                
-        # Clear all memberships
-        char.db.organisations = {}
-        self.caller.msg(f"Cleared all organization memberships for {char.key}.")
 
 class OrgCmdSet(CmdSet):
-    """Command set for organisation commands."""
-    key = "OrgCmdSet"
+    """
+    Command set for organization commands.
+    """
     
     def at_cmdset_creation(self):
-        """Populate the command set."""
-        self.add(CmdOrg())
-        self.add(CmdOrgAdmin())
-        self.add(CmdClearOrgMemberships()) 
+        """Add commands to the set."""
+        self.add(CmdOrg()) 

@@ -66,6 +66,14 @@ class Character(ObjectParent, DefaultCharacter):
         Signature assets (d4-d12)
         """
         return TraitHandler(self, db_attribute_key="char_signature_assets")
+
+    @lazy_property
+    def organisations(self):
+        """
+        Get all organizations this character belongs to.
+        Returns a dict of {org_id: rank_number}
+        """
+        return self.attributes.get('organisations', default={}, category='organisations')
         
     def at_object_creation(self):
         """
@@ -81,6 +89,9 @@ class Character(ObjectParent, DefaultCharacter):
         # Initialize character background and personality
         self.db.background = "No background has been set."
         self.db.personality = "No personality has been set."
+
+        # Initialize organization memberships
+        self.attributes.add('organisations', {}, category='organisations')
 
         # Initialize attributes
         for trait in ATTRIBUTES:
@@ -150,6 +161,7 @@ class Character(ObjectParent, DefaultCharacter):
         _ = self.character_attributes
         _ = self.skills
         _ = self.signature_assets
+        _ = self.organisations
 
     def at_post_puppet(self):
         """
@@ -165,3 +177,4 @@ class Character(ObjectParent, DefaultCharacter):
         _ = self.character_attributes
         _ = self.skills
         _ = self.signature_assets
+        _ = self.organisations
