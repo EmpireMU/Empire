@@ -178,4 +178,4 @@ class Organisation(DefaultObject):
             self.head = None
             
         # Delete the organisation
-        self.delete() 
+        super().delete() 
