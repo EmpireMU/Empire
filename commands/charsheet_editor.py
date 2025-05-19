@@ -523,6 +523,8 @@ class CmdResource(MuxCommand):
                     trait = char.resources.get(key)
                     if trait:
                         trait.base = die_size
+                        # Ensure the value is stored as a string
+                        trait.value = f"1d{die_size}"
                     self.caller.msg(f"Added {char.name}'s first {name} (d{die_size}).")
                     char.msg(f"{self.caller.name} added your first {name} (d{die_size}).")
             else:  # cmd == 'del'
