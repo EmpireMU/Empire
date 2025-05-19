@@ -237,11 +237,6 @@ class CmdInitTraits(Command):
     switch_options = ("all",)  # Define valid switches
     aliases = ()
     
-    def parse(self):
-        """Parse switches and arguments."""
-        super().parse()
-        self.switches = [switch.lower() for switch in self.switches]
-    
     def func(self):
         """Handle trait initialization."""
         if "all" in self.switches:
