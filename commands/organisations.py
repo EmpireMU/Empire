@@ -2,22 +2,23 @@
 Organization commands for managing organizations and their members.
 """
 
-from evennia import Command, CmdSet
+from evennia.commands.default.muxcommand import MuxCommand
+from evennia import CmdSet
 from evennia.utils import evtable
 from evennia.utils.search import search_object
 from typeclasses.organisations import Organisation
 
 
-class CmdOrg(Command):
+class CmdOrg(MuxCommand):
     """
     View and manage organizations.
     
     Usage:
         org <organization>                    - View organization info
-        org/create <name>                     - Create new organization
-        org/member <organization> = <character>[,rank] - Add/set member
-        org/remove <organization> = <character> - Remove member from organization
-        org/rankname <organization> = <rank>,<name> - Set rank name
+        org/create <name>                     - Create new organization (Staff only)
+        org/member <organization> = <character>[,rank] - Add/set member (Staff only)
+        org/remove <organization> = <character> - Remove member (Staff only)
+        org/rankname <organization> = <rank>,<name> - Set rank name (Staff only)
         
     Examples:
         org House Otrese
