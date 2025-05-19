@@ -154,6 +154,9 @@ class Character(ObjectParent, DefaultCharacter):
             # Debug print
             self.msg(f"Distinction {trait.key}: default_value={trait.default_value}, base={self.distinctions.get(trait.key).base}")
 
+        # Resources and signature assets are initialized empty
+        # They will be added manually by the player or GM
+
     def at_init(self):
         """
         Called when object is first created and after it is loaded from cache.
