@@ -328,25 +328,26 @@ class CmdOrgAdmin(MuxCommand):
         if not self.args:
             self.caller.msg("Usage: orgadmin/delete <organisation>")
             return
-            
+
         # Find the organisation
         orgs = search_object(self.args, typeclass=Organisation)
         if not orgs:
             self.caller.msg(f"No organisation found matching '{self.args}'")
             return
         org = orgs[0]
-        
-        # Confirm deletion
-        self.caller.msg(f"Are you sure you want to delete {org.key}? This will remove all members and cannot be undone.")
 
-        def confirm_delete(caller, prompt, user_input):
-            if user_input.strip().lower() == 'yes':
-                org.delete()
-                caller.msg(f"Deleted organisation: {org.key}")
-            else:
-                caller.msg("Deletion cancelled.")
+        # Check for confirmation flag
+        confirming = self.caller.db.org_delete_confirming
+        if confirming and confirming == org.key:
+            org.delete()
+            self.caller.msg(f"Deleted organisation: {org.key}")
+            del self.caller.db.org_delete_confirming
+            return
 
-        self.caller.get_input(prompt="Type 'yes' to confirm, anything else to cancel: ", callback=confirm_delete)
+        # First time: warn and set flag
+        self.caller.msg(f"|yWARNING: This will delete {org.key} and remove all members. This cannot be undone!|n")
+        self.caller.msg("|yType the same command again to confirm deletion.|n")
+        self.caller.db.org_delete_confirming = org.key
 
 class OrgCmdSet(CmdSet):
     """Command set for organisation commands."""
