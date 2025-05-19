@@ -3,6 +3,7 @@ Staff commands for editing character sheets.
 """
 from evennia import Command
 from evennia import CmdSet
+from utils.character_setup import initialize_traits
 
 UNDELETABLE_TRAITS = ["attributes", "skills"]
 
@@ -11,13 +12,22 @@ class CmdSetTrait(Command):
     Set a trait on a character's sheet.
     
     Usage:
-        settrait <character> = <trait> <value>
+        settrait <character> = <category> <trait> <die>
         
     Examples:
-        settrait Bob = Attributes Cunning d8
-        settrait Jane = Distinctions "Too Clever" d8
-    
+        settrait Bob = attributes prowess d8
+        settrait Jane = skills fighting d10
+        settrait Tom = resources wealth d6
+        settrait Alice = signature_assets "Magic Sword" d8
+        
+    Categories:
+        attributes       - Core attributes (d4-d12)
+        skills          - Learned abilities (d4-d12)
+        resources       - Organizational resources (d4-d12)
+        signature_assets - Notable items/allies (d4-d12)
+        
     This command allows staff to add or modify character traits.
+    Note: For distinctions, use the 'setdist' command instead.
     """
     
     key = "settrait"
@@ -27,29 +37,58 @@ class CmdSetTrait(Command):
     def func(self):
         """Handle the trait setting."""
         if not self.args or not self.rhs:
-            self.caller.msg("Usage: settrait <character> = <trait> <value>")
+            self.caller.msg(self.__doc__.strip())
             return
             
         char = self.caller.search(self.lhs)
         if not char:
             return
             
-        # Parse the trait and value
+        # Parse the trait info
         try:
-            trait_name, value = self.rhs.split(" ", 1)
+            category, trait_name, die_value = self.rhs.split(" ", 2)
+            category = category.lower()
+            trait_name = trait_name.strip('"').strip()
+            
+            # Parse die value (should be in format 'd6', 'd8', etc.)
+            if die_value.startswith('d'):
+                die_size = int(die_value[1:])
+            else:
+                die_size = int(die_value)
+                
+            if die_size not in [4, 6, 8, 10, 12]:
+                self.caller.msg("Die size must be d4, d6, d8, d10, or d12.")
+                return
+                
         except ValueError:
-            self.caller.msg("You must specify both a trait name and value.")
+            self.caller.msg("Usage: settrait <character> = <category> <trait> <die>")
             return
             
-        # Update or create the trait
-        if hasattr(char, 'traits'):
-            try:
-                char.traits.add(trait_name, value)
-                self.caller.msg(f"Updated {char.name}'s {trait_name} to {value}.")
-            except Exception as e:
-                self.caller.msg(f"Error setting trait: {e}")
-        else:
-            self.caller.msg(f"{char.name} does not have trait support.")
+        # Validate category
+        valid_categories = {
+            'attributes': char.attributes,
+            'skills': char.skills,
+            'resources': char.resources,
+            'signature_assets': char.signature_assets
+        }
+        
+        if category not in valid_categories:
+            self.caller.msg(f"Invalid category. Must be one of: {', '.join(valid_categories.keys())}")
+            return
+            
+        # Get the trait handler for this category
+        handler = valid_categories[category]
+        
+        try:
+            # Add/update the trait
+            handler.add(trait_name, trait_name.title(), trait_type="static", base=die_size)
+            
+            # Notify relevant parties
+            self.caller.msg(f"Set {char.name}'s {category} trait '{trait_name}' to d{die_size}.")
+            if char != self.caller:
+                char.msg(f"{self.caller.name} sets your {category} trait '{trait_name}' to d{die_size}.")
+        except Exception as e:
+            self.caller.msg(f"Error setting trait: {e}")
 
 class CmdDeleteTrait(Command):
     """
@@ -167,6 +206,46 @@ class CmdSetDistinction(Command):
         except Exception as e:
             self.caller.msg(f"Error setting distinction: {e}")
 
+class CmdInitTraits(Command):
+    """
+    Initialize or reinitialize a character's traits.
+    
+    Usage:
+        inittraits <character>
+        
+    This command will safely initialize any missing traits on a character.
+    It will not overwrite existing traits, only add missing ones.
+    
+    This is useful for:
+    - Fixing characters with missing traits
+    - Setting up new characters
+    - Resetting a character to base stats
+    
+    Only staff members can use this command.
+    """
+    
+    key = "inittraits"
+    locks = "cmd:perm(Builder)"  # Builders and above can use this
+    help_category = "Building"
+    
+    def func(self):
+        """Handle the trait initialization."""
+        if not self.args:
+            self.caller.msg("Usage: inittraits <character>")
+            return
+            
+        char = self.caller.search(self.args.strip())
+        if not char:
+            return
+            
+        success, message = initialize_traits(char)
+        if success:
+            self.caller.msg(f"Successfully initialized {char.name}'s traits: {message}")
+            if char != self.caller:
+                char.msg(f"{self.caller.name} has initialized your character traits.")
+        else:
+            self.caller.msg(f"Failed to initialize traits: {message}")
+
 class CharSheetEditorCmdSet(CmdSet):
     """
     Command set for editing character sheets.
@@ -178,4 +257,5 @@ class CharSheetEditorCmdSet(CmdSet):
         """
         self.add(CmdSetTrait())
         self.add(CmdDeleteTrait())
-        self.add(CmdSetDistinction()) 
+        self.add(CmdSetDistinction())
+        self.add(CmdInitTraits()) 

@@ -12,6 +12,7 @@ from evennia.objects.objects import DefaultCharacter
 from evennia.utils import lazy_property
 from evennia.contrib.rpg.traits import TraitHandler
 from .objects import ObjectParent
+from utils.character_setup import initialize_traits
 
 
 class Character(ObjectParent, DefaultCharacter):
@@ -90,57 +91,10 @@ class Character(ObjectParent, DefaultCharacter):
     def at_object_creation(self):
         """
         Called only once when object is first created.
+        Initialize all traits using the standard initialization function.
         """
-        # Everyone starts with 1 plot point
-        self.traits.add("plot_points", "Plot Points", trait_type="counter", base=1, min=0)
+        success, message = initialize_traits(self)
+        if not success:
+            self.msg(f"Warning: Failed to initialize traits: {message}")
         
-        # Add attributes (all start at d6 - "typical person")
-        self.attributes.add("prowess", "Prowess", trait_type="static", base=6,
-                          desc="Strength, endurance and ability to fight")
-        self.attributes.add("finesse", "Finesse", trait_type="static", base=6,
-                          desc="Dexterity and agility")
-        self.attributes.add("leadership", "Leadership", trait_type="static", base=6,
-                          desc="Capacity as a leader")
-        self.attributes.add("social", "Social", trait_type="static", base=6,
-                          desc="Charisma and social navigation")
-        self.attributes.add("acuity", "Acuity", trait_type="static", base=6,
-                          desc="Perception and information processing")
-        self.attributes.add("erudition", "Erudition", trait_type="static", base=6,
-                          desc="Learning and recall ability")
-                          
-        # Add skills (start at d4 - "untrained")
-        SKILL_LIST = [
-            ("administration", "Administration", "Organizing affairs of large groups"),
-            ("arcana", "Arcana", "Knowledge of magic"),
-            ("athletics", "Athletics", "General physical feats"),
-            ("dexterity", "Dexterity", "Precision physical feats"),
-            ("diplomacy", "Diplomacy", "Protocol and high politics"),
-            ("direction", "Direction", "Leading in non-combat"),
-            ("exploration", "Exploration", "Wilderness and ruins"),
-            ("fighting", "Fighting", "Melee combat"),
-            ("influence", "Influence", "Personal persuasion"),
-            ("learning", "Learning", "Education and research"),
-            ("making", "Making", "Crafting and building"),
-            ("medicine", "Medicine", "Healing and medical knowledge"),
-            ("perception", "Perception", "Awareness and searching"),
-            ("performance", "Performance", "Entertainment arts"),
-            ("presentation", "Presentation", "Style and bearing"),
-            ("rhetoric", "Rhetoric", "Public speaking"),
-            ("seafaring", "Seafaring", "Sailing and navigation"),
-            ("shooting", "Shooting", "Ranged combat"),
-            ("warfare", "Warfare", "Military leadership and strategy")
-        ]
-        
-        for skill_key, skill_name, skill_desc in SKILL_LIST:
-            self.skills.add(skill_key, skill_name, trait_type="static", base=4,
-                          desc=skill_desc)
-                          
-        # Add three empty distinction slots to be filled during character generation
-        self.distinctions.add("concept", "Character Concept", trait_type="static", base=8,
-                            desc="Core character concept (e.g. Bold Adventurer)")
-        self.distinctions.add("culture", "Cultural Background", trait_type="static", base=8,
-                            desc="Character's cultural origin")
-        self.distinctions.add("reputation", "Reputation", trait_type="static", base=8,
-                            desc="How others perceive the character")
-                            
         # Resources and Signature Assets start empty - added through play
