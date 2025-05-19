@@ -31,7 +31,7 @@ class CmdInitTraits(MuxCommand):
     key = "inittraits"
     locks = "cmd:perm(Admin)"  # Admin and above can use this
     help_category = "Building"
-    switch_options = ("all",)  # Define valid switches
+    switch_options = ("all",)
     
     def func(self):
         """Handle trait initialization."""
@@ -63,17 +63,8 @@ class CmdInitTraits(MuxCommand):
             self.caller.msg(f"{char.name} does not support traits (wrong typeclass?).")
             return
             
-        # Check if this is a confirmation
-        if hasattr(self, 'confirming') and self.confirming:
-            success, msg = initialize_traits(char)
-            self.caller.msg(msg)
-            delattr(self, 'confirming')
-            return
-            
-        # First time through - ask for confirmation
-        self.caller.msg(f"|yWARNING: This will initialize all traits for {char.name}.|n")
-        self.caller.msg("|yThis may affect existing traits. Type 'inittraits' again to confirm.|n")
-        self.confirming = True
+        success, msg = initialize_traits(char)
+        self.caller.msg(msg)
 
 class CmdWipeTraits(MuxCommand):
     """

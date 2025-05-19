@@ -68,6 +68,11 @@ def initialize_traits(character: Any, force: bool = False) -> Tuple[bool, str]:
     
     # Initialize distinctions
     changes.extend(initialize_trait_group(character, DISTINCTIONS, "distinctions", force))
+    
+    # Initialize resources and signature assets handlers (but don't add any traits)
+    # This ensures the handlers exist for adding traits later
+    _ = character.resources
+    _ = character.signature_assets
             
     if not changes:
         return True, "Character traits were already fully initialized"
