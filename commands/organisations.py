@@ -47,10 +47,13 @@ class CmdOrg(MuxCommand):
                     rank_groups[rank_name] = []
                 rank_groups[rank_name].append(char.key)
             
-            # Display members grouped by rank
-            for rank_name in sorted(rank_groups.keys(), key=lambda x: org.get_rank_number(x)):
-                members_list = ", ".join(rank_groups[rank_name])
-                self.caller.msg(f"{rank_name}: {members_list}")
+            # Display members grouped by rank, sorted by rank number
+            for char, rank_num, rank_name in sorted(members, key=lambda x: x[1]):
+                if rank_name in rank_groups:
+                    members_list = ", ".join(rank_groups[rank_name])
+                    self.caller.msg(f"{rank_name}: {members_list}")
+                    # Remove this rank from groups to avoid duplicate display
+                    del rank_groups[rank_name]
         else:
             self.caller.msg("\nNo members.")
 
