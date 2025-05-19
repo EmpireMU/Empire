@@ -353,6 +353,10 @@ class CmdClearOrgMemberships(MuxCommand):
         # Debug output
         self.caller.msg(f"\nDebug Information for {char.name}:")
         self.caller.msg(f"Current Organizations: {char.db.organisations}")
+        self.caller.msg(f"Organization IDs: {list(char.db.organisations.keys())}")
+        for org_id in char.db.organisations:
+            org = char.search(org_id, global_search=True)
+            self.caller.msg(f"Organization {org_id}: {'Found' if org else 'Not Found'}")
             
         # Clean up organization memberships for deleted organizations
         for org_id in list(char.db.organisations.keys()):
