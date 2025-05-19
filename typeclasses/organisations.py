@@ -5,6 +5,7 @@ from evennia import DefaultObject
 from evennia.typeclasses.tags import TagProperty
 from evennia.utils.dbserialize import dbserialize
 from evennia.utils.utils import lazy_property
+from evennia.utils.search import search_object
 
 class Organisation(DefaultObject):
     """
@@ -156,9 +157,10 @@ class Organisation(DefaultObject):
         """
         members = []
         for char_id, rank_num in self.db.members.items():
-            # Search for character by ID
-            char = self.search(char_id, global_search=True)
-            if char:
+            # Search for character by ID using search_object
+            chars = search_object(id=char_id)
+            if chars:
+                char = chars[0]
                 rank_name = self.ranks.get(rank_num, f"Rank {rank_num}")
                 members.append((char, rank_num, rank_name))
         return sorted(members, key=lambda x: x[1])  # Sort by rank number
@@ -173,9 +175,9 @@ class Organisation(DefaultObject):
         """
         # Remove all members
         for char_id in list(self.db.members.keys()):
-            char = self.search(char_id, global_search=True)
-            if char:
-                self.remove_member(char)
+            chars = search_object(id=char_id)
+            if chars:
+                self.remove_member(chars[0])
         
         # Clear head reference
         if self.head:
