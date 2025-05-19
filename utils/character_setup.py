@@ -31,6 +31,8 @@ def initialize_trait_group(
                 desc=trait.description,
                 name=trait.name
             )
+            # Ensure .base is set correctly
+            handler.get(trait.key).base = trait.default_value
             changes.append(f"Added {handler_name[:-1]}: {trait.name}")
         # Debug print
         character.msg(f"Trait {trait.key}: default_value={trait.default_value}, base={handler.get(trait.key).base}")
