@@ -64,7 +64,7 @@ class Organisation(ObjectParent, DefaultObject):
         self.attributes.add('members', members, category='organisation')
         
         # Add to character's organization list
-        orgs = character.organisations
+        orgs = character.attributes.get('organisations', default={}, category='organisations')
         orgs[self.id] = rank
         character.attributes.add('organisations', orgs, category='organisations')
         return True
@@ -86,7 +86,7 @@ class Organisation(ObjectParent, DefaultObject):
             self.attributes.add('members', members, category='organisation')
         
         # Remove from character's organization list
-        orgs = character.organisations
+        orgs = character.attributes.get('organisations', default={}, category='organisations')
         if self.id in orgs:
             del orgs[self.id]
             character.attributes.add('organisations', orgs, category='organisations')
@@ -113,7 +113,7 @@ class Organisation(ObjectParent, DefaultObject):
             self.attributes.add('members', members, category='organisation')
             
             # Update character's organization list
-            orgs = character.organisations
+            orgs = character.attributes.get('organisations', default={}, category='organisations')
             orgs[self.id] = rank
             character.attributes.add('organisations', orgs, category='organisations')
             return True
@@ -131,7 +131,9 @@ class Organisation(ObjectParent, DefaultObject):
         if not isinstance(rank, int) or rank < 1 or rank > self.MAX_RANKS:
             return False
             
-        self.db.ranks[rank] = name
+        ranks = self.db.ranks or {}
+        ranks[rank] = name
+        self.db.ranks = ranks
         return True
         
     def get_rank_name(self, rank):
