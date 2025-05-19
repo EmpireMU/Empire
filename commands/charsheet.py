@@ -6,8 +6,30 @@ from evennia import CmdSet
 from evennia.utils import evtable
 from evennia.utils.ansi import ANSIString
 
+def get_trait_display(trait):
+    """
+    Convert a trait object into display strings.
+    
+    Args:
+        trait: A trait object with key, base, and optional desc attributes
+        
+    Returns:
+        tuple: (display_name, die_size, description)
+    """
+    display_name = trait.key.title()  # Capitalize the trait name
+    die_size = f"d{trait.base}"  # Format die size as d8, d10, etc.
+    description = trait.desc if hasattr(trait, 'desc') else ""
+    return display_name, die_size, description
+
 def format_trait_section(title, traits, show_desc=False):
-    """Format a section of traits with a title and optional descriptions."""
+    """
+    Format a section of traits with a title and optional descriptions.
+    
+    Args:
+        title: Section title (e.g., "Attributes", "Skills")
+        traits: List of trait objects
+        show_desc: Whether to show descriptions (only used for Resources and Assets)
+    """
     if not traits:
         return ""
         
@@ -28,22 +50,21 @@ def format_trait_section(title, traits, show_desc=False):
     
     # Add rows
     for trait in sorted(traits, key=lambda x: x.key):
+        display_name, die_size, description = get_trait_display(trait)
         if show_desc:
-            table.add_row(
-                trait.key.title(),
-                f"d{trait.base}",
-                trait.desc if hasattr(trait, 'desc') else ""
-            )
+            table.add_row(display_name, die_size, description)
         else:
-            table.add_row(
-                trait.key.title(),
-                f"d{trait.base}"
-            )
+            table.add_row(display_name, die_size)
     
     return section + str(table) + "\n"
 
 def format_distinctions_short(distinctions):
-    """Format distinctions in a compact form for the sheet header."""
+    """
+    Format distinctions in a compact form for the sheet header.
+    
+    Args:
+        distinctions: List of distinction trait objects
+    """
     if not distinctions:
         return ""
     
@@ -53,14 +74,19 @@ def format_distinctions_short(distinctions):
     # Create table
     table = evtable.EvTable(border="table", width=78)
     
-    # Add all distinctions in one row
-    dist_list = [f"{d.key.title()} (d8)" for d in sorted(distinctions, key=lambda x: x.key)]
-    table.add_row(*dist_list)
+    # Convert trait objects to display strings
+    dist_displays = [f"{get_trait_display(d)[0]} (d8)" for d in sorted(distinctions, key=lambda x: x.key)]
+    table.add_row(*dist_displays)
     
     return section + str(table) + "\n"
 
 def format_distinctions_full(distinctions):
-    """Format distinctions with full descriptions for the sheet footer."""
+    """
+    Format distinctions with full descriptions for the sheet footer.
+    
+    Args:
+        distinctions: List of distinction trait objects
+    """
     if not distinctions:
         return ""
     
@@ -77,10 +103,8 @@ def format_distinctions_full(distinctions):
     
     # Add rows
     for dist in sorted(distinctions, key=lambda x: x.key):
-        table.add_row(
-            dist.key.title(),
-            dist.desc if hasattr(dist, 'desc') else ""
-        )
+        display_name, _, description = get_trait_display(dist)
+        table.add_row(display_name, description)
     
     return section + str(table) + "\n"
 
@@ -136,8 +160,15 @@ class CmdSheet(Command):
         if pp:
             sheet.append(f"|wPlot Points:|n {pp.base}\n")
         
-        # Distinctions (short form)
-        distinctions = list(char.distinctions.all())
+        # Get trait objects for each category
+        # We need the full trait objects to access their properties
+        distinctions = [char.distinctions.get(key) for key in char.distinctions.all()]
+        attributes = [char.character_attributes.get(key) for key in char.character_attributes.all()]
+        skills = [char.skills.get(key) for key in char.skills.all()]
+        resources = [char.resources.get(key) for key in char.resources.all()]
+        assets = [char.signature_assets.get(key) for key in char.signature_assets.all()]
+        
+        # Format each section
         if distinctions:
             sheet.append(format_distinctions_short(distinctions))
         
@@ -145,13 +176,9 @@ class CmdSheet(Command):
         sheet.append("\n|rPrime Sets|n")
         sheet.append("-" * 78 + "\n")
         
-        # Attributes
-        attributes = list(char.character_attributes.all())
         if attributes:
             sheet.append(format_trait_section("Attributes", attributes))
             
-        # Skills
-        skills = list(char.skills.all())
         if skills:
             sheet.append(format_trait_section("Skills", skills))
         
@@ -159,13 +186,9 @@ class CmdSheet(Command):
         sheet.append("\n|gAdditional Sets|n")
         sheet.append("-" * 78 + "\n")
         
-        # Resources
-        resources = list(char.resources.all())
         if resources:
             sheet.append(format_trait_section("Resources", resources, show_desc=True))
         
-        # Signature Assets
-        assets = list(char.signature_assets.all())
         if assets:
             sheet.append(format_trait_section("Signature Assets", assets, show_desc=True))
         
