@@ -85,6 +85,7 @@ class Organisation(DefaultObject):
         if not isinstance(rank, int) or rank < 1 or rank > self.MAX_RANKS:
             raise ValueError(f"Rank must be a number between 1 and {self.MAX_RANKS}")
         
+        # Store character ID as integer
         self.db.members[character.id] = rank
         character.db.organisations = character.db.organisations or {}
         character.db.organisations[self.id] = rank
@@ -155,6 +156,7 @@ class Organisation(DefaultObject):
         """
         members = []
         for char_id, rank_num in self.db.members.items():
+            # Search for character by ID
             char = self.search(char_id, global_search=True)
             if char:
                 rank_name = self.ranks.get(rank_num, f"Rank {rank_num}")
