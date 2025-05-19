@@ -26,8 +26,8 @@ def initialize_trait_group(
             handler.add(
                 trait.key,
                 trait.default_value,
-                name=trait.name,
-                desc=trait.description
+                desc=trait.description,
+                name=trait.name
             )
             changes.append(f"Added {handler_name[:-1]}: {trait.name}")
             

@@ -108,8 +108,8 @@ class Character(ObjectParent, DefaultCharacter):
             self.character_attributes.add(
                 trait.key,
                 trait.default_value,
-                name=trait.name,
-                desc=trait.description
+                desc=trait.description,
+                name=trait.name
             )
 
         # Initialize skills (d4 - "untrained")
@@ -117,8 +117,8 @@ class Character(ObjectParent, DefaultCharacter):
             self.skills.add(
                 trait.key,
                 trait.default_value,
-                name=trait.name,
-                desc=trait.description
+                desc=trait.description,
+                name=trait.name
             )
 
         # Initialize distinction slots (d8)
@@ -126,8 +126,8 @@ class Character(ObjectParent, DefaultCharacter):
             self.distinctions.add(
                 trait.key,
                 trait.default_value,
-                name=trait.name,
-                desc=trait.description
+                desc=trait.description,
+                name=trait.name
             )
 
     def at_init(self):
