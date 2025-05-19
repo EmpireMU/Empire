@@ -72,7 +72,7 @@ class CmdSetTrait(MuxCommand):
             
         # Add or update trait
         try:
-            handler.add(trait_key, die_size)
+            handler.add(key=trait_key, value=die_size)
             self.caller.msg(f"Set {char.name}'s {category} trait '{trait_key}' to d{die_size}.")
             char.msg(f"{self.caller.name} sets your {category} trait '{trait_key}' to d{die_size}.")
         except Exception as e:
@@ -331,7 +331,7 @@ class CmdFixTraitKeys(MuxCommand):
                 
                 # Remove old trait and add with new key
                 handler.remove(key)
-                handler.add(new_key, trait.base, desc=trait.desc if hasattr(trait, 'desc') else None)
+                handler.add(key=new_key, value=trait.base, desc=trait.desc if hasattr(trait, 'desc') else None)
                 changes.append(f"Fixed {category} key: {key} -> {new_key}")
                 
         return changes
