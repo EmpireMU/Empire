@@ -179,7 +179,7 @@ class CmdCortexRoll(Command):
         # Check for difficulty
         self.difficulty = None
         if len(args) >= 2 and args[-2] == "vs":
-            diff_val = args[-1]
+            diff_val = args[-1].lower()  # Convert to lowercase for comparison
             # Remove difficulty from dice list
             args = args[:-2]
             
@@ -195,12 +195,23 @@ class CmdCortexRoll(Command):
                 # Try to match named difficulty exactly first
                 exact_match = None
                 partial_matches = []
+                
+                # Special handling for "very" prefix
+                if diff_val == "very":
+                    self.msg("Please specify 'very easy' or 'very hard'.")
+                    self.dice = None
+                    return
+                    
+                # Check for partial matches
                 for name, value in DIFFICULTIES.items():
-                    if diff_val == name.lower():
+                    name_lower = name.lower()
+                    if diff_val == name_lower:
                         exact_match = value
                         break
-                    elif diff_val in name.lower():
-                        partial_matches.append(name)
+                    elif diff_val in name_lower:
+                        # Only add to partial matches if it's not just the "very" prefix
+                        if not (diff_val == "very" and name_lower.startswith("very")):
+                            partial_matches.append(name)
                 
                 if exact_match is not None:
                     self.difficulty = exact_match
