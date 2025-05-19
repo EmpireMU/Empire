@@ -87,27 +87,26 @@ class Character(ObjectParent, DefaultCharacter):
         """
         return TraitHandler(self, db_attribute_key="signature_assets")
         
-    def at_first_save(self):
+    def at_object_creation(self):
         """
-        Called after very first save of object.
-        This is when we should initialize traits, as the object is fully created.
+        Called only once when object is first created.
+        Initialize trait handlers but don't add traits yet.
         """
-        super().at_first_save()
-        
-        # Initialize trait handlers
+        super().at_object_creation()
+        # Just ensure the handlers exist
         _ = self.traits
         _ = self.distinctions
         _ = self.attributes
         _ = self.skills
         _ = self.resources
         _ = self.signature_assets
-        
+
     def at_init(self):
         """
         Called when object is first created and after it is loaded from cache.
         """
         super().at_init()
-        
+
     def at_post_puppet(self):
         """
         Called just after puppeting has completed.
