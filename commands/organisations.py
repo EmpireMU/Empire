@@ -125,7 +125,8 @@ class CmdOrgAdmin(MuxCommand):
         from typeclasses.organisations import Organisation
         
         # Check if organisation already exists
-        if self.caller.search(name, global_search=True):
+        existing = self.caller.search(name, global_search=True)
+        if existing:
             self.caller.msg(f"An organisation named {name} already exists.")
             return
             
