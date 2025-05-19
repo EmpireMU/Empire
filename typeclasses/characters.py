@@ -99,7 +99,7 @@ class Character(ObjectParent, DefaultCharacter):
         self.cmdset.add(CortexCmdSet, persistent=True)
 
         # Initialize plot points
-        self.traits.add("plot_points", "Plot Points", base=1, min=0)
+        self.traits.add("plot_points", "Plot Points", value=1, min=0)
 
         # Initialize default attributes (d6 - "typical person")
         ATTRIBUTES = [
@@ -111,7 +111,7 @@ class Character(ObjectParent, DefaultCharacter):
             ("erudition", "Erudition", "Learning and recall ability")
         ]
         for key, name, desc in ATTRIBUTES:
-            self.character_attributes.add(key, name, base=6, desc=desc)
+            self.character_attributes.add(key, name, value=6, desc=desc)
 
         # Initialize default skills (d4 - "untrained")
         SKILLS = [
@@ -136,7 +136,7 @@ class Character(ObjectParent, DefaultCharacter):
             ("warfare", "Warfare", "Military leadership and strategy")
         ]
         for key, name, desc in SKILLS:
-            self.skills.add(key, name, base=4, desc=desc)
+            self.skills.add(key, name, value=4, desc=desc)
 
         # Initialize distinction slots (d8)
         DISTINCTIONS = [
@@ -145,7 +145,7 @@ class Character(ObjectParent, DefaultCharacter):
             ("reputation", "Reputation", "How others perceive the character")
         ]
         for key, name, desc in DISTINCTIONS:
-            self.distinctions.add(key, name, base=8, desc=desc)
+            self.distinctions.add(key, name, value=8, desc=desc)
 
     def at_init(self):
         """
