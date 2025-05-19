@@ -192,6 +192,30 @@ class CmdSheet(Command):
         # Distinction Details
         if distinctions:
             sheet.append("\n" + format_distinctions_full(distinctions))
+            
+        # Organizations
+        if hasattr(char, 'db') and char.db.organisations:
+            sheet.append("\n|yOrganisations|n")
+            sheet.append("-" * 78 + "\n")
+            
+            table = evtable.EvTable(
+                "|wOrganisation|n",
+                "|wRank|n",
+                border="table",
+                width=78
+            )
+            
+            for org_id, rank in char.db.organisations.items():
+                org = char.search(org_id, global_search=True)
+                if org:
+                    # Show if not secret, or if viewer is staff, or if viewer is the character
+                    if (not org.is_secret or 
+                        self.caller.check_permstring("Builder") or 
+                        self.caller == char):
+                        table.add_row(org.name, rank or "Member")
+            
+            if table.nrows > 0:
+                sheet.append(str(table))
         
         # Send the sheet
         self.caller.msg("\n".join(sheet))
