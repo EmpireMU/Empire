@@ -101,7 +101,12 @@ def get_trait_die(character, trait_spec: str) -> Optional[Tuple[str, str, str, b
             trait = handler.get(trait_key)
             
         if trait:
-            die_size = str(trait.base)
+            # For distinctions, always use d8 unless stepped down
+            if category_name == 'distinctions':
+                die_size = '8'
+            else:
+                die_size = str(trait.base)
+                
             # Apply step modification if present
             if step_mod:
                 die_size = step_die(die_size, 1 if step_mod == 'U' else -1)
