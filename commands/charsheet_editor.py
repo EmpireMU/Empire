@@ -520,7 +520,6 @@ class CmdResource(MuxCommand):
                     self.msg(f"Debug: Setting new value to {new_value}")  # Debug message
                     # Store the value in a way that prevents float conversion
                     trait.value = new_value
-                    trait.db.value = new_value  # Store in db to prevent float conversion
                     trait.base = die_size  # Ensure base is set
                     self.caller.msg(f"Added another {name} (d{die_size}) to {char.name}. Now has {new_count}.")
                     char.msg(f"{self.caller.name} added another {name} (d{die_size}). You now have {new_count}.")
@@ -533,6 +532,7 @@ class CmdResource(MuxCommand):
                     trait = char.resources.get(key)
                     if trait:
                         trait.base = die_size
+                        trait.value = initial_value  # Set the value directly
                     self.caller.msg(f"Added {char.name}'s first {name} (d{die_size}).")
                     char.msg(f"{self.caller.name} added your first {name} (d{die_size}).")
             else:  # cmd == 'del'
