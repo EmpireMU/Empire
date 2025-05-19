@@ -92,6 +92,17 @@ class CmdCortexRoll(Command):
     - Challenging: 11
     - Hard: 15
     - Very Hard: 19
+    
+    Trait Modifiers:
+    - (U) - Step up a trait (e.g., strength(U))
+    - (D) - Step down a trait (e.g., fighting(D))
+    - (double) - Double a trait to roll it twice (e.g., bold(double))
+    
+    Notes:
+    - All trait names are case-insensitive
+    - Raw dice must be specified with a 'd' prefix (e.g., d8, d10)
+    - Valid die sizes are d4, d6, d8, d10, and d12
+    - You cannot roll more than 10 dice at once
     """
     
     key = "roll"

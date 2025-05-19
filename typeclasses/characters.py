@@ -12,6 +12,7 @@ from evennia.objects.objects import DefaultCharacter
 from evennia.utils import lazy_property
 from evennia.contrib.rpg.traits import TraitHandler
 from .objects import ObjectParent
+from commands.cortex_roll import CortexCmdSet
 
 
 class Character(ObjectParent, DefaultCharacter):
@@ -93,6 +94,9 @@ class Character(ObjectParent, DefaultCharacter):
         Initialize all trait handlers and set up default traits.
         """
         super().at_object_creation()
+
+        # Add Cortex Prime command set
+        self.cmdset.add(CortexCmdSet, persistent=True)
 
         # Initialize plot points
         self.traits.add("plot_points", "Plot Points", trait_type="counter", base=1, min=0)
