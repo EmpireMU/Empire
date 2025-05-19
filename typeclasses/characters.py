@@ -163,12 +163,13 @@ class Character(ObjectParent, DefaultCharacter):
         super().at_init()
         
         # Force initialize all trait handlers
-        self.traits
-        self.distinctions
-        self.character_attributes
-        self.skills
-        self.resources
-        self.signature_assets
+        self.msg(f"Debug: Initializing trait handlers for {self.name}")
+        self.msg(f"Debug: traits = {self.traits}")
+        self.msg(f"Debug: distinctions = {self.distinctions}")
+        self.msg(f"Debug: character_attributes = {self.character_attributes}")
+        self.msg(f"Debug: skills = {self.skills}")
+        self.msg(f"Debug: resources = {self.resources}")
+        self.msg(f"Debug: signature_assets = {self.signature_assets}")
 
     def at_post_puppet(self):
         """

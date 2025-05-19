@@ -3,6 +3,7 @@ Utility functions for character setup and initialization.
 """
 from typing import List, Tuple, Optional, Any
 from .trait_definitions import TraitDefinition, ATTRIBUTES, SKILLS, DISTINCTIONS
+from evennia.contrib.rpg.traits import TraitHandler
 
 def initialize_plot_points(character: Any, force: bool) -> Optional[str]:
     """Initialize plot points for a character."""
@@ -73,8 +74,12 @@ def initialize_traits(character: Any, force: bool = False) -> Tuple[bool, str]:
     
     # Initialize resources and signature assets handlers
     # This ensures the handlers exist for adding traits later
-    _ = character.resources
-    _ = character.signature_assets
+    if not hasattr(character, 'resources'):
+        character.resources = TraitHandler(character, db_attribute_key="char_resources")
+        changes.append("Initialized resources handler")
+    if not hasattr(character, 'signature_assets'):
+        character.signature_assets = TraitHandler(character, db_attribute_key="char_signature_assets")
+        changes.append("Initialized signature assets handler")
             
     if not changes:
         return True, "Character traits were already fully initialized"
