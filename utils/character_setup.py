@@ -23,7 +23,12 @@ def initialize_trait_group(
     
     for trait in trait_definitions:
         if force or not handler.get(trait.key):
-            handler.add(trait.key, trait.default_value, desc=trait.description)
+            handler.add(
+                trait.key,
+                trait.default_value,
+                name=trait.name,
+                desc=trait.description
+            )
             changes.append(f"Added {handler_name[:-1]}: {trait.name}")
             
     return changes

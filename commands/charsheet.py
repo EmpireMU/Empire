@@ -16,7 +16,8 @@ def get_trait_display(trait):
     Returns:
         tuple: (display_name, die_size, description)
     """
-    display_name = str(trait.key).title()  # Ensure key is string before capitalizing
+    # Use trait.name if available, otherwise fall back to key
+    display_name = trait.name if hasattr(trait, 'name') else str(trait.key).title()
     die_size = f"d{trait.base}"  # Format die size as d8, d10, etc.
     description = trait.desc if hasattr(trait, 'desc') else ""
     return display_name, die_size, description
