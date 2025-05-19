@@ -70,8 +70,15 @@ class CmdSetTrait(MuxCommand):
             'signature_assets': 'signature_assets'
         }[category]
         
-        handler = getattr(char, handler_name)
-        if not handler:
+        try:
+            self.msg(f"Debug: Trying to get {handler_name} handler for {char.name}")
+            handler = getattr(char, handler_name)
+            self.msg(f"Debug: Got handler: {handler}")
+            if not handler:
+                self.msg(f"Could not get {category} trait handler for {char.name}")
+                return
+        except AttributeError as e:
+            self.msg(f"Debug: AttributeError: {e}")
             self.msg(f"Could not get {category} trait handler for {char.name}")
             return
             
@@ -85,6 +92,7 @@ class CmdSetTrait(MuxCommand):
             self.caller.msg(f"Set {char.name}'s {category} trait '{trait_key}' to d{die_size}.")
             char.msg(f"{self.caller.name} sets your {category} trait '{trait_key}' to d{die_size}.")
         except Exception as e:
+            self.msg(f"Debug: Error setting trait: {e}")
             self.msg(f"Error setting trait: {e}")
 
 class CmdDeleteTrait(MuxCommand):
