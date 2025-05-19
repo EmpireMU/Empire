@@ -49,8 +49,9 @@ class CmdOrg(MuxCommand):
         self.caller.msg("\nDebug Information:")
         self.caller.msg(f"Organization Members: {org.db.members}")
         for char_id in org.db.members:
-            char = org.search(char_id, global_search=True)
-            if char:
+            chars = search_object(f"#{char_id}")
+            if chars:
+                char = chars[0]
                 self.caller.msg(f"Character {char.key} Organizations: {char.db.organisations}")
 
 class CmdOrgAdmin(MuxCommand):

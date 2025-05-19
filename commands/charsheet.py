@@ -5,6 +5,7 @@ from evennia import Command
 from evennia import CmdSet
 from evennia.utils import evtable
 from evennia.utils.ansi import ANSIString
+from evennia.utils.search import search_object
 
 def get_trait_display(trait):
     """
@@ -206,8 +207,9 @@ class CmdSheet(Command):
             )
             
             for org_id, rank in char.db.organisations.items():
-                org = char.search(org_id, global_search=True)
-                if org:
+                orgs = search_object(f"#{org_id}")
+                if orgs:
+                    org = orgs[0]
                     # Show if not secret, or if viewer is staff, or if viewer is the character
                     if (not org.is_secret or 
                         self.caller.check_permstring("Builder") or 

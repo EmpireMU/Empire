@@ -13,6 +13,7 @@ from evennia.utils import lazy_property
 from evennia.contrib.rpg.traits import TraitHandler
 from .objects import ObjectParent
 from utils.trait_definitions import ATTRIBUTES, SKILLS, DISTINCTIONS
+from evennia.objects.models import search_object
 
 
 class Character(ObjectParent, DefaultCharacter):
@@ -157,8 +158,8 @@ class Character(ObjectParent, DefaultCharacter):
         # Clean up organization memberships for deleted organizations
         if hasattr(self, 'db.organisations'):
             for org_id in list(self.db.organisations.keys()):
-                org = self.search(org_id, global_search=True)
-                if not org:
+                orgs = search_object(f"#{org_id}")
+                if not orgs:
                     del self.db.organisations[org_id]
 
     def at_post_puppet(self):

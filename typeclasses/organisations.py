@@ -157,8 +157,8 @@ class Organisation(DefaultObject):
         """
         members = []
         for char_id, rank_num in self.db.members.items():
-            # Search for character using Evennia's search
-            chars = search_object(id=char_id)
+            # Search for character using Evennia's search with dbref
+            chars = search_object(f"#{char_id}")
             if chars:
                 char = chars[0]
                 rank_name = self.ranks.get(rank_num, f"Rank {rank_num}")
@@ -175,7 +175,7 @@ class Organisation(DefaultObject):
         """
         # Remove all members
         for char_id in list(self.db.members.keys()):
-            chars = search_object(id=char_id)
+            chars = search_object(f"#{char_id}")
             if chars:
                 self.remove_member(chars[0])
         
