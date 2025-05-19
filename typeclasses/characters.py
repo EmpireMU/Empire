@@ -115,6 +115,8 @@ class Character(ObjectParent, DefaultCharacter):
                     desc=trait.description,
                     name=trait.name
                 )
+            # Debug print
+            self.msg(f"Attribute {trait.key}: default_value={trait.default_value}, base={self.character_attributes.get(trait.key).base}")
 
         # Initialize skills
         for trait in SKILLS:
@@ -128,6 +130,8 @@ class Character(ObjectParent, DefaultCharacter):
                     desc=trait.description,
                     name=trait.name
                 )
+            # Debug print
+            self.msg(f"Skill {trait.key}: default_value={trait.default_value}, base={self.skills.get(trait.key).base}")
 
         # Initialize distinctions
         for trait in DISTINCTIONS:
@@ -141,6 +145,8 @@ class Character(ObjectParent, DefaultCharacter):
                     desc=trait.description,
                     name=trait.name
                 )
+            # Debug print
+            self.msg(f"Distinction {trait.key}: default_value={trait.default_value}, base={self.distinctions.get(trait.key).base}")
 
     def at_init(self):
         """
