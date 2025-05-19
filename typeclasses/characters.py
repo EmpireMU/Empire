@@ -92,22 +92,36 @@ class Character(ObjectParent, DefaultCharacter):
         Called only once when object is first created.
         """
         super().at_object_creation()
-        # Commenting out trait initialization for now
-        # _ = self.traits
-        # _ = self.distinctions
-        # _ = self.attributes
-        # _ = self.skills
-        # _ = self.resources
-        # _ = self.signature_assets
+        # Initialize all trait handlers
+        _ = self.traits
+        _ = self.distinctions
+        _ = self.attributes
+        _ = self.skills
+        _ = self.resources
+        _ = self.signature_assets
 
     def at_init(self):
         """
         Called when object is first created and after it is loaded from cache.
         """
         super().at_init()
+        # Ensure trait handlers are initialized
+        _ = self.traits
+        _ = self.distinctions
+        _ = self.attributes
+        _ = self.skills
+        _ = self.resources
+        _ = self.signature_assets
 
     def at_post_puppet(self):
         """
         Called just after puppeting has completed.
         """
         super().at_post_puppet()
+        # Ensure trait handlers are initialized
+        _ = self.traits
+        _ = self.distinctions
+        _ = self.attributes
+        _ = self.skills
+        _ = self.resources
+        _ = self.signature_assets
