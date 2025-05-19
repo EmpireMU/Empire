@@ -159,8 +159,10 @@ class CmdOrg(MuxCommand):
         
     def at_post_cmd(self):
         """Clean up any temporary attributes."""
+        # Only clean up if the command wasn't successful
         if hasattr(self.caller, 'db') and hasattr(self.caller.db, 'delete_org_confirming'):
-            del self.caller.db.delete_org_confirming
+            if not self.caller.db.delete_org_confirming:
+                del self.caller.db.delete_org_confirming
         
     def create_org(self):
         """Create a new organization."""
