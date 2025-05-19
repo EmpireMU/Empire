@@ -22,8 +22,10 @@ def initialize_trait_group(
     for trait in trait_definitions:
         existing = handler.get(trait.key)
         if existing:
-            existing.base = trait.default_value
-            changes.append(f"Updated {handler_name[:-1]}: {trait.name}")
+            # Only update if force=True
+            if force:
+                existing.base = trait.default_value
+                changes.append(f"Updated {handler_name[:-1]}: {trait.name}")
         else:
             handler.add(
                 trait.key,

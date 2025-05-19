@@ -63,8 +63,18 @@ class CmdInitTraits(MuxCommand):
             self.caller.msg(f"{char.name} does not support traits (wrong typeclass?).")
             return
             
-        success, msg = initialize_traits(char)
-        self.caller.msg(msg)
+        # Check if this is a confirmation
+        if hasattr(self, 'confirming') and self.confirming:
+            success, msg = initialize_traits(char)
+            self.caller.msg(msg)
+            delattr(self, 'confirming')
+            return
+            
+        # First time through - ask for confirmation
+        self.caller.msg(f"|yWARNING: This will initialize traits for {char.name}.|n")
+        self.caller.msg("|yThis may affect existing traits. Type 'inittraits' again to confirm.|n")
+        self.confirming = True
+        return  # Add this to prevent the command from continuing
 
 class CmdWipeTraits(MuxCommand):
     """
