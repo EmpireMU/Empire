@@ -89,9 +89,12 @@ class Organisation(DefaultObject):
         # Store character ID as integer
         self.db.members[character.id] = rank
         
-        # Initialize organizations dict if needed and add this organization
-        character.db.organisations = character.db.organisations or {}
-        character.db.organisations[self.id] = rank
+        # Get current organizations or initialize empty dict
+        orgs = character.attributes.get('organisations', default={})
+        # Update the organizations dict
+        orgs[self.id] = rank
+        # Save back to attributes
+        character.attributes.add('organisations', orgs)
     
     def remove_member(self, character):
         """
@@ -102,8 +105,13 @@ class Organisation(DefaultObject):
         """
         if character.id in self.db.members:
             del self.db.members[character.id]
-            if self.id in character.db.organisations:
-                del character.db.organisations[self.id]
+            # Get current organizations
+            orgs = character.attributes.get('organisations', default={})
+            # Remove this organization
+            if self.id in orgs:
+                del orgs[self.id]
+                # Save back to attributes
+                character.attributes.add('organisations', orgs)
     
     def set_rank(self, character, rank):
         """
@@ -120,9 +128,12 @@ class Organisation(DefaultObject):
             self.add_member(character, rank)
         else:
             self.db.members[character.id] = rank
-            # Initialize organizations dict if needed and update the rank
-            character.db.organisations = character.db.organisations or {}
-            character.db.organisations[self.id] = rank
+            # Get current organizations
+            orgs = character.attributes.get('organisations', default={})
+            # Update the rank
+            orgs[self.id] = rank
+            # Save back to attributes
+            character.attributes.add('organisations', orgs)
     
     def get_rank(self, character):
         """
