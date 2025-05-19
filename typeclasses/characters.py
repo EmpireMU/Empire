@@ -82,6 +82,9 @@ class Character(ObjectParent, DefaultCharacter):
         self.db.background = "No background has been set."
         self.db.personality = "No personality has been set."
 
+        # Initialize organization memberships
+        self.db.organisations = {}
+
         # Initialize attributes
         for trait in ATTRIBUTES:
             existing = self.character_attributes.get(trait.key)
