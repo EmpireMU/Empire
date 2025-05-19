@@ -64,16 +64,16 @@ class CmdInitTraits(MuxCommand):
             return
             
         # Check if this is a confirmation
-        if hasattr(self, 'confirming') and self.confirming:
+        if self.caller.attributes.has('init_traits_confirming'):
             success, msg = initialize_traits(char)
             self.caller.msg(msg)
-            delattr(self, 'confirming')
+            self.caller.attributes.remove('init_traits_confirming')
             return
             
         # First time through - ask for confirmation
         self.caller.msg(f"|yWARNING: This will initialize traits for {char.name}.|n")
         self.caller.msg("|yThis may affect existing traits. Type 'inittraits' again to confirm.|n")
-        self.confirming = True
+        self.caller.attributes.add('init_traits_confirming', True, category='temp')
         return  # Add this to prevent the command from continuing
 
 class CmdWipeTraits(MuxCommand):
