@@ -157,7 +157,7 @@ class Organisation(DefaultObject):
         """
         members = []
         for char_id, rank_num in self.db.members.items():
-            # Search for character by ID using search_object
+            # Search for character using Evennia's search
             chars = search_object(id=char_id)
             if chars:
                 char = chars[0]
