@@ -15,6 +15,9 @@ own cmdsets by inheriting from them or directly from `evennia.CmdSet`.
 """
 
 from evennia import default_cmds
+from commands.charsheet import CharSheetCmdSet
+from commands.charsheet_editor import CharSheetEditorCmdSet
+from commands.plot_points import PlotPointCmdSet
 
 
 class CharacterCmdSet(default_cmds.CharacterCmdSet):
@@ -34,6 +37,8 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         #
         # any commands you add below will overload the default ones.
         #
+        self.add(CharSheetCmdSet)  # Add sheet viewing for all characters
+        self.add(PlotPointCmdSet)  # Add plot point commands
 
 
 class AccountCmdSet(default_cmds.AccountCmdSet):
@@ -54,6 +59,8 @@ class AccountCmdSet(default_cmds.AccountCmdSet):
         #
         # any commands you add below will overload the default ones.
         #
+        self.add(CharSheetEditorCmdSet)  # Add sheet editing for staff accounts
+        self.add(PlotPointCmdSet)  # Add plot point commands
 
 
 class UnloggedinCmdSet(default_cmds.UnloggedinCmdSet):
