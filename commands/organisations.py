@@ -123,10 +123,10 @@ class CmdOrgAdmin(MuxCommand):
     def create_org(self, name):
         """Create a new organisation."""
         from typeclasses.organisations import Organisation
+        from evennia.objects.models import ObjectDB
         
-        # Check if organisation already exists
-        existing = self.caller.search(name, global_search=True)
-        if existing:
+        # Check if organisation already exists by name
+        if ObjectDB.objects.filter(db_key__iexact=name).exists():
             self.caller.msg(f"An organisation named {name} already exists.")
             return
             
