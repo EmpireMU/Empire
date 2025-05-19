@@ -71,7 +71,8 @@ class CmdSpendPlotPoint(Command):
     key = "spendpp"
     locks = "cmd:all()"  # Everyone can use this command
     help_category = "Game"
-    
+    switch_options = ()  # No switches for this command
+
     def func(self):
         """Handle the plot point spending."""
         char = self.caller
@@ -120,7 +121,8 @@ class CmdCheckPlotPoints(Command):
     key = "pp"
     locks = "cmd:all()"  # Everyone can use this command
     help_category = "Game"
-    
+    switch_options = ()  # No switches for this command
+
     def func(self):
         """Show plot point count."""
         if not self.args:
@@ -173,7 +175,8 @@ class CmdSetRoomPlotPoints(Command):
     key = "setroompp"
     locks = "cmd:perm(Builder)"  # Builders and above can use this
     help_category = "Game"
-    
+    switch_options = ()  # No switches for this command
+
     def func(self):
         """Handle the plot point setting."""
         if not self.args:
@@ -251,7 +254,8 @@ class CmdSetCharacterPlotPoints(Command):
     key = "setpp"
     locks = "cmd:perm(Builder)"  # Builders and above can use this
     help_category = "Game"
-    
+    switch_options = ()  # No switches for this command
+
     def func(self):
         """Handle the plot point setting."""
         if not self.args or "=" not in self.args:

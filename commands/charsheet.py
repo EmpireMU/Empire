@@ -105,6 +105,7 @@ class CmdSheet(Command):
     key = "sheet"
     locks = "cmd:all()"  # Everyone can use this command
     help_category = "Character"
+    switch_options = ()  # No switches for this command
     
     def func(self):
         """Display the character sheet."""

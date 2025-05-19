@@ -104,15 +104,12 @@ def validate_dice_pool(dice: List[TraitDie]) -> Optional[str]:
         Error message if invalid, None if valid
         
     Rules:
-    - Must include at least 2 dice
-    - If any prime trait set (Attributes, Skills, Distinctions) is used,
-      then all three prime sets must be represented
-    - If a Signature Asset or Resource is used, all three prime sets
-      must also be included
+    - When using any traits (including Resources/Assets), all three Prime sets are required:
+      * One Attribute
+      * One Skill
+      * One Distinction
+    - Raw dice can be rolled individually
     """
-    if len(dice) < 2:
-        return "You must include at least 2 dice in your pool."
-        
     # Track which prime trait sets are used
     has_attribute = False
     has_skill = False

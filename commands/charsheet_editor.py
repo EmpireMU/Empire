@@ -33,6 +33,7 @@ class CmdSetTrait(Command):
     key = "settrait"
     locks = "cmd:perm(Builder)"  # Builders and above can use this
     help_category = "Building"
+    switch_options = ()  # No switches for this command
     
     def func(self):
         """Handle the trait setting."""
@@ -107,6 +108,7 @@ class CmdDeleteTrait(Command):
     key = "deletetrait"
     locks = "cmd:perm(Builder)"
     help_category = "Building"
+    switch_options = ()  # No switches for this command
     
     def func(self):
         """Handle the trait deletion."""
@@ -162,6 +164,7 @@ class CmdSetDistinction(Command):
     key = "setdist"
     locks = "cmd:perm(Builder)"  # Builders and above can use this
     help_category = "Building"
+    switch_options = ()  # No switches for this command
     
     def func(self):
         """Handle setting the distinction."""
@@ -231,6 +234,7 @@ class CmdInitTraits(Command):
     key = "inittraits"
     locks = "cmd:perm(Builder)"  # Builders and above can use this
     help_category = "Building"
+    switch_options = ("all",)  # Define valid switches
     
     def func(self):
         """Handle trait initialization."""
@@ -238,7 +242,7 @@ class CmdInitTraits(Command):
             self.caller.msg("Usage: inittraits <character> or inittraits/all")
             return
             
-        if "all" in self.switches:
+        if self.cmdstring == "inittraits" and "all" in self.switches:
             # Initialize all characters
             from evennia.objects.models import ObjectDB
             from typeclasses.characters import Character

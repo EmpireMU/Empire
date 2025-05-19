@@ -48,65 +48,56 @@ def format_colored_roll(value, die, trait_info, extra_value=None):
 
 class CmdCortexRoll(Command):
     """
-    Roll a pool of Cortex Prime dice against an optional difficulty.
+    Roll dice according to Cortex Prime rules.
     
     Usage:
-        roll <trait1> <trait2> <trait3> ... [vs <difficulty>]
+        roll <traits/dice> [vs <difficulty>]
         
     Examples:
-        roll explorer prowess fighting d8  (prime sets plus raw die)
-        roll explorer acuity perception vs hard  (just prime sets)
-        roll d12 d8 d6 vs 11  (just raw dice)
-        roll explorer prowess fighting asset d10  (prime sets plus signature asset and raw die)
+        roll d8                                    - Roll a single raw die
+        roll d8 d6                                 - Roll two raw dice
+        roll strength fighting bold                - Basic trait roll
+        roll strength(U) fighting bold(D)          - Roll with stepped traits
+        roll strength(double) fighting bold        - Roll with doubled strength
+        roll strength fighting bold resource       - Add a resource die
+        roll strength fighting bold signature-axe  - Add a signature asset
+        roll strength fighting bold vs hard        - Roll vs named difficulty
         
-    This will roll the specified dice pool according to Cortex Prime rules:
-    - Takes the two highest non-hitch dice for the total
-    - Uses next highest non-hitch die as the effect die (d4 if none available)
-    - Any 1s rolled are hitches and cannot be used for total or effect die
-    - All 1s is a botch (catastrophic failure)
-    - Supports d4, d6, d8, d10, and d12
+    Rules:
+    - Raw dice can be rolled individually or in groups
+    - Trait rolls always use three dice (one from each Prime set):
+      * One Attribute
+      * One Skill
+      * One Distinction
+    - Additional dice can be added from:
+      * Resources
+      * Signature Assets
+      * Plot point effects
+    - Traits can be modified:
+      * Step up (U) or down (D)
+      * Double a trait to roll it twice
+    - Raw dice cannot be modified
+    - Maximum of 10 dice in any roll
     
-    Prime Trait Sets:
-    When using any trait from the prime sets (Attributes, Skills, or Distinctions),
-    you must include one trait from each of these sets in your pool. Additionally,
-    using any Signature Asset or Resource requires all three prime sets to be included.
-    Raw dice (like 'd8') can always be added to any roll without affecting these requirements.
+    Results show:
+    - Individual die results with trait names
+    - Total of two highest dice (if multiple dice)
+    - Effect die (third highest, or d4 if only two dice)
+    - Any hitches (1s rolled)
+    - Success/failure vs difficulty if specified
     
-    Modifiers:
-    - (U) steps up the die one size (d6 → d8)
-    - (D) steps down the die one size (d8 → d6)
-    - (double) uses the same trait twice
-    
-    You can use trait names (like 'prowess' or 'fighting') or raw dice (like 'd8').
-    The command will look up trait values in this order:
-    1. Attributes (prowess, finesse, etc.)
-    2. Skills (fighting, influence, etc.)
-    3. Distinctions (always d8)
-    4. Resources (require all prime sets)
-    5. Signature Assets (require all prime sets)
-    
-    Raw dice can be mixed freely with any of the above.
-    
-    Validation Rules:
-    - Must include at least 2 dice
-    - When using any prime trait (Attribute/Skill/Distinction), must use all three
-    - When using a Resource or Signature Asset, must include all prime sets
-    - Raw dice can be added to any roll
-    - Maximum of 10 dice in a pool
-    
-    Difficulty ratings:
-        Very Easy: 3
-        Easy: 7
-        Challenging: 11
-        Hard: 15
-        Very Hard: 19
-        
-    Beating a difficulty by 5 or more is a heroic success.
+    Named Difficulties:
+    - Very Easy: 3
+    - Easy: 7
+    - Challenging: 11
+    - Hard: 15
+    - Very Hard: 19
     """
     
     key = "roll"
     locks = "cmd:all()"  # Everyone can use this command
     help_category = "Game"
+    switch_options = ()  # No switches for this command
     arg_regex = r"\s.+|$"  # Require space between command and arguments, or no arguments
     
     def at_pre_cmd(self):
@@ -172,15 +163,11 @@ class CmdCortexRoll(Command):
         
         # Validate dice pool size
         if not args:
-            self.msg("You must specify at least two dice to roll.")
+            self.msg("You must specify at least one die to roll.")
             return
             
         if len(args) > MAX_DICE_POOL:
             self.msg(f"You cannot roll more than {MAX_DICE_POOL} dice at once.")
-            return
-            
-        if len(args) < 2:
-            self.msg("You must roll at least two dice.")
             return
         
         # Process dice/traits
