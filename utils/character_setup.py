@@ -20,7 +20,7 @@ def initialize_traits(character):
     
     # Initialize plot points if needed
     if not character.traits.get("plot_points"):
-        character.traits.add("plot_points", "Plot Points", value=1, min=0)
+        character.traits.add(key="plot_points", name="Plot Points", value=1, min=0)
         changes.append("Added plot points")
         
     # Initialize attributes if needed (all start at d6 - "typical person")
@@ -35,7 +35,7 @@ def initialize_traits(character):
     
     for attr_key, attr_name, attr_desc in ATTRIBUTES:
         if not character.character_attributes.get(attr_key):
-            character.character_attributes.add(attr_key, attr_name, value=6,
+            character.character_attributes.add(key=attr_key, name=attr_name, value=6,
                                   desc=attr_desc)
             changes.append(f"Added attribute: {attr_name}")
             
@@ -64,7 +64,7 @@ def initialize_traits(character):
     
     for skill_key, skill_name, skill_desc in SKILLS:
         if not character.skills.get(skill_key):
-            character.skills.add(skill_key, skill_name, value=4,
+            character.skills.add(key=skill_key, name=skill_name, value=4,
                                desc=skill_desc)
             changes.append(f"Added skill: {skill_name}")
             
@@ -77,7 +77,7 @@ def initialize_traits(character):
     
     for dist_key, dist_name, dist_desc in DISTINCTIONS:
         if not character.distinctions.get(dist_key):
-            character.distinctions.add(dist_key, dist_name, value=8,
+            character.distinctions.add(key=dist_key, name=dist_name, value=8,
                                     desc=dist_desc)
             changes.append(f"Added distinction slot: {dist_name}")
             
