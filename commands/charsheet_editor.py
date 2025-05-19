@@ -529,11 +529,13 @@ class CmdResource(MuxCommand):
             
         # Group resources by name
         resources_by_name = {}
-        for trait in char.resources.all():
-            name = trait.name
-            if name not in resources_by_name:
-                resources_by_name[name] = []
-            resources_by_name[name].append(trait)
+        for key in char.resources.all():
+            trait = char.resources.get(key)
+            if trait:
+                name = trait.name
+                if name not in resources_by_name:
+                    resources_by_name[name] = []
+                resources_by_name[name].append(trait)
             
         # Build the display message
         msg = f"\n|w{char.name}'s Resources|n\n"
