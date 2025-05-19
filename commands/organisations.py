@@ -5,6 +5,7 @@ from evennia.commands.default.muxcommand import MuxCommand
 from evennia import CmdSet
 from evennia.utils import evtable
 from evennia.utils.utils import lazy_property
+from evennia.utils import create_object
 
 class CmdOrg(MuxCommand):
     """
@@ -145,7 +146,10 @@ class CmdOrgAdmin(MuxCommand):
             return
             
         # Create the organisation
-        org = Organisation(name)
+        org = create_object(
+            typeclass="typeclasses.organisations.Organisation",
+            key=name
+        )
         self.caller.msg(f"Created organisation: {name}")
     
     def set_head(self, args):
