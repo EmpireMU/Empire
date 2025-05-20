@@ -9,6 +9,7 @@ from evennia.objects.objects import DefaultObject
 from evennia.utils import lazy_property
 from evennia.utils.search import search_object
 from .objects import ObjectParent
+from evennia.contrib.rpg.traits import TraitHandler
 
 
 class Organisation(ObjectParent, DefaultObject):
@@ -26,6 +27,14 @@ class Organisation(ObjectParent, DefaultObject):
         Returns a dict of {char_id: rank_number}
         """
         return self.attributes.get('members', default={}, category='organisation')
+        
+    @property
+    def resources(self):
+        """
+        Get all resources owned by this organization.
+        Returns a list of Resource objects.
+        """
+        return search_object('resource', attribute_name='owner', attribute_value=self.dbref)
         
     def at_object_creation(self):
         """
@@ -46,6 +55,58 @@ class Organisation(ObjectParent, DefaultObject):
             3: "Noble Family",
             4: "Senior Servant"
         }
+        
+    def create_resource(self, name, die_size=6, description=None):
+        """
+        Create a new resource owned by this organization.
+        
+        Args:
+            name (str): The name of the resource
+            die_size (int): The die size (4-12)
+            description (str, optional): Description of the resource
+            
+        Returns:
+            Resource: The created resource object, or None if creation failed
+        """
+        from evennia.utils.create import create_object
+        from typeclasses.resources import Resource
+        
+        try:
+            resource = create_object(
+                typeclass=Resource,
+                key=name,
+                location=self.location
+            )
+            if resource:
+                resource.die_size = die_size
+                if description:
+                    resource.db.description = description
+                resource.set_owner(self)  # This will also set origin
+                return resource
+        except Exception:
+            return None
+            
+    def transfer_resource(self, resource, target):
+        """
+        Transfer a resource to another character or organization.
+        
+        Args:
+            resource: The resource to transfer
+            target: The character or organization to transfer to
+            
+        Returns:
+            bool: True if transfer successful, False otherwise
+        """
+        if not resource or not target:
+            return False
+            
+        # Verify we own the resource
+        if resource.owner != self:
+            return False
+            
+        # Transfer ownership
+        resource.set_owner(target, transfer_from=self)
+        return True
         
     def add_member(self, character, rank=4):
         """
@@ -201,6 +262,10 @@ class Organisation(ObjectParent, DefaultObject):
             chars = search_object(f"#{char_id}")
             if chars:
                 self.remove_member(chars[0])
+                
+        # Delete all owned resources
+        for resource in self.resources:
+            resource.delete()
         
         # Delete the organisation
         super().delete() 

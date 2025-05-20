@@ -67,6 +67,15 @@ class Character(ObjectParent, DefaultCharacter):
         """
         return TraitHandler(self, db_attribute_key="char_signature_assets")
 
+    @property
+    def resources(self):
+        """
+        Get all resources owned by this character.
+        Returns a list of Resource objects.
+        """
+        from evennia.utils.search import search_object
+        return search_object('resource', attribute_name='owner', attribute_value=self.dbref)
+
     @lazy_property
     def organisations(self):
         """
@@ -143,9 +152,6 @@ class Character(ObjectParent, DefaultCharacter):
                 self.distinctions.get(trait.key).base = trait.default_value
             # Debug print
             self.msg(f"Distinction {trait.key}: default_value={trait.default_value}, base={self.distinctions.get(trait.key).base}")
-
-        # Resources and signature assets are initialized empty
-        # They will be added manually by the player or GM
 
     def at_init(self):
         """
