@@ -210,11 +210,11 @@ class Character(ObjectParent, DefaultCharacter):
         # For multiple resources with same name, append a number
         base_name = name
         counter = 1
-        while base_name in self.char_resources.traits:
+        while base_name in self.char_resources.all:
             counter += 1
             base_name = f"{name} {counter}"
             
-        self.char_resources.add(base_name, name=name, trait_type="static", base=die_size, mod=0)
+        self.char_resources.add(base_name, trait_type="static", base=die_size, mod=0)
         return True
         
     def remove_resource(self, name):
