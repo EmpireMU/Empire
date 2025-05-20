@@ -205,7 +205,7 @@ class Character(ObjectParent, DefaultCharacter):
         # For multiple resources with same name, append a number
         base_name = name
         counter = 1
-        while name in self.char_resources.all:
+        while name in self.char_resources.traits:
             counter += 1
             name = f"{base_name} {counter}"
             
@@ -222,7 +222,7 @@ class Character(ObjectParent, DefaultCharacter):
         Returns:
             bool: True if removed, False if not found
         """
-        if name in self.char_resources.all:
+        if name in self.char_resources.traits:
             self.char_resources.remove(name)
             return True
         return False
@@ -241,7 +241,7 @@ class Character(ObjectParent, DefaultCharacter):
         Raises:
             ValueError: If resource not found or target is invalid
         """
-        if resource_name not in self.char_resources.all:
+        if resource_name not in self.char_resources.traits:
             raise ValueError(f"Resource '{resource_name}' not found")
             
         from typeclasses.organisations import Organisation
@@ -249,7 +249,7 @@ class Character(ObjectParent, DefaultCharacter):
             raise ValueError("Can only transfer resources to characters or organizations")
             
         # Get the die size before removing
-        die_size = self.char_resources.get(resource_name)
+        die_size = self.char_resources.traits[resource_name].current
         
         # Remove from self
         self.char_resources.remove(resource_name)
@@ -270,6 +270,6 @@ class Character(ObjectParent, DefaultCharacter):
             list: List of (name, die_size) tuples
         """
         resources = []
-        for name, die_size in self.char_resources.all.items():
-            resources.append((name, die_size))
+        for name, trait in self.char_resources.traits.items():
+            resources.append((name, trait.current))
         return sorted(resources)

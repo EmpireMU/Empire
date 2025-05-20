@@ -435,15 +435,14 @@ class CmdResource(MuxCommand):
         table = EvTable(
             "|wName|n",
             "|wDie|n",
-            border="table",
-            width=78
+            border="header"
         )
         
-        # Add rows
-        for name, trait in sorted(resources.items()):
+        # Add each resource to the table
+        for name, trait in resources.items():
             table.add_row(name, f"d{trait.current}")
             
-        self.msg(f"|wYour Resources:|n\n{table}")
+        self.msg(table)
         
     def view_resource(self):
         """View details of a specific resource."""
@@ -471,76 +470,93 @@ class CmdResource(MuxCommand):
             self.msg(f"No resource found named '{name}'.")
             return
             
-        die_size = resources[name].current
-        self.msg(f"|c{name}|n\nA d{die_size} resource owned by {owner.name}.")
+        # Get the resource trait
+        resource = resources[name]
+        
+        # Create table
+        from evennia.utils.evtable import EvTable
+        table = EvTable(
+            "|wName|n",
+            "|wDie|n",
+            border="header"
+        )
+        table.add_row(name, f"d{resource.current}")
+        
+        self.msg(table)
         
     def create_org_resource(self):
-        """Create a new resource for an organization."""
-        if not self.args or "=" not in self.args:
-            self.msg("Usage: resource/org <org> = <name>,<die_size>")
+        """Create a resource for an organization."""
+        if not self.args:
+            self.msg("Usage: resource/org <org>=<name>,<die_size>")
             return
             
-        # Check admin permissions
-        if not self.caller.check_permstring("Admin"):
-            self.msg("You don't have permission to create resources.")
+        if not self.rhs:
+            self.msg("You must provide both a name and die size.")
             return
             
-        # Parse org name and resource details
-        org_name, rest = [part.strip() for part in self.args.split("=", 1)]
-        
-        # Parse resource name and die size
-        try:
-            name, die_size = [part.strip() for part in rest.split(",", 1)]
-            die_size = int(die_size)
-        except ValueError:
-            self.msg("Usage: resource/org <org> = <name>,<die_size>")
-            self.msg("Die size must be a number (4, 6, 8, 10, or 12).")
-            return
-            
-        # Find the organization
-        org = self._get_org(org_name)
+        # Get organization
+        org = self.caller.search(self.lhs)
         if not org:
             return
             
-        # Create the resource
+        # Parse die size
         try:
+            name, die_size = self.rhs.split(",", 1)
+            name = name.strip()
+            die_size = int(die_size.strip())
+            if die_size not in [4, 6, 8, 10, 12]:
+                self.msg("Die size must be one of: 4, 6, 8, 10, 12")
+                return
+        except ValueError:
+            self.msg("You must provide both a name and valid die size.")
+            return
+            
+        # Add resource to organization
+        try:
+            if not hasattr(org, 'org_resources'):
+                self.msg("That organization cannot have resources.")
+                return
+                
             org.add_org_resource(name, die_size)
-            self.msg(f"Created resource: {name} (d{die_size}) for {org.name}")
+            self.msg(f"Added resource '{name}' (d{die_size}) to {org.name}.")
         except ValueError as e:
             self.msg(str(e))
             
     def create_char_resource(self):
-        """Create a new resource for a character."""
-        if not self.args or "=" not in self.args:
-            self.msg("Usage: resource/char <character> = <name>,<die_size>")
+        """Create a resource for a character."""
+        if not self.args:
+            self.msg("Usage: resource/char <char>=<name>,<die_size>")
             return
             
-        # Check admin permissions
-        if not self.caller.check_permstring("Admin"):
-            self.msg("You don't have permission to create resources.")
+        if not self.rhs:
+            self.msg("You must provide both a name and die size.")
             return
             
-        # Parse character name and resource details
-        char_name, rest = [part.strip() for part in self.args.split("=", 1)]
-        
-        # Parse resource name and die size
-        try:
-            name, die_size = [part.strip() for part in rest.split(",", 1)]
-            die_size = int(die_size)
-        except ValueError:
-            self.msg("Usage: resource/char <character> = <name>,<die_size>")
-            self.msg("Die size must be a number (4, 6, 8, 10, or 12).")
-            return
-            
-        # Find the character
-        char = self._get_char(char_name)
+        # Get character
+        char = self.caller.search(self.lhs)
         if not char:
             return
             
-        # Create the resource
+        # Parse die size
         try:
+            name, die_size = self.rhs.split(",", 1)
+            name = name.strip()
+            die_size = int(die_size.strip())
+            if die_size not in [4, 6, 8, 10, 12]:
+                self.msg("Die size must be one of: 4, 6, 8, 10, 12")
+                return
+        except ValueError:
+            self.msg("You must provide both a name and valid die size.")
+            return
+            
+        # Add resource to character
+        try:
+            if not hasattr(char, 'char_resources'):
+                self.msg("That character cannot have resources.")
+                return
+                
             char.add_resource(name, die_size)
-            self.msg(f"Created resource: {name} (d{die_size}) for {char.name}")
+            self.msg(f"Added resource '{name}' (d{die_size}) to {char.name}.")
         except ValueError as e:
             self.msg(str(e))
             

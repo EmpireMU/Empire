@@ -42,7 +42,7 @@ class Organisation(ObjectParent, DefaultObject):
         TraitHandler that manages organization resources.
         Each trait represents a die pool (d4-d12).
         """
-        return TraitHandler(self, db_attribute="org_resources")
+        return TraitHandler(self, db_attribute_key="org_resources")
 
     def at_object_creation(self):
         """
@@ -115,7 +115,7 @@ class Organisation(ObjectParent, DefaultObject):
         # For multiple resources with same name, append a number
         base_name = name
         counter = 1
-        while name in self.org_resources.all:
+        while name in self.org_resources.traits:
             counter += 1
             name = f"{base_name} {counter}"
             
@@ -132,7 +132,7 @@ class Organisation(ObjectParent, DefaultObject):
         Returns:
             bool: True if removed, False if not found
         """
-        if name in self.org_resources.all:
+        if name in self.org_resources.traits:
             self.org_resources.remove(name)
             return True
         return False
@@ -151,7 +151,7 @@ class Organisation(ObjectParent, DefaultObject):
         Raises:
             ValueError: If resource not found or target is invalid
         """
-        if resource_name not in self.org_resources.all:
+        if resource_name not in self.org_resources.traits:
             raise ValueError(f"Resource '{resource_name}' not found")
             
         from typeclasses.characters import Character
@@ -159,7 +159,7 @@ class Organisation(ObjectParent, DefaultObject):
             raise ValueError("Can only transfer resources to characters or organizations")
             
         # Get the die size before removing
-        die_size = self.org_resources.get(resource_name)
+        die_size = self.org_resources.traits[resource_name].current
         
         # Remove from self
         self.org_resources.remove(resource_name)
@@ -180,8 +180,8 @@ class Organisation(ObjectParent, DefaultObject):
             list: List of (name, die_size) tuples
         """
         resources = []
-        for name, die_size in self.org_resources.all.items():
-            resources.append((name, die_size))
+        for name, trait in self.org_resources.traits.items():
+            resources.append((name, trait.current))
         return sorted(resources)
         
     def add_member(self, character, rank=4):
