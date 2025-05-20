@@ -73,7 +73,7 @@ class Character(ObjectParent, DefaultCharacter):
         TraitHandler that manages character resources.
         Each trait represents a die pool (d4-d12).
         """
-        return TraitHandler(self, db_attribute="char_resources")
+        return TraitHandler(self, db_attribute_key="char_resources")
 
     @property
     def resources(self):
