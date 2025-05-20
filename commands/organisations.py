@@ -450,7 +450,7 @@ class CmdResource(MuxCommand):
     def view_resource(self):
         """View details of a specific resource."""
         if not self.args:
-            self.msg("Usage: resource <name>")
+            self.msg("Usage: resource <n>")
             return
             
         owner = self.caller
@@ -458,11 +458,13 @@ class CmdResource(MuxCommand):
             owner = self.caller.char
             
         # Get resources from trait handler
+        resources = None
         if hasattr(owner, 'char_resources'):
             resources = owner.char_resources.all
         elif hasattr(owner, 'org_resources'):
             resources = owner.org_resources.all
-        else:
+            
+        if not resources:
             self.msg("You don't own any resources.")
             return
             

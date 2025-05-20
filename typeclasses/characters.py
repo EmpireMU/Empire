@@ -75,15 +75,6 @@ class Character(ObjectParent, DefaultCharacter):
         """
         return TraitHandler(self, db_attribute_key="char_resources")
 
-    @property
-    def resources(self):
-        """
-        Get all resources owned by this character.
-        Returns a list of Resource objects.
-        """
-        from evennia.utils.search import search_object
-        return search_object('resource', attribute_name='owner', attribute_value=self.dbref)
-
     @lazy_property
     def organisations(self):
         """
