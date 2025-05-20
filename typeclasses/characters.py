@@ -152,7 +152,7 @@ class Character(ObjectParent, DefaultCharacter):
             # Debug print
             self.msg(f"Distinction {trait.key}: default_value={trait.default_value}, base={self.distinctions.get(trait.key).base}")
 
-        # Initialize resources
+        # Initialize resources handler
         _ = self.char_resources
 
     def at_init(self):
@@ -210,11 +210,11 @@ class Character(ObjectParent, DefaultCharacter):
         # For multiple resources with same name, append a number
         base_name = name
         counter = 1
-        while name in self.char_resources.traits:
+        while base_name in self.char_resources.traits:
             counter += 1
-            name = f"{base_name} {counter}"
+            base_name = f"{name} {counter}"
             
-        self.char_resources.add(name, die_size)
+        self.char_resources.add(base_name, name=name, trait_type="static", base=die_size, mod=0)
         return True
         
     def remove_resource(self, name):
