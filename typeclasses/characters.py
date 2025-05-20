@@ -210,7 +210,7 @@ class Character(ObjectParent, DefaultCharacter):
         # For multiple resources with same name, append a number
         base_name = name
         counter = 1
-        while base_name in self.char_resources.all:
+        while base_name in self.char_resources.traits:
             counter += 1
             base_name = f"{name} {counter}"
             
