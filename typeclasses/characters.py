@@ -67,6 +67,14 @@ class Character(ObjectParent, DefaultCharacter):
         """
         return TraitHandler(self, db_attribute_key="char_signature_assets")
 
+    @lazy_property
+    def char_resources(self):
+        """
+        TraitHandler that manages character resources.
+        Each trait represents a die pool (d4-d12).
+        """
+        return TraitHandler(self, db_attribute="char_resources")
+
     @property
     def resources(self):
         """
@@ -184,3 +192,93 @@ class Character(ObjectParent, DefaultCharacter):
         _ = self.skills
         _ = self.signature_assets
         _ = self.organisations
+
+    def add_resource(self, name, die_size):
+        """
+        Add a resource to the character.
+        
+        Args:
+            name (str): Name of the resource
+            die_size (int): Size of the die (4, 6, 8, 10, or 12)
+            
+        Returns:
+            bool: True if added successfully
+            
+        Raises:
+            ValueError: If die size is invalid
+        """
+        valid_sizes = [4, 6, 8, 10, 12]
+        if die_size not in valid_sizes:
+            raise ValueError(f"Die size must be one of: {', '.join(map(str, valid_sizes))}")
+            
+        # For multiple resources with same name, append a number
+        base_name = name
+        counter = 1
+        while name in self.char_resources.all:
+            counter += 1
+            name = f"{base_name} {counter}"
+            
+        self.char_resources.add(name, die_size)
+        return True
+        
+    def remove_resource(self, name):
+        """
+        Remove a resource from the character.
+        
+        Args:
+            name (str): Name of the resource to remove
+            
+        Returns:
+            bool: True if removed, False if not found
+        """
+        if name in self.char_resources.all:
+            self.char_resources.remove(name)
+            return True
+        return False
+        
+    def transfer_resource(self, resource_name, target):
+        """
+        Transfer a resource to another character or organization.
+        
+        Args:
+            resource_name (str): Name of the resource to transfer
+            target (Character or Organisation): Who to transfer to
+            
+        Returns:
+            bool: True if transferred successfully
+            
+        Raises:
+            ValueError: If resource not found or target is invalid
+        """
+        if resource_name not in self.char_resources.all:
+            raise ValueError(f"Resource '{resource_name}' not found")
+            
+        from typeclasses.organisations import Organisation
+        if not (isinstance(target, type(self)) or isinstance(target, Organisation)):
+            raise ValueError("Can only transfer resources to characters or organizations")
+            
+        # Get the die size before removing
+        die_size = self.char_resources.get(resource_name)
+        
+        # Remove from self
+        self.char_resources.remove(resource_name)
+        
+        # Add to target
+        if isinstance(target, Organisation):
+            target.add_org_resource(resource_name, die_size)
+        else:
+            target.add_resource(resource_name, die_size)
+            
+        return True
+        
+    def get_resources(self):
+        """
+        Get a formatted list of all resources.
+        
+        Returns:
+            list: List of (name, die_size) tuples
+        """
+        resources = []
+        for name, die_size in self.char_resources.all.items():
+            resources.append((name, die_size))
+        return sorted(resources)

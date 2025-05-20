@@ -36,6 +36,14 @@ class Organisation(ObjectParent, DefaultObject):
         """
         return search_object('resource', attribute_name='owner', attribute_value=self.dbref)
         
+    @lazy_property
+    def org_resources(self):
+        """
+        TraitHandler that manages organization resources.
+        Each trait represents a die pool (d4-d12).
+        """
+        return TraitHandler(self, db_attribute="org_resources")
+
     def at_object_creation(self):
         """
         Called when the organization is first created.
@@ -86,27 +94,95 @@ class Organisation(ObjectParent, DefaultObject):
         except Exception:
             return None
             
-    def transfer_resource(self, resource, target):
+    def add_org_resource(self, name, die_size):
         """
-        Transfer a resource to another character or organization.
+        Add a resource to the organization.
         
         Args:
-            resource: The resource to transfer
-            target: The character or organization to transfer to
+            name (str): Name of the resource
+            die_size (int): Size of the die (4, 6, 8, 10, or 12)
             
         Returns:
-            bool: True if transfer successful, False otherwise
+            bool: True if added successfully
+            
+        Raises:
+            ValueError: If die size is invalid
         """
-        if not resource or not target:
-            return False
+        valid_sizes = [4, 6, 8, 10, 12]
+        if die_size not in valid_sizes:
+            raise ValueError(f"Die size must be one of: {', '.join(map(str, valid_sizes))}")
             
-        # Verify we own the resource
-        if resource.owner != self:
-            return False
+        # For multiple resources with same name, append a number
+        base_name = name
+        counter = 1
+        while name in self.org_resources.all:
+            counter += 1
+            name = f"{base_name} {counter}"
             
-        # Transfer ownership
-        resource.set_owner(target, transfer_from=self)
+        self.org_resources.add(name, die_size)
         return True
+        
+    def remove_org_resource(self, name):
+        """
+        Remove a resource from the organization.
+        
+        Args:
+            name (str): Name of the resource to remove
+            
+        Returns:
+            bool: True if removed, False if not found
+        """
+        if name in self.org_resources.all:
+            self.org_resources.remove(name)
+            return True
+        return False
+        
+    def transfer_resource(self, resource_name, target):
+        """
+        Transfer a resource to a character or another organization.
+        
+        Args:
+            resource_name (str): Name of the resource to transfer
+            target (Character or Organisation): Who to transfer to
+            
+        Returns:
+            bool: True if transferred successfully
+            
+        Raises:
+            ValueError: If resource not found or target is invalid
+        """
+        if resource_name not in self.org_resources.all:
+            raise ValueError(f"Resource '{resource_name}' not found")
+            
+        from typeclasses.characters import Character
+        if not (isinstance(target, type(self)) or isinstance(target, Character)):
+            raise ValueError("Can only transfer resources to characters or organizations")
+            
+        # Get the die size before removing
+        die_size = self.org_resources.get(resource_name)
+        
+        # Remove from self
+        self.org_resources.remove(resource_name)
+        
+        # Add to target
+        if isinstance(target, Character):
+            target.add_resource(resource_name, die_size)
+        else:
+            target.add_org_resource(resource_name, die_size)
+            
+        return True
+        
+    def get_resources(self):
+        """
+        Get a formatted list of all resources.
+        
+        Returns:
+            list: List of (name, die_size) tuples
+        """
+        resources = []
+        for name, die_size in self.org_resources.all.items():
+            resources.append((name, die_size))
+        return sorted(resources)
         
     def add_member(self, character, rank=4):
         """
