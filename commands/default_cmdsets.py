@@ -21,7 +21,6 @@ from commands.charsheet_admin import CharSheetAdminCmdSet
 from commands.plot_points import PlotPointCmdSet
 from commands.cortex_roll import CortexCmdSet
 from commands.organisations import OrgCmdSet
-from commands.resources import ResourceCmdSet
 
 
 class CharacterCmdSet(default_cmds.CharacterCmdSet):
@@ -41,11 +40,12 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         #
         # any commands you add below will overload the default ones.
         #
-        self.add(CharSheetCmdSet)  # Add sheet viewing for all characters
-        self.add(PlotPointCmdSet)  # Add plot point commands
-        self.add(CortexCmdSet)  # Add Cortex Prime commands
-        self.add(OrgCmdSet())  # Add organization commands
-        self.add(ResourceCmdSet())  # Add resource management commands
+        self.add(CharSheetCmdSet)
+        self.add(CharSheetEditorCmdSet)
+        self.add(CharSheetAdminCmdSet)
+        self.add(PlotPointCmdSet)
+        self.add(CortexCmdSet)
+        self.add(OrgCmdSet)
 
 
 class AccountCmdSet(default_cmds.AccountCmdSet):
@@ -66,9 +66,6 @@ class AccountCmdSet(default_cmds.AccountCmdSet):
         #
         # any commands you add below will overload the default ones.
         #
-        self.add(CharSheetEditorCmdSet)  # Add sheet editing for staff accounts
-        self.add(CharSheetAdminCmdSet)  # Add administrative commands for staff
-        self.add(PlotPointCmdSet)  # Add plot point commands
 
 
 class UnloggedinCmdSet(default_cmds.UnloggedinCmdSet):
