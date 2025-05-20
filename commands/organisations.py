@@ -334,11 +334,251 @@ class CmdOrg(MuxCommand):
         self.msg(str(table))
 
 
+class CmdResource(MuxCommand):
+    """
+    View and manage resources.
+    
+    Usage:
+        resource [<name>]                    - View resource info or list all owned
+        resource/org <org> = <name>,<die_size>  - Create resource for an organization
+        resource/char <char> = <name>,<die_size>  - Create resource for a character
+        resource/transfer <name> = <target>  - Transfer resource to target
+        
+    Examples:
+        resource                          - List all resources you own
+        resource House Guard              - View details of House Guard resource
+        resource/org HouseOtrese = Guard Pool,8    - Create d8 resource for org
+        resource/org "House Otrese" = "Guard Pool",8  - Names with spaces need quotes
+        resource/char Koline = "Personal Guard",6  - Create d6 resource for character
+        resource/transfer Guard = Koline  - Transfer to character Koline
+        
+    When multiple resources share the same name, you can specify which one
+    by including a number after the name:
+        resource "Political Capital 2"
+        resource/transfer "Wealth 3" = "House Anadun"
+    """
+    
+    key = "resource"
+    aliases = ["res"]
+    locks = "cmd:all()"
+    help_category = "Resources"
+    
+    def _get_org(self, org_name):
+        """Helper method to find and validate an organization."""
+        from typeclasses.organisations import Organisation
+        org = self.caller.search(org_name, global_search=True)
+        if not org:
+            return None
+            
+        if not isinstance(org, Organisation):
+            self.msg(f"{org.name} is not an organization.")
+            return None
+            
+        return org
+        
+    def _get_char(self, char_name):
+        """Helper method to find and validate a character."""
+        from typeclasses.characters import Character
+        char = self.caller.search(char_name, global_search=True)
+        if not char:
+            return None
+            
+        if not hasattr(char, 'char_resources'):
+            self.msg(f"{char.name} cannot own resources.")
+            return None
+            
+        return char
+        
+    def func(self):
+        """Handle resource management."""
+        if not self.args and not self.switches:
+            # List all owned resources
+            self.list_resources()
+            return
+            
+        if not self.switches:
+            # View specific resource
+            self.view_resource()
+            return
+            
+        # Handle switches
+        switch = self.switches[0]
+        
+        if switch == "org":
+            self.create_org_resource()
+        elif switch == "char":
+            self.create_char_resource()
+        elif switch == "transfer":
+            self.transfer_resource()
+        else:
+            self.msg(f"Unknown switch: {switch}")
+            
+    def list_resources(self):
+        """List all resources owned by the caller."""
+        owner = self.caller
+        if hasattr(self.caller, 'char'):
+            owner = self.caller.char
+            
+        # Get resources from trait handler
+        if hasattr(owner, 'char_resources'):
+            resources = owner.char_resources.all
+        elif hasattr(owner, 'org_resources'):
+            resources = owner.org_resources.all
+        else:
+            self.msg("You don't own any resources.")
+            return
+            
+        if not resources:
+            self.msg("You don't own any resources.")
+            return
+            
+        # Create table
+        from evennia.utils.evtable import EvTable
+        table = EvTable(
+            "|wName|n",
+            "|wDie|n",
+            border="table",
+            width=78
+        )
+        
+        # Add rows
+        for name, die_size in sorted(resources.items()):
+            table.add_row(name, f"d{die_size}")
+            
+        self.msg(f"|wYour Resources:|n\n{table}")
+        
+    def view_resource(self):
+        """View details of a specific resource."""
+        if not self.args:
+            self.msg("Usage: resource <name>")
+            return
+            
+        owner = self.caller
+        if hasattr(self.caller, 'char'):
+            owner = self.caller.char
+            
+        # Get resources from trait handler
+        if hasattr(owner, 'char_resources'):
+            resources = owner.char_resources.all
+        elif hasattr(owner, 'org_resources'):
+            resources = owner.org_resources.all
+        else:
+            self.msg("You don't own any resources.")
+            return
+            
+        name = self.args.strip()
+        if name not in resources:
+            self.msg(f"No resource found named '{name}'.")
+            return
+            
+        die_size = resources[name]
+        self.msg(f"|c{name}|n\nA d{die_size} resource owned by {owner.name}.")
+        
+    def create_org_resource(self):
+        """Create a new resource for an organization."""
+        if not self.args or "=" not in self.args:
+            self.msg("Usage: resource/org <org> = <name>,<die_size>")
+            return
+            
+        # Check admin permissions
+        if not self.caller.check_permstring("Admin"):
+            self.msg("You don't have permission to create resources.")
+            return
+            
+        # Parse org name and resource details
+        org_name, rest = [part.strip() for part in self.args.split("=", 1)]
+        
+        # Parse resource name and die size
+        try:
+            name, die_size = [part.strip() for part in rest.split(",", 1)]
+            die_size = int(die_size)
+        except ValueError:
+            self.msg("Usage: resource/org <org> = <name>,<die_size>")
+            self.msg("Die size must be a number (4, 6, 8, 10, or 12).")
+            return
+            
+        # Find the organization
+        org = self._get_org(org_name)
+        if not org:
+            return
+            
+        # Create the resource
+        try:
+            org.add_org_resource(name, die_size)
+            self.msg(f"Created resource: {name} (d{die_size}) for {org.name}")
+        except ValueError as e:
+            self.msg(str(e))
+            
+    def create_char_resource(self):
+        """Create a new resource for a character."""
+        if not self.args or "=" not in self.args:
+            self.msg("Usage: resource/char <character> = <name>,<die_size>")
+            return
+            
+        # Check admin permissions
+        if not self.caller.check_permstring("Admin"):
+            self.msg("You don't have permission to create resources.")
+            return
+            
+        # Parse character name and resource details
+        char_name, rest = [part.strip() for part in self.args.split("=", 1)]
+        
+        # Parse resource name and die size
+        try:
+            name, die_size = [part.strip() for part in rest.split(",", 1)]
+            die_size = int(die_size)
+        except ValueError:
+            self.msg("Usage: resource/char <character> = <name>,<die_size>")
+            self.msg("Die size must be a number (4, 6, 8, 10, or 12).")
+            return
+            
+        # Find the character
+        char = self._get_char(char_name)
+        if not char:
+            return
+            
+        # Create the resource
+        try:
+            char.add_resource(name, die_size)
+            self.msg(f"Created resource: {name} (d{die_size}) for {char.name}")
+        except ValueError as e:
+            self.msg(str(e))
+            
+    def transfer_resource(self):
+        """Transfer a resource to another character or organization."""
+        if not self.args or "=" not in self.args:
+            self.msg("Usage: resource/transfer <name> = <target>")
+            return
+            
+        name, target = [part.strip() for part in self.args.split("=", 1)]
+        
+        # Find target
+        from evennia.utils.search import search_object
+        targets = search_object(target)
+        if not targets:
+            self.msg(f"Target '{target}' not found.")
+            return
+            
+        target = targets[0]
+        
+        # Get owner
+        owner = self.caller
+        if hasattr(self.caller, 'char'):
+            owner = self.caller.char
+            
+        try:
+            owner.transfer_resource(name, target)
+            self.msg(f"Transferred {name} to {target.name}.")
+        except ValueError as e:
+            self.msg(str(e))
+
+
 class OrgCmdSet(CmdSet):
     """
-    Command set for organization commands.
+    Command set for organization management.
     """
     
     def at_cmdset_creation(self):
         """Add commands to the set."""
-        self.add(CmdOrg()) 
+        self.add(CmdOrg())
+        self.add(CmdResource())  # Add resource management commands 
