@@ -420,13 +420,11 @@ class CmdResource(MuxCommand):
             owner = self.caller.char
             
         # Get resources from trait handler
-        if hasattr(owner, 'char_resources'):
-            resources = owner.char_resources.all
-        elif hasattr(owner, 'org_resources'):
-            resources = owner.org_resources.all
-        else:
-            self.msg("You don't own any resources.")
-            return
+        resources = None
+        if hasattr(owner, 'char_resources') and owner.char_resources:
+            resources = owner.char_resources.traits
+        elif hasattr(owner, 'org_resources') and owner.org_resources:
+            resources = owner.org_resources.traits
             
         if not resources:
             self.msg("You don't own any resources.")
@@ -442,8 +440,8 @@ class CmdResource(MuxCommand):
         )
         
         # Add rows
-        for name, die_size in sorted(resources.items()):
-            table.add_row(name, f"d{die_size}")
+        for name, trait in sorted(resources.items()):
+            table.add_row(name, f"d{trait.current}")
             
         self.msg(f"|wYour Resources:|n\n{table}")
         
@@ -459,10 +457,10 @@ class CmdResource(MuxCommand):
             
         # Get resources from trait handler
         resources = None
-        if hasattr(owner, 'char_resources'):
-            resources = owner.char_resources.all
-        elif hasattr(owner, 'org_resources'):
-            resources = owner.org_resources.all
+        if hasattr(owner, 'char_resources') and owner.char_resources:
+            resources = owner.char_resources.traits
+        elif hasattr(owner, 'org_resources') and owner.org_resources:
+            resources = owner.org_resources.traits
             
         if not resources:
             self.msg("You don't own any resources.")
@@ -473,7 +471,7 @@ class CmdResource(MuxCommand):
             self.msg(f"No resource found named '{name}'.")
             return
             
-        die_size = resources[name]
+        die_size = resources[name].current
         self.msg(f"|c{name}|n\nA d{die_size} resource owned by {owner.name}.")
         
     def create_org_resource(self):
