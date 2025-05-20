@@ -152,6 +152,9 @@ class Character(ObjectParent, DefaultCharacter):
             # Debug print
             self.msg(f"Distinction {trait.key}: default_value={trait.default_value}, base={self.distinctions.get(trait.key).base}")
 
+        # Initialize resources
+        _ = self.char_resources
+
     def at_init(self):
         """
         Called when object is first created and after it is loaded from cache.
@@ -167,6 +170,7 @@ class Character(ObjectParent, DefaultCharacter):
         _ = self.skills
         _ = self.signature_assets
         _ = self.organisations
+        _ = self.char_resources
 
     def at_post_puppet(self):
         """
@@ -183,6 +187,7 @@ class Character(ObjectParent, DefaultCharacter):
         _ = self.skills
         _ = self.signature_assets
         _ = self.organisations
+        _ = self.char_resources
 
     def add_resource(self, name, die_size):
         """
