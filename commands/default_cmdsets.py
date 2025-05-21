@@ -21,6 +21,7 @@ from commands.charsheet_admin import CharSheetAdminCmdSet
 from commands.plot_points import PlotPointCmdSet
 from commands.cortex_roll import CortexCmdSet
 from commands.organisations import OrgCmdSet
+from commands import requests
 
 
 class CharacterCmdSet(default_cmds.CharacterCmdSet):
@@ -51,7 +52,7 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
 class AccountCmdSet(default_cmds.AccountCmdSet):
     """
     This is the cmdset available to the Account at all times. It is
-    combined with the `CharacterCmdSet` when the Account puppets a
+    combined with the `CharacterCmdSet` when an Account puppets a
     Character. It holds game-account-specific commands, channel
     commands, etc.
     """
@@ -66,6 +67,8 @@ class AccountCmdSet(default_cmds.AccountCmdSet):
         #
         # any commands you add below will overload the default ones.
         #
+        # Add request commands - this is an OOC system
+        self.add(requests.RequestCmdSet)
 
 
 class UnloggedinCmdSet(default_cmds.UnloggedinCmdSet):

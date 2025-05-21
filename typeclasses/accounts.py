@@ -136,7 +136,24 @@ class Account(DefaultAccount):
 
     """
 
-    pass
+    def at_post_login(self, session=None):
+        """
+        Called after the account is logged in.
+        Show any stored request notifications.
+        """
+        super().at_post_login(session)
+        
+        # Check for stored notifications
+        notifications = self.db.offline_request_notifications
+        if notifications:
+            # Show all stored notifications
+            self.msg("\n|yStored Request Notifications:|n")
+            for notification in notifications:
+                self.msg(notification)
+            self.msg("\n")  # Add a blank line after notifications
+            
+            # Clear the notifications
+            self.db.offline_request_notifications = []
 
 
 class Guest(DefaultGuest):
