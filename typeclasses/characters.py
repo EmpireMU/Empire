@@ -153,8 +153,9 @@ class Character(ObjectParent, DefaultCharacter):
             # Debug print
             self.msg(f"Distinction {trait.key}: default_value={trait.default_value}, base={self.distinctions.get(trait.key).base}")
 
-        # Initialize resources handler
-        _ = self.char_resources
+        # Initialize resources handler with empty trait set
+        self.attributes.add("char_resources", {}, category="char_resources")
+        _ = self.char_resources  # Force lazy property initialization
 
     def at_init(self):
         """
