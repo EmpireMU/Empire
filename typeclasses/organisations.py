@@ -28,14 +28,6 @@ class Organisation(ObjectParent, DefaultObject):
         """
         return self.attributes.get('members', default={}, category='organisation')
         
-    @property
-    def resources(self):
-        """
-        Get all resources owned by this organization.
-        Returns a list of Resource objects.
-        """
-        return search_object('resource', attribute_name='owner', attribute_value=self.dbref)
-        
     @lazy_property
     def org_resources(self):
         """
@@ -63,36 +55,6 @@ class Organisation(ObjectParent, DefaultObject):
             3: "Noble Family",
             4: "Senior Servant"
         }
-        
-    def create_resource(self, name, die_size=6, description=None):
-        """
-        Create a new resource owned by this organization.
-        
-        Args:
-            name (str): The name of the resource
-            die_size (int): The die size (4-12)
-            description (str, optional): Description of the resource
-            
-        Returns:
-            Resource: The created resource object, or None if creation failed
-        """
-        from evennia.utils.create import create_object
-        from typeclasses.resources import Resource
-        
-        try:
-            resource = create_object(
-                typeclass=Resource,
-                key=name,
-                location=self.location
-            )
-            if resource:
-                resource.die_size = die_size
-                if description:
-                    resource.db.description = description
-                resource.set_owner(self)  # This will also set origin
-                return resource
-        except Exception:
-            return None
             
     def add_org_resource(self, name, die_size):
         """
@@ -338,10 +300,6 @@ class Organisation(ObjectParent, DefaultObject):
             chars = search_object(f"#{char_id}")
             if chars:
                 self.remove_member(chars[0])
-                
-        # Delete all owned resources
-        for resource in self.resources:
-            resource.delete()
         
         # Delete the organisation
         super().delete() 
