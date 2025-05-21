@@ -266,13 +266,35 @@ class CmdOrg(MuxCommand):
             
         # Get members
         members = list(org.get_members())
+        
+        # Show basic info
+        self.msg(f"\n|y{org.name}|n")
+        self.msg(f"Description: {org.db.description}")
+        
+        # Show resources if high-ranking member
+        caller_rank = org.get_member_rank(self.caller)
+        if caller_rank and 1 <= caller_rank <= 3:
+            resources = org.get_resources()
+            if resources:
+                self.msg("\nResources:")
+                table = evtable.EvTable(
+                    "|wName|n",
+                    "|wDie|n",
+                    border="table"
+                )
+                for name, die_size in resources:
+                    table.add_row(name, f"d{die_size}")
+                self.msg(str(table))
+            else:
+                self.msg("\nThis organization has no resources.")
+        
+        # Show members
         if not members:
-            self.msg(f"\n|y{org.name}|n")
-            self.msg(f"Description: {org.db.description}")
             self.msg("\nThis organization has no members.")
             return
             
-        # Create info table
+        # Create member table
+        self.msg(f"\nMembers ({len(members)}):")
         table = evtable.EvTable(
             "|wName|n",
             "|wRank|n",
@@ -284,10 +306,6 @@ class CmdOrg(MuxCommand):
         for member, rank_num, rank_name in members:
             table.add_row(member.name, rank_name)
             
-        # Show info
-        self.msg(f"\n|y{org.name}|n")
-        self.msg(f"Description: {org.db.description}")
-        self.msg(f"\nMembers ({len(members)}):")
         self.msg(str(table))
 
 
