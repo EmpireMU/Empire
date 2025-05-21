@@ -36,7 +36,7 @@ def format_colored_roll(value, die, trait_info, extra_value=None):
             'distinctions': 'Distinction',
             'character_attributes': 'Attribute',
             'skills': 'Skill',
-            'resources': 'Resource',
+            'char_resources': 'Resource',
             'signature_assets': 'Signature Asset'
         }
         category_name = display_names.get(trait_info.category, trait_info.category.title().rstrip('s')) if trait_info.category else "Raw"
@@ -57,8 +57,8 @@ def format_colored_roll(value, die, trait_info, extra_value=None):
             trait = trait_info.caller.character_attributes.get(trait_info.key)
         elif trait_info.category == 'skills':
             trait = trait_info.caller.skills.get(trait_info.key)
-        elif trait_info.category == 'resources':
-            trait = trait_info.caller.resources.get(trait_info.key)
+        elif trait_info.category == 'char_resources':
+            trait = trait_info.caller.char_resources.get(trait_info.key)
         elif trait_info.category == 'signature_assets':
             trait = trait_info.caller.signature_assets.get(trait_info.key)
             

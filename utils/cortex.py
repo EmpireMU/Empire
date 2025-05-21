@@ -79,7 +79,7 @@ def get_trait_die(character, trait_spec: str) -> Optional[Tuple[str, str, str, b
         ('attributes', character.character_attributes),
         ('skills', character.skills),
         ('distinctions', character.distinctions),
-        ('resources', character.char_resources),
+        ('char_resources', character.char_resources),
         ('signature_assets', character.signature_assets)
     ]
     
@@ -148,7 +148,7 @@ def validate_dice_pool(dice: List[TraitDie]) -> Optional[str]:
             elif die.category == 'distinctions':
                 has_distinction = True
                 requires_prime_sets = True
-            elif die.category in ('signature_assets', 'resources'):
+            elif die.category in ('signature_assets', 'char_resources'):
                 requires_prime_sets = True  # Signature Assets and Resources require prime sets
     
     # If prime sets are required (due to any trait use), check all three are present
