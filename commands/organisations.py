@@ -301,7 +301,7 @@ class CmdResource(MuxCommand):
         resource [<n>]                    - View resource info or list all owned
         resource/org <org> = <n>,<die_size>  - Create resource for an organization (Admin)
         resource/char <char> = <n>,<die_size>  - Create resource for a character (Admin)
-        resource/transfer <n> = <target>  - Transfer resource to target (Admin)
+        resource/transfer <source>:<n> = <target>  - Transfer resource to target (Admin)
         resource/delete <char> = <n>      - Delete a resource from a character (Admin)
         
     Examples:
@@ -523,28 +523,43 @@ class CmdResource(MuxCommand):
             return
             
         if not self.args or "=" not in self.args:
-            self.msg("Usage: resource/transfer <name> = <target>")
+            self.msg("Usage: resource/transfer <source>:<resource> = <target>")
             return
             
-        name, target = [part.strip() for part in self.args.split("=", 1)]
+        source_and_name, target = [part.strip() for part in self.args.split("=", 1)]
         
-        # Find target
+        # Parse source and resource name
+        if ":" not in source_and_name:
+            self.msg("You must specify the source and resource name in the format: source:resource")
+            return
+            
+        source_name, name = [part.strip() for part in source_and_name.split(":", 1)]
+        
+        # Find source and target
         from evennia.utils.search import search_object
+        source = search_object(source_name)
+        if not source:
+            self.msg(f"Source '{source_name}' not found.")
+            return
+        source = source[0]
+        
         targets = search_object(target)
         if not targets:
             self.msg(f"Target '{target}' not found.")
             return
-            
         target = targets[0]
         
-        # Get owner
-        owner = self.caller
-        if hasattr(self.caller, 'char'):
-            owner = self.caller.char
+        # Verify source can have resources
+        if not hasattr(source, 'char_resources') and not hasattr(source, 'org_resources'):
+            self.msg(f"{source.name} cannot have resources.")
+            return
             
         try:
-            owner.transfer_resource(name, target)
-            self.msg(f"Transferred {name} to {target.name}.")
+            if hasattr(source, 'char_resources'):
+                source.transfer_resource(name, target)
+            else:
+                source.transfer_resource(name, target)
+            self.msg(f"Transferred {name} from {source.name} to {target.name}.")
         except ValueError as e:
             self.msg(str(e))
             
