@@ -20,13 +20,20 @@ def get_trait_display(trait):
         return "", "", ""
         
     # Get the display name, falling back to key if name not set
-    display_name = trait.name or trait.key
+    try:
+        display_name = trait.name
+    except AttributeError:
+        display_name = trait.key
     
-    # Get the die size, falling back to base value if not set
-    die_size = f"d{trait.base}" if trait.base else ""
+    # Get the die size from the value
+    die_size = f"d{trait.value}" if hasattr(trait, 'value') else ""
     
     # Get the description, falling back to empty string if not set
-    description = trait.desc or ""
+    # Resources don't have descriptions, so we handle that case
+    try:
+        description = trait.desc
+    except AttributeError:
+        description = ""
     
     return display_name, die_size, description
 
