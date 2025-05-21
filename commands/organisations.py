@@ -8,7 +8,7 @@ from evennia.utils import evtable
 from evennia.utils.search import search_object
 from typeclasses.organisations import Organisation
 from utils.org_utils import (
-    check_admin, validate_rank, get_org, get_char,
+    validate_rank, get_org, get_char,
     get_org_and_char, parse_equals, parse_comma
 )
 
@@ -19,11 +19,11 @@ class CmdOrg(MuxCommand):
     
     Usage:
         org <organization>                    - View organization info
-        org/create <name>                     - Create new organization (Staff only)
-        org/member <organization> = <character>[,rank] - Add/set member (Staff only)
-        org/remove <organization> = <character> - Remove member (Staff only)
-        org/rankname <organization> = <rank>,<name> - Set rank name (Staff only)
-        org/delete <organization>             - Delete organization (Staff only)
+        org/create <n>                     - Create new organization (Admin)
+        org/member <organization> = <character>[,rank] - Add/set member (Admin)
+        org/remove <organization> = <character> - Remove member (Admin)
+        org/rankname <organization> = <rank>,<n> - Set rank name (Admin)
+        org/delete <organization>             - Delete organization (Admin)
         
     Examples:
         org House Otrese
@@ -42,7 +42,10 @@ class CmdOrg(MuxCommand):
     
     def _check_admin(self):
         """Helper method to check admin permissions."""
-        return check_admin(self.caller)
+        if not self.caller.permissions.check("Admin"):
+            self.msg("You don't have permission to perform this action.")
+            return False
+        return True
         
     def _validate_rank(self, rank_str, default=None):
         """Helper method to validate rank numbers."""
@@ -231,13 +234,13 @@ class CmdOrg(MuxCommand):
             return
             
         # Parse arguments
-        parts = self._parse_equals("org/rankname <organization> = <rank>,<name>")
+        parts = self._parse_equals("org/rankname <organization> = <rank>,<n>")
         if not parts:
             return
         org_name, rest = parts
         
         # Parse rank and name
-        rank_parts = self._parse_comma(rest, 2, "org/rankname <organization> = <rank>,<name>")
+        rank_parts = self._parse_comma(rest, 2, "org/rankname <organization> = <rank>,<n>")
         if not rank_parts:
             return
             
@@ -323,7 +326,10 @@ class CmdResource(MuxCommand):
     
     def _check_admin(self):
         """Helper method to check admin permissions."""
-        return check_admin(self.caller)
+        if not self.caller.permissions.check("Admin"):
+            self.msg("You don't have permission to perform this action.")
+            return False
+        return True
         
     def _get_org(self, org_name):
         """Helper method to find and validate an organization."""

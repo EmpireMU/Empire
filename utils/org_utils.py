@@ -6,22 +6,12 @@ from evennia.utils.search import search_object
 from evennia.utils import evtable
 from typeclasses.organisations import Organisation
 from typeclasses.characters import Character
+from utils.resource_utils import validate_resource_owner
 
-
-def check_admin(caller):
-    """Check if a caller has admin permissions.
-    
-    Args:
-        caller: The command caller to check
-        
-    Returns:
-        bool: True if admin, False otherwise
-    """
-    if not caller.check_permstring("Admin"):
-        caller.msg("You don't have permission to perform this action.")
-        return False
-    return True
-
+# Note: For permission checks, use Evennia's built-in system:
+# - caller.permissions.check() for general permission checks
+# - has_perm() for specific permission checks
+# - locks for more complex permission requirements
 
 def validate_rank(rank_str, default=None, caller=None):
     """Validate rank numbers.
@@ -86,9 +76,7 @@ def get_char(char_name, caller=None, check_resources=False):
     if not char:
         return None
         
-    if check_resources and not hasattr(char, 'char_resources'):
-        if caller:
-            caller.msg(f"{char.name} cannot own resources.")
+    if check_resources and not validate_resource_owner(char, caller):
         return None
         
     return char
@@ -156,41 +144,4 @@ def parse_comma(text, expected_parts=2, usage_msg=None, caller=None):
     except (ValueError, IndexError):
         if caller and usage_msg:
             caller.msg(f"Usage: {usage_msg}")
-        return None
-
-
-def get_unique_resource_name(name, existing_resources, caller=None):
-    """Get a unique name for a resource, appending a number if needed.
-    
-    Args:
-        name (str): Base name for the resource
-        existing_resources (dict or TraitHandler): Existing resources to check against
-        caller (optional): Caller to notify about name changes
-        
-    Returns:
-        str: A unique name for the resource
-    """
-    if hasattr(existing_resources, 'traits'):
-        # If it's a TraitHandler, get the traits dict
-        existing_resources = existing_resources.traits
-        
-    # First try to strip any existing number suffix
-    import re
-    base_name = re.sub(r'\s+\d+$', '', name)
-    
-    # If the base name is available, use it
-    if base_name not in existing_resources:
-        if base_name != name and caller:
-            caller.msg(f"Simplified resource name from '{name}' to '{base_name}'.")
-        return base_name
-        
-    # Otherwise, find the next available number
-    counter = 1
-    while f"{base_name} {counter}" in existing_resources:
-        counter += 1
-        
-    new_name = f"{base_name} {counter}"
-    if new_name != name and caller:
-        caller.msg(f"Resource name '{base_name}' already exists, using '{new_name}' instead.")
-        
-    return new_name 
+        return None 
