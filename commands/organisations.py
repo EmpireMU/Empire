@@ -533,7 +533,8 @@ class CmdResource(MuxCommand):
             self.msg("You must specify the source and resource name in the format: source:resource")
             return
             
-        source_name, name = [part.strip() for part in source_and_name.split(":", 1)]
+        source_name, name = [part.strip().strip('"') for part in source_and_name.split(":", 1)]
+        target = target.strip().strip('"')  # Also strip quotes from target
         
         # Find source and target
         from evennia.utils.search import search_object
