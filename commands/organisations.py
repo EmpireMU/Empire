@@ -537,21 +537,33 @@ class CmdResource(MuxCommand):
         
         # Find source and target
         from evennia.utils.search import search_object
-        source = search_object(source_name)
-        if not source:
+        from typeclasses.organisations import Organisation
+        from typeclasses.characters import Character
+        
+        # Try to find source
+        source_matches = search_object(source_name)
+        if not source_matches:
             self.msg(f"Source '{source_name}' not found.")
             return
-        source = source[0]
+        source = source_matches[0]
         
-        targets = search_object(target)
-        if not targets:
+        # Verify source type and resource capability
+        if not (isinstance(source, (Character, Organisation)) and 
+                (hasattr(source, 'char_resources') or hasattr(source, 'org_resources'))):
+            self.msg(f"{source.name} cannot have resources.")
+            return
+            
+        # Try to find target
+        target_matches = search_object(target)
+        if not target_matches:
             self.msg(f"Target '{target}' not found.")
             return
-        target = targets[0]
+        target = target_matches[0]
         
-        # Verify source can have resources
-        if not hasattr(source, 'char_resources') and not hasattr(source, 'org_resources'):
-            self.msg(f"{source.name} cannot have resources.")
+        # Verify target type and resource capability
+        if not (isinstance(target, (Character, Organisation)) and 
+                (hasattr(target, 'char_resources') or hasattr(target, 'org_resources'))):
+            self.msg(f"{target.name} cannot have resources.")
             return
             
         try:
