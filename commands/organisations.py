@@ -7,6 +7,10 @@ from evennia import CmdSet, create_object
 from evennia.utils import evtable
 from evennia.utils.search import search_object
 from typeclasses.organisations import Organisation
+from utils.org_utils import (
+    check_admin, validate_rank, get_org, get_char,
+    get_org_and_char, parse_equals, parse_comma
+)
 
 
 class CmdOrg(MuxCommand):
@@ -36,82 +40,34 @@ class CmdOrg(MuxCommand):
     help_category = "Organizations"
     switch_options = ("create", "member", "remove", "rankname", "delete")
     
-    # Permission and validation helpers
     def _check_admin(self):
         """Helper method to check admin permissions."""
-        if not self.caller.check_permstring("Admin"):
-            self.msg("You don't have permission to perform this action.")
-            return False
-        return True
+        return check_admin(self.caller)
         
     def _validate_rank(self, rank_str, default=None):
         """Helper method to validate rank numbers."""
-        try:
-            rank = int(rank_str)
-            if not 1 <= rank <= 10:
-                self.msg("Rank must be a number between 1 and 10.")
-                return None
-            return rank
-        except (ValueError, TypeError):
-            if default is not None:
-                return default
-            self.msg("Rank must be a number between 1 and 10.")
-            return None
-            
-    # Object search helpers
+        return validate_rank(rank_str, default, self.caller)
+        
     def _get_org(self, org_name):
         """Helper method to find and validate an organization."""
-        org = self.caller.search(org_name, global_search=True)
-        if not org:
-            return None
-            
-        if not isinstance(org, Organisation):
-            self.msg(f"{org.name} is not an organization.")
-            return None
-            
-        return org
+        return get_org(org_name, self.caller)
         
     def _get_character(self, char_name):
         """Helper method to find a character."""
-        char = self.caller.search(char_name, global_search=True)
-        if not char:
-            return None
-        return char
+        return get_char(char_name, self.caller)
         
     def _get_org_and_char(self, org_name, char_name):
         """Helper method to find both an organization and a character."""
-        org = self._get_org(org_name)
-        if not org:
-            return None, None
-            
-        char = self._get_character(char_name)
-        if not char:
-            return org, None
-            
-        return org, char
+        return get_org_and_char(org_name, char_name, self.caller)
         
-    # Argument parsing helpers
     def _parse_equals(self, usage_msg):
         """Helper method to parse = separated arguments."""
-        if "=" not in self.args:
-            self.msg(f"Usage: {usage_msg}")
-            return None, None
-        return [part.strip() for part in self.args.split("=", 1)]
+        return parse_equals(self.args, usage_msg, self.caller)
         
     def _parse_comma(self, text, expected_parts=2, usage_msg=None):
         """Helper method to parse comma-separated arguments."""
-        try:
-            parts = [part.strip() for part in text.split(",", expected_parts - 1)]
-            if len(parts) != expected_parts:
-                if usage_msg:
-                    self.msg(f"Usage: {usage_msg}")
-                return None
-            return parts
-        except (ValueError, IndexError):
-            if usage_msg:
-                self.msg(f"Usage: {usage_msg}")
-            return None
-            
+        return parse_comma(text, expected_parts, usage_msg, self.caller)
+        
     # Member management helpers
     def _is_member(self, org, char):
         """Helper method to check if a character is a member of an organization."""
@@ -340,10 +296,10 @@ class CmdResource(MuxCommand):
     
     Usage:
         resource [<n>]                    - View resource info or list all owned
-        resource/org <org> = <n>,<die_size>  - Create resource for an organization
-        resource/char <char> = <n>,<die_size>  - Create resource for a character
-        resource/transfer <n> = <target>  - Transfer resource to target
-        resource/delete <n>               - Delete a resource you own
+        resource/org <org> = <n>,<die_size>  - Create resource for an organization (Admin)
+        resource/char <char> = <n>,<die_size>  - Create resource for a character (Admin)
+        resource/transfer <n> = <target>  - Transfer resource to target (Admin)
+        resource/delete <char> = <n>      - Delete a resource from a character (Admin)
         
     Examples:
         resource                          - List all resources you own
@@ -352,7 +308,7 @@ class CmdResource(MuxCommand):
         resource/org "House Otrese" = "Guard Pool",8  - Names with spaces need quotes
         resource/char Koline = "Personal Guard",6  - Create d6 resource for character
         resource/transfer Guard = Koline  - Transfer to character Koline
-        resource/delete "Guard Pool"      - Delete the Guard Pool resource
+        resource/delete Koline = "Guard Pool"  - Delete Koline's Guard Pool resource
         
     When multiple resources share the same name, you can specify which one
     by including a number after the name:
@@ -365,31 +321,17 @@ class CmdResource(MuxCommand):
     locks = "cmd:all()"
     help_category = "Resources"
     
+    def _check_admin(self):
+        """Helper method to check admin permissions."""
+        return check_admin(self.caller)
+        
     def _get_org(self, org_name):
         """Helper method to find and validate an organization."""
-        from typeclasses.organisations import Organisation
-        org = self.caller.search(org_name, global_search=True)
-        if not org:
-            return None
-            
-        if not isinstance(org, Organisation):
-            self.msg(f"{org.name} is not an organization.")
-            return None
-            
-        return org
+        return get_org(org_name, self.caller)
         
     def _get_char(self, char_name):
         """Helper method to find and validate a character."""
-        from typeclasses.characters import Character
-        char = self.caller.search(char_name, global_search=True)
-        if not char:
-            return None
-            
-        if not hasattr(char, 'char_resources'):
-            self.msg(f"{char.name} cannot own resources.")
-            return None
-            
-        return char
+        return get_char(char_name, self.caller, check_resources=True)
         
     def func(self):
         """Handle resource management."""
@@ -490,6 +432,9 @@ class CmdResource(MuxCommand):
         
     def create_org_resource(self):
         """Create a resource for an organization."""
+        if not self._check_admin():
+            return
+            
         if not self.args:
             self.msg("Usage: resource/org <org>=<name>,<die_size>")
             return
@@ -528,6 +473,9 @@ class CmdResource(MuxCommand):
             
     def create_char_resource(self):
         """Create a resource for a character."""
+        if not self._check_admin():
+            return
+            
         if not self.args:
             self.msg("Usage: resource/char <char>=<name>,<die_size>")
             return
@@ -566,6 +514,9 @@ class CmdResource(MuxCommand):
             
     def transfer_resource(self):
         """Transfer a resource to another character or organization."""
+        if not self._check_admin():
+            return
+            
         if not self.args or "=" not in self.args:
             self.msg("Usage: resource/transfer <name> = <target>")
             return
@@ -593,26 +544,26 @@ class CmdResource(MuxCommand):
             self.msg(str(e))
             
     def delete_resource(self):
-        """Delete a resource owned by the caller."""
-        if not self.args:
-            self.msg("Usage: resource/delete <n>")
+        """Delete a resource from a character."""
+        if not self._check_admin():
             return
             
-        owner = self.caller
-        if hasattr(self.caller, 'char'):
-            owner = self.caller.char
+        if not self.args or "=" not in self.args:
+            self.msg("Usage: resource/delete <char> = <n>")
+            return
             
-        # Get resources from trait handler
-        if hasattr(owner, 'char_resources') and owner.char_resources:
-            if owner.remove_resource(self.args.strip()):
-                self.msg(f"Deleted resource '{self.args.strip()}'.")
-                return
-        elif hasattr(owner, 'org_resources') and owner.org_resources:
-            if owner.remove_org_resource(self.args.strip()):
-                self.msg(f"Deleted resource '{self.args.strip()}'.")
-                return
-                
-        self.msg(f"No resource found named '{self.args.strip()}'.")
+        char_name, resource_name = [part.strip() for part in self.args.split("=", 1)]
+        
+        # Get character
+        char = self._get_char(char_name)
+        if not char:
+            return
+            
+        # Delete the resource
+        if char.remove_resource(resource_name):
+            self.msg(f"Deleted resource '{resource_name}' from {char.name}.")
+        else:
+            self.msg(f"No resource found named '{resource_name}' on {char.name}.")
 
 
 class OrgCmdSet(CmdSet):
