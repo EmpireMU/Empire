@@ -73,61 +73,36 @@ def format_colored_roll(value, die, trait_info, extra_value=None):
 
 class CmdCortexRoll(Command):
     """
-    Roll dice according to Cortex Prime rules.
+    Roll dice using the Cortex Prime system.
     
     Usage:
-        roll <traits/dice> [vs <difficulty>]
+        roll <trait1> [<trait2>...] [vs <difficulty>]
+        roll/step <trait1> [<trait2>...] - Step up the highest die
         
     Examples:
-        roll d8                                    - Roll a single raw die
-        roll d8 d6                                 - Roll two raw dice
-        roll strength fighting bold                - Basic trait roll
-        roll strength(U) fighting bold(D)          - Roll with stepped traits
-        roll strength(double) fighting bold        - Roll with doubled strength
-        roll strength fighting bold resource       - Add a resource die
-        roll strength fighting bold signature-axe  - Add a signature asset
-        roll strength fighting bold vs hard        - Roll vs named difficulty
+        roll strength fighting - Roll Strength + Fighting dice
+        roll strength d8 - Roll Strength + a d8
+        roll strength fighting signature_sword vs 12 - Roll against difficulty 12
+        roll/step strength fighting - Step up highest die by one size
         
-    Rules:
-    - Raw dice can be rolled individually or in groups
-    - Trait rolls always use three dice (one from each Prime set):
-      * One Attribute
-      * One Skill
-      * One Distinction
-    - Additional dice can be added from:
-      * Resources
-      * Signature Assets
-      * Plot point effects
-    - Traits can be modified:
-      * Step up (U) or down (D)
-      * Double a trait to roll it twice
-    - Raw dice cannot be modified
-    - Maximum of 10 dice in any roll
+    Dice Mechanics:
+    - Each trait adds its die to the pool (e.g., d6, d8, d10, d12)
+    - Roll all dice and sum the two highest
+    - If rolling against difficulty, must beat the target number
+    - Distinctions can be used as d8 or d4 (d4 gives you a plot point)
+    - Plot points can be spent to:
+      * Step up the size of one die
+      * Keep an additional die in the total
     
-    Results show:
-    - Individual die results with trait names
-    - Total of two highest dice (if multiple dice)
-    - Effect die (third highest, or d4 if only two dice)
-    - Any hitches (1s rolled)
-    - Success/failure vs difficulty if specified
-    
-    Named Difficulties:
-    - Very Easy: 3
-    - Easy: 7
-    - Challenging: 11
-    - Hard: 15
-    - Very Hard: 19
-    
-    Trait Modifiers:
-    - (U) - Step up a trait (e.g., strength(U))
-    - (D) - Step down a trait (e.g., fighting(D))
-    - (double) - Double a trait to roll it twice (e.g., bold(double))
-    
-    Notes:
-    - All trait names are case-insensitive
-    - Raw dice must be specified with a 'd' prefix (e.g., d8, d10)
-    - Valid die sizes are d4, d6, d8, d10, and d12
-    - You cannot roll more than 10 dice at once
+    Special Rules:
+    - Rolling 1 on any die is a "hitch" (minor complication)
+    - Matching dice can be used for special effects
+    - Effect die (highest unused die) determines impact
+    - Difficulty numbers:
+      * 8 - Easy task
+      * 12 - Moderate challenge
+      * 16 - Difficult feat
+      * 20 - Extreme challenge
     """
     
     key = "roll"

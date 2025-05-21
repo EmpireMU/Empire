@@ -137,12 +137,38 @@ class CmdSheet(Command):
     Without arguments, shows your own character sheet.
     Staff members can view other characters' sheets by specifying their name.
     
-    The sheet displays:
-    - Plot Points
-    - Distinctions (short form)
-    - Prime Sets (Attributes, Skills)
-    - Additional Sets (Resources, Signature Assets)
-    - Distinction Details (full descriptions)
+    Sheet Sections:
+    1. Basic Information
+       - Character name
+       - Plot Points (used for special actions)
+    
+    2. Distinctions (d8 or d4)
+       - Character Concept: Core identity
+       - Cultural Background: Heritage and upbringing
+       - Reputation: How others see you
+       Note: Using d4 instead of d8 earns a Plot Point
+    
+    3. Prime Sets (Core dice pools)
+       - Attributes (d4-d12): Natural capabilities
+         * Physical (Strength, Agility, etc.)
+         * Mental (Intelligence, Willpower, etc.)
+         * Social (Presence, Manipulation, etc.)
+       - Skills (d4-d12): Trained abilities
+         * Combat (Fighting, Shooting, etc.)
+         * Physical (Athletics, Stealth, etc.)
+         * Mental (Medicine, Science, etc.)
+         * Social (Persuasion, Deception, etc.)
+    
+    4. Additional Sets
+       - Resources: Organization-provided dice pools
+       - Signature Assets: Personal items/companions
+    
+    Die Size Guide:
+       d4: Untrained/Weak
+       d6: Average/Basic Training
+       d8: Professional/Well Trained
+       d10: Expert/Exceptional
+       d12: Master/Peak Human
     """
     
     key = "sheet"

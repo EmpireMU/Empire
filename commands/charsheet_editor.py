@@ -15,18 +15,39 @@ class CmdSetTrait(MuxCommand):
     Set a trait on a character sheet.
 
     Usage:
-      settrait <character> = <category> <name> d<size>
-      settrait <character> = <category> <name> d<size> <description>
+      settrait <character> = <category> <n> d<size> [description]
 
     Categories:
-      attributes   - Core attributes (d4-d12)
-      skills       - Skills (d4-d12)
+      attributes   - Core attributes (d4-d12, default d6)
+        Represent innate capabilities like Strength, Agility, etc.
+      skills       - Skills (d4-d12, default d4)
+        Represent learned abilities and training
       signature_assets - Signature assets (d4-d12)
+        Represent important items or companions
+
+    Die Sizes:
+      d4  - Untrained/Weak
+      d6  - Average/Basic Training
+      d8  - Professional/Well Trained
+      d10 - Expert/Exceptional
+      d12 - Master/Peak Human
 
     Examples:
       settrait Tom = attributes strength d8
+        Sets Tom's Strength attribute to d8
       settrait Tom = skills fighting d6 "Expert in hand-to-hand combat"
-      settrait Tom = signature_assets sword d8 "Family heirloom"
+        Sets Tom's Fighting skill to d6 with description
+      settrait Tom = signature_assets sword d8 "Family heirloom blade"
+        Creates a d8 Signature Asset representing Tom's sword
+      settrait Jane = attributes agility d10 "Years of acrobatic training"
+        Sets Jane's Agility to d10 with explanation of high rating
+
+    Notes:
+    - Setting a trait that already exists will overwrite it
+    - Descriptions help justify the die rating and provide roleplay hooks
+    - Attributes affect all related skill rolls
+    - Skills can't normally exceed d12
+    - Each die size represents a significant increase in capability
     """
     key = "settrait"
     help_category = "Character"
@@ -35,7 +56,7 @@ class CmdSetTrait(MuxCommand):
     def func(self):
         """Execute the command."""
         if not self.args or "=" not in self.args:
-            self.msg("Usage: settrait <character> = <category> <name> d<size> [description]")
+            self.msg("Usage: settrait <character> = <category> <n> d<size> [description]")
             return
 
         # Split into character and trait parts
@@ -49,7 +70,7 @@ class CmdSetTrait(MuxCommand):
         # Parse trait information
         parts = trait_part.strip().split()
         if len(parts) < 3:
-            self.msg("Usage: settrait <character> = <category> <name> d<size> [description]")
+            self.msg("Usage: settrait <character> = <category> <n> d<size> [description]")
             return
 
         category = parts[0].lower()

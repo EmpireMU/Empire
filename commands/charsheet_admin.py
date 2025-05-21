@@ -8,23 +8,67 @@ from utils.character_setup import initialize_traits
 
 class CmdInitTraits(MuxCommand):
     """
-    Initialize or reinitialize a character's traits.
+    Initialize missing traits on a character.
     
     Usage:
-        inittraits <character>
-        inittraits/all
+        inittraits <character>  - Initialize one character
+        inittraits/all         - Initialize all characters
         
     Examples:
         inittraits Bob     - Initialize Bob's traits
         inittraits/all     - Initialize all characters' traits
         
-    This will set up default traits if they don't exist:
-    - Plot Points (starts at 1)
-    - Attributes (all start at d6)
-    - Skills (all start at d4)
-    - Distinction slots (all d8)
+    Default Trait Setup:
+    1. Plot Points
+       - Starts at 1
+       - Used for special actions and dice manipulation
     
-    Existing traits will not be modified.
+    2. Attributes (all start at d6)
+       - Prowess: Strength, endurance and ability to fight
+       - Finesse: Dexterity and agility
+       - Leadership: Capacity as a leader
+       - Social: Charisma and social navigation
+       - Acuity: Perception and information processing
+       - Erudition: Learning and recall ability
+    
+    3. Skills (all start at d4)
+       - Administration: Organizing affairs of large groups
+       - Arcana: Knowledge of magic
+       - Athletics: General physical feats
+       - Dexterity: Precision physical feats
+       - Diplomacy: Protocol and high politics
+       - Direction: Leading in non-combat
+       - Exploration: Wilderness and ruins
+       - Fighting: Melee combat
+       - Influence: Personal persuasion
+       - Learning: Education and research
+       - Making: Crafting and building
+       - Medicine: Healing and medical knowledge
+       - Perception: Awareness and searching
+       - Performance: Entertainment arts
+       - Presentation: Style and bearing
+       - Rhetoric: Public speaking
+       - Seafaring: Sailing and navigation
+       - Shooting: Ranged combat
+       - Warfare: Military leadership and strategy
+    
+    4. Distinction Slots (all d8)
+       - Character Concept: Core character concept
+       - Cultural Background: Character's cultural origin
+       - Reputation: How others perceive the character
+    
+    Important Notes:
+    - This command ONLY adds missing traits with default values
+    - Existing traits are NOT modified
+    - Custom traits and values are preserved
+    - To reset all traits to defaults, use 'wipetraits' instead
+    
+    Troubleshooting:
+    - If traits appear missing, check character typeclass
+    - If values seem wrong, verify trait handlers are initialized
+    - For complete reset, use 'wipetraits'
+    - Contact admin if persistent initialization issues occur
+    
     Only administrators can use this command.
     """
     

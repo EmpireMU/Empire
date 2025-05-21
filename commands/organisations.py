@@ -25,14 +25,48 @@ class CmdOrg(MuxCommand):
         org/rankname <organization> = <rank>,<n> - Set rank name (Admin)
         org/delete <organization>             - Delete organization (Admin)
         
+    Organization System:
+    Organizations represent formal groups like noble houses, guilds, or military units.
+    Each organization has:
+    - Hierarchical rank structure (1-10)
+    - Resource pools for member use
+    - Internal leadership roles
+    - Special privileges by rank
+    
+    Rank Structure (Default):
+    1. Leader/Head (Full control)
+    2. Deputy/Second (Resource management)
+    3. Senior Member (Resource access)
+    4. Full Member (Standard privileges)
+    5. Junior Member (Limited privileges)
+    6-10. Custom ranks (Configurable)
+    
     Examples:
-        org House Otrese
-        org/create House Anadun
-        org/member House Otrese = Koline,3    - Add Koline as Noble Family
-        org/member House Otrese = Koline,2    - Promote Koline to Minister
-        org/remove House Otrese = Koline
-        org/rankname House Otrese = 5,Knight
-        org/delete House Otrese               - Delete the organization
+        org House Otrese                   - View House Otrese's info
+        org/create House Anadun            - Create new noble house
+        org/member House Otrese = Koline,3 - Add Koline as Senior Member
+        org/member House Otrese = Koline,2 - Promote Koline to Deputy
+        org/remove House Otrese = Koline   - Remove Koline from house
+        org/rankname House Otrese = 5,Knight - Set rank 5 name to Knight
+        org/delete House Otrese            - Delete the organization
+        
+    Member Management:
+    - Higher ranks can manage lower-ranked members
+    - Rank determines resource access level
+    - Members can belong to multiple organizations
+    - Rank changes affect resource availability
+    
+    Resource System:
+    - Organizations can create and maintain resources
+    - Resources are shared among members
+    - Higher ranks have access to better resources
+    - Use 'resource' command to manage org resources
+    
+    Notes:
+    - Choose appropriate rank names for org theme
+    - Balance resource distribution by rank
+    - Document org structure and hierarchy
+    - Consider inter-organization relationships
     """
     
     key = "org"
@@ -320,6 +354,19 @@ class CmdResource(MuxCommand):
         resource/transfer <source>:<n> = <target>  - Transfer resource to target (Admin)
         resource/delete <char> = <n>      - Delete a resource from a character (Admin)
         
+    Resource System:
+    - Resources represent organizational assets and influence
+    - Die sizes (d4-d12) represent resource power/magnitude
+    - Resources can be shared between organization members
+    - Higher-ranking members have access to better resources
+    
+    Die Size Guidelines:
+    d4  - Minor resource (small unit, basic equipment)
+    d6  - Standard resource (regular unit, good equipment)
+    d8  - Significant resource (elite unit, excellent equipment)
+    d10 - Major resource (specialized unit, superior equipment)
+    d12 - Exceptional resource (legendary unit, masterwork equipment)
+    
     Examples:
         resource                          - List all resources you own
         resource House Guard              - View details of House Guard resource
@@ -329,10 +376,23 @@ class CmdResource(MuxCommand):
         resource/transfer Guard = Koline  - Transfer to character Koline
         resource/delete Koline = "Guard Pool"  - Delete Koline's Guard Pool resource
         
+    Resource Management:
+    - Organizations can create and maintain multiple resources
+    - Resources can be transferred between org members
+    - Only high-ranking members can manage major resources
+    - Resources can be combined for more effective actions
+    - Lost or damaged resources may be reduced in die size
+    
     When multiple resources share the same name, you can specify which one
     by including a number after the name:
         resource "Political Capital 2"
         resource/transfer "Wealth 3" = "House Anadun"
+        
+    Notes:
+    - Resource names should be descriptive and unique
+    - Consider balance when assigning die sizes
+    - Resources should match organization's theme
+    - Document resource purposes and limitations
     """
     
     key = "resource"
