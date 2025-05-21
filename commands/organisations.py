@@ -374,9 +374,9 @@ class CmdResource(MuxCommand):
         # Get resources from trait handler
         resources = None
         if hasattr(owner, 'char_resources') and owner.char_resources:
-            resources = owner.char_resources.traits
+            resources = owner.char_resources
         elif hasattr(owner, 'org_resources') and owner.org_resources:
-            resources = owner.org_resources.traits
+            resources = owner.org_resources
             
         if not resources:
             self.msg("You don't own any resources.")
@@ -391,8 +391,9 @@ class CmdResource(MuxCommand):
         )
         
         # Add each resource to the table
-        for name, trait in resources.items():
-            table.add_row(name, f"d{trait.current}")
+        for name in resources.all():
+            trait = resources.get(name)
+            table.add_row(name, f"d{trait.value}")
             
         self.msg(table)
         
@@ -409,22 +410,20 @@ class CmdResource(MuxCommand):
         # Get resources from trait handler
         resources = None
         if hasattr(owner, 'char_resources') and owner.char_resources:
-            resources = owner.char_resources.traits
+            resources = owner.char_resources
         elif hasattr(owner, 'org_resources') and owner.org_resources:
-            resources = owner.org_resources.traits
+            resources = owner.org_resources
             
         if not resources:
             self.msg("You don't own any resources.")
             return
             
         name = self.args.strip()
-        if name not in resources:
+        trait = resources.get(name)
+        if not trait:
             self.msg(f"No resource found named '{name}'.")
             return
             
-        # Get the resource trait
-        resource = resources[name]
-        
         # Create table
         from evennia.utils.evtable import EvTable
         table = EvTable(
@@ -432,7 +431,7 @@ class CmdResource(MuxCommand):
             "|wDie|n",
             border="header"
         )
-        table.add_row(name, f"d{resource.current}")
+        table.add_row(name, f"d{trait.value}")
         
         self.msg(table)
         

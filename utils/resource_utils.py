@@ -16,29 +16,43 @@ def get_unique_resource_name(name, existing_resources, caller=None):
     Returns:
         str: A unique name for the resource
     """
-    if hasattr(existing_resources, 'traits'):
-        # If it's a TraitHandler, get the traits dict
-        existing_resources = existing_resources.traits
-        
     # First try to strip any existing number suffix
     base_name = re.sub(r'\s+\d+$', '', name)
     
-    # If the base name is available, use it
-    if base_name not in existing_resources:
-        if base_name != name and caller:
-            caller.msg(f"Simplified resource name from '{name}' to '{base_name}'.")
-        return base_name
-        
-    # Otherwise, find the next available number
-    counter = 1
-    while f"{base_name} {counter}" in existing_resources:
-        counter += 1
-        
-    new_name = f"{base_name} {counter}"
-    if new_name != name and caller:
-        caller.msg(f"Resource name '{base_name}' already exists, using '{new_name}' instead.")
-        
-    return new_name
+    # If it's a TraitHandler, check if the base name exists
+    if hasattr(existing_resources, 'get'):
+        if not existing_resources.get(base_name):
+            if base_name != name and caller:
+                caller.msg(f"Simplified resource name from '{name}' to '{base_name}'.")
+            return base_name
+            
+        # Find the next available number
+        counter = 1
+        while existing_resources.get(f"{base_name} {counter}"):
+            counter += 1
+            
+        new_name = f"{base_name} {counter}"
+        if new_name != name and caller:
+            caller.msg(f"Resource name '{base_name}' already exists, using '{new_name}' instead.")
+            
+        return new_name
+    else:
+        # Handle plain dictionaries (for backward compatibility)
+        if base_name not in existing_resources:
+            if base_name != name and caller:
+                caller.msg(f"Simplified resource name from '{name}' to '{base_name}'.")
+            return base_name
+            
+        # Find the next available number
+        counter = 1
+        while f"{base_name} {counter}" in existing_resources:
+            counter += 1
+            
+        new_name = f"{base_name} {counter}"
+        if new_name != name and caller:
+            caller.msg(f"Resource name '{base_name}' already exists, using '{new_name}' instead.")
+            
+        return new_name
 
 
 def validate_resource_owner(obj, caller=None):

@@ -10,6 +10,7 @@ from evennia.utils import lazy_property
 from evennia.utils.search import search_object
 from .objects import ObjectParent
 from evennia.contrib.rpg.traits import TraitHandler
+from utils.resource_utils import get_unique_resource_name, validate_die_size
 
 
 class Organisation(ObjectParent, DefaultObject):
@@ -21,44 +22,39 @@ class Organisation(ObjectParent, DefaultObject):
     MAX_RANKS = 10
     
     @lazy_property
-    def members(self):
-        """
-        Get all members of this organization.
-        Returns a dict of {char_id: rank_number}
-        """
-        return self.attributes.get('members', default={}, category='organisation')
-        
-    @lazy_property
     def org_resources(self):
-        """
-        TraitHandler that manages organization resources.
-        Each trait represents a die pool (d4-d12).
-        """
+        """TraitHandler that manages organization resources."""
         return TraitHandler(self, db_attribute_key="org_resources")
-
+        
     def at_object_creation(self):
-        """
-        Called when the organization is first created.
-        """
+        """Called when object is first created."""
         super().at_object_creation()
         
-        # Initialize member list
-        self.attributes.add('members', {}, category='organisation')
+        # Initialize description
+        self.db.description = "No description set."
         
-        # Set up organization properties
-        self.db.description = "No description has been set."
-        
-        # Initialize default ranks
-        self.db.ranks = {
-            1: "Head of House",
-            2: "Minister",
-            3: "Noble Family",
-            4: "Senior Servant"
+        # Initialize rank names (1-10)
+        self.db.rank_names = {
+            1: "Head of House",      
+            2: "Minister",        
+            3: "Noble Family",       
+            4: "Senior Servant",        
+            5: "Servant",         
+            6: "Junior Servant",        
+            7: "Affiliate",   
+            8: "Extended Family",      
+            9: "",       
+            10: ""     
         }
-            
+        
+        # Initialize members dict {character_id: rank_number}
+        self.db.members = {}
+        
+        # Initialize resources handler
+        _ = self.org_resources
+        
     def add_org_resource(self, name, die_size):
-        """
-        Add a resource to the organization.
+        """Add a resource to the organization.
         
         Args:
             name (str): Name of the resource
@@ -70,24 +66,21 @@ class Organisation(ObjectParent, DefaultObject):
         Raises:
             ValueError: If die size is invalid
         """
-        valid_sizes = [4, 6, 8, 10, 12]
-        if die_size not in valid_sizes:
-            raise ValueError(f"Die size must be one of: {', '.join(map(str, valid_sizes))}")
+        if not validate_die_size(die_size):
+            raise ValueError(f"Invalid die size: {die_size}")
             
         # Get a unique name for the resource
-        from utils.org_utils import get_unique_resource_name
         unique_name = get_unique_resource_name(name, self.org_resources)
             
         # Add the resource with the die size as the base value
         self.org_resources.add(
             unique_name,
-            base=die_size  # Use base instead of directly passing die_size
+            base=die_size  # Use base instead of value
         )
         return True
         
     def remove_org_resource(self, name):
-        """
-        Remove a resource from the organization.
+        """Remove a resource from the organization.
         
         Args:
             name (str): Name of the resource to remove
@@ -95,14 +88,13 @@ class Organisation(ObjectParent, DefaultObject):
         Returns:
             bool: True if removed, False if not found
         """
-        if name in self.org_resources.traits:
+        if self.org_resources.get(name):
             self.org_resources.remove(name)
             return True
         return False
         
     def transfer_resource(self, resource_name, target):
-        """
-        Transfer a resource to a character or another organization.
+        """Transfer a resource to another organization or character.
         
         Args:
             resource_name (str): Name of the resource to transfer
@@ -114,15 +106,16 @@ class Organisation(ObjectParent, DefaultObject):
         Raises:
             ValueError: If resource not found or target is invalid
         """
-        if resource_name not in self.org_resources.traits:
+        trait = self.org_resources.get(resource_name)
+        if not trait:
             raise ValueError(f"Resource '{resource_name}' not found")
             
         from typeclasses.characters import Character
         if not (isinstance(target, type(self)) or isinstance(target, Character)):
-            raise ValueError("Can only transfer resources to characters or organizations")
+            raise ValueError("Can only transfer resources to organizations or characters")
             
         # Get the die size before removing
-        die_size = self.org_resources.traits[resource_name].current
+        die_size = trait.value
         
         # Remove from self
         self.org_resources.remove(resource_name)
@@ -136,168 +129,133 @@ class Organisation(ObjectParent, DefaultObject):
         return True
         
     def get_resources(self):
-        """
-        Get a formatted list of all resources.
+        """Get a formatted list of all resources.
         
         Returns:
             list: List of (name, die_size) tuples
         """
         resources = []
-        for name, trait in self.org_resources.traits.items():
-            resources.append((name, trait.current))
+        for key in self.org_resources.all():
+            trait = self.org_resources.get(key)
+            resources.append((key, trait.value))
         return sorted(resources)
         
     def add_member(self, character, rank=4):
-        """
-        Add a character to the organization.
+        """Add a character as a member.
         
         Args:
             character: The character to add
-            rank: The rank to give them (default: Senior Servant)
+            rank (int): Their rank number (1-10)
+            
+        Returns:
+            bool: True if added successfully
         """
-        if not character.check_permstring("Admin"):
+        if not 1 <= rank <= 10:
             return False
             
-        # Add to organization's member list
-        members = self.members
-        members[character.id] = rank
-        self.attributes.add('members', members, category='organisation')
-        
-        # Add to character's organization list
-        orgs = character.attributes.get('organisations', default={}, category='organisations')
-        orgs[self.id] = rank
-        character.attributes.add('organisations', orgs, category='organisations')
+        self.db.members[character.id] = rank
         return True
         
     def remove_member(self, character):
-        """
-        Remove a character from the organization.
+        """Remove a character from membership.
         
         Args:
             character: The character to remove
+            
+        Returns:
+            bool: True if removed successfully
         """
-        if not character.check_permstring("Admin"):
-            return False
-            
-        # Remove from organization's member list
-        members = self.members
-        if character.id in members:
-            del members[character.id]
-            self.attributes.add('members', members, category='organisation')
-        
-        # Remove from character's organization list
-        orgs = character.attributes.get('organisations', default={}, category='organisations')
-        if self.id in orgs:
-            del orgs[self.id]
-            character.attributes.add('organisations', orgs, category='organisations')
-        return True
-            
-    def set_rank(self, character, rank):
-        """
-        Set a character's rank in the organization.
-        
-        Args:
-            character: The character to set rank for
-            rank: The new rank number (1-10)
-        """
-        if not character.check_permstring("Admin"):
-            return False
-            
-        if not isinstance(rank, int) or rank < 1 or rank > self.MAX_RANKS:
-            return False
-            
-        # Update organization's member list
-        members = self.members
-        if character.id in members:
-            members[character.id] = rank
-            self.attributes.add('members', members, category='organisation')
-            
-            # Update character's organization list
-            orgs = character.attributes.get('organisations', default={}, category='organisations')
-            orgs[self.id] = rank
-            character.attributes.add('organisations', orgs, category='organisations')
+        if character.id in self.db.members:
+            del self.db.members[character.id]
             return True
-            
         return False
         
-    def set_rank_name(self, rank, name):
-        """
-        Set the name for a rank number.
+    def set_rank(self, character, rank):
+        """Set a member's rank.
         
         Args:
-            rank: The rank number (1-10)
-            name: The name to give this rank
+            character: The character to update
+            rank (int): Their new rank (1-10)
+            
+        Returns:
+            bool: True if set successfully
         """
-        if not isinstance(rank, int) or rank < 1 or rank > self.MAX_RANKS:
+        if character.id not in self.db.members:
             return False
             
-        ranks = self.db.ranks or {}
-        ranks[rank] = name
-        self.db.ranks = ranks
+        if not 1 <= rank <= 10:
+            return False
+            
+        self.db.members[character.id] = rank
         return True
         
-    def get_rank_name(self, rank):
-        """
-        Get the name of a rank number.
-        
-        Args:
-            rank: The rank number
-            
-        Returns:
-            The rank name or None if invalid
-        """
-        return self.db.ranks.get(rank)
-        
     def get_member_rank(self, character):
-        """
-        Get a character's rank in the organization.
+        """Get a member's rank number.
         
         Args:
             character: The character to check
             
         Returns:
-            The rank number or None if not a member
+            int or None: Their rank number, or None if not a member
         """
-        return self.members.get(character.id)
+        return self.db.members.get(character.id)
         
     def get_member_rank_name(self, character):
-        """
-        Get a character's rank name in the organization.
+        """Get a member's rank name.
         
         Args:
             character: The character to check
             
         Returns:
-            The rank name or None if not a member
+            str or None: Their rank name, or None if not a member
         """
         rank = self.get_member_rank(character)
-        if rank is not None:
-            return self.get_rank_name(rank)
-        return None
-
-    def get_members(self):
+        if rank is None:
+            return None
+        return self.db.rank_names.get(rank, f"Rank {rank}")
+        
+    def set_rank_name(self, rank, name):
+        """Set the name for a rank number.
+        
+        Args:
+            rank (int): The rank number (1-10)
+            name (str): The name for this rank
+            
+        Returns:
+            bool: True if set successfully
         """
-        Get all members of the organisation.
+        if not 1 <= rank <= 10:
+            return False
+            
+        self.db.rank_names[rank] = name
+        return True
+        
+    def get_members(self):
+        """Get all members and their ranks.
         
         Returns:
-            List of (character, rank_number, rank_name) tuples
+            list: List of (character, rank_number, rank_name) tuples,
+                  sorted by rank (highest first) then name
         """
+        from evennia.objects.models import ObjectDB
+        
         members = []
-        for char_id, rank_num in self.members.items():
-            # Search for character using Evennia's search with dbref
-            chars = search_object(f"#{char_id}")
-            if chars:
-                char = chars[0]
-                rank_name = self.get_rank_name(rank_num) or f"Rank {rank_num}"
-                members.append((char, rank_num, rank_name))
-        return sorted(members, key=lambda x: x[1])  # Sort by rank number
+        for char_id, rank in self.db.members.items():
+            char = ObjectDB.objects.get(id=char_id)
+            rank_name = self.db.rank_names.get(rank, f"Rank {rank}")
+            members.append((char, rank, rank_name))
+            
+        return sorted(
+            members,
+            key=lambda x: (-x[1], x[0].key)  # Sort by rank (desc) then name
+        )
         
     def delete(self):
         """
         Delete the organisation and clean up all references.
         """
         # Remove all members
-        for char_id in list(self.members.keys()):
+        for char_id in list(self.db.members.keys()):
             chars = search_object(f"#{char_id}")
             if chars:
                 self.remove_member(chars[0])
