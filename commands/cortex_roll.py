@@ -426,6 +426,8 @@ class CmdCortexRoll(Command):
             trait = trait_info.caller.skills.get(trait_info.key)
         elif trait_info.category == 'signature_assets':
             trait = trait_info.caller.signature_assets.get(trait_info.key)
+        elif trait_info.category == 'char_resources':
+            trait = trait_info.caller.char_resources.get(trait_info.key)
         else:
             return None
             

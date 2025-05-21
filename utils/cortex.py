@@ -87,7 +87,7 @@ def get_trait_die(character, trait_spec: str) -> Optional[Tuple[str, str, str, b
         # For distinctions, check both key and name
         if category_name == 'distinctions':
             # First try by key
-            trait = handler.get(trait_key)
+            trait = handler.get(trait_key.lower())
             if not trait:
                 # If not found by key, try to find by name
                 for key in handler.all():
@@ -98,7 +98,13 @@ def get_trait_die(character, trait_spec: str) -> Optional[Tuple[str, str, str, b
                 else:
                     trait = None
         else:
-            trait = handler.get(trait_key)
+            # For other categories, try case-insensitive key lookup
+            trait = None
+            for key in handler.all():
+                if key.lower() == trait_key.lower():
+                    trait = handler.get(key)
+                    trait_key = key  # Use the actual key for the trait
+                    break
             
         if trait:
             # For distinctions, always use d8 unless stepped down
