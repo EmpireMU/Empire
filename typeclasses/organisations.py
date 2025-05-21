@@ -17,6 +17,7 @@ class Organisation(ObjectParent, DefaultObject):
     """
     An organization that characters can join.
     Organizations can have different ranks and provide resources to members.
+    Organizations are abstract concepts and do not have a physical location.
     """
     
     MAX_RANKS = 10
@@ -52,6 +53,34 @@ class Organisation(ObjectParent, DefaultObject):
         
         # Initialize resources handler
         _ = self.org_resources
+        
+    def at_post_move(self, source_location, **kwargs):
+        """Override to prevent movement."""
+        return False
+        
+    def move_to(self, destination, **kwargs):
+        """Override to prevent movement."""
+        return False
+        
+    @property
+    def location(self):
+        """Override to always return None."""
+        return None
+        
+    @location.setter
+    def location(self, value):
+        """Override to prevent setting location."""
+        pass
+        
+    @property
+    def home(self):
+        """Override to always return None."""
+        return None
+        
+    @home.setter
+    def home(self, value):
+        """Override to prevent setting home."""
+        pass
         
     def add_org_resource(self, name, die_size):
         """Add a resource to the organization.

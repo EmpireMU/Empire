@@ -137,9 +137,7 @@ class CmdOrg(MuxCommand):
         try:
             org = create_object(
                 typeclass=Organisation,
-                key=self.args,
-                location=self.caller.location,
-                home=self.caller.location
+                key=self.args
             )
             if org:
                 self.msg(f"Created organization: {org.name}")
@@ -519,9 +517,6 @@ class CmdResource(MuxCommand):
             
     def transfer_resource(self):
         """Transfer a resource to another character or organization."""
-        if not self._check_admin():
-            return
-            
         if not self.args or "=" not in self.args:
             self.msg("Usage: resource/transfer <source>:<resource> = <target>")
             return
@@ -567,6 +562,26 @@ class CmdResource(MuxCommand):
             self.msg(f"{target.name} cannot have resources.")
             return
             
+        # Check transfer permissions
+        if not self.caller.permissions.check("Admin"):
+            # Check if resource is transferable
+            if "Wealth" not in name and "Political Capital" not in name:
+                self.msg("Only Wealth and Political Capital resources can be transferred.")
+                return
+                
+            # If source is an organization, check rank permissions
+            if isinstance(source, Organisation):
+                caller_rank = source.get_member_rank(self.caller)
+                if caller_rank not in [1, 2]:
+                    self.msg("Only members of rank 1 or 2 can transfer resources from an organization.")
+                    return
+            
+            # If target is a character and source is a character, check if it's the caller
+            if isinstance(source, Character) and isinstance(target, Character):
+                if source != self.caller:
+                    self.msg("You can only transfer your own resources.")
+                    return
+        
         try:
             # Get the resource from the appropriate handler
             if hasattr(source, 'char_resources'):
