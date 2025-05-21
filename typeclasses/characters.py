@@ -210,11 +210,16 @@ class Character(ObjectParent, DefaultCharacter):
         # For multiple resources with same name, append a number
         base_name = name
         counter = 1
-        while base_name in self.char_resources.traits:
+        while self.char_resources.get(base_name):
             counter += 1
             base_name = f"{name} {counter}"
             
-        self.char_resources.add(base_name, trait_type="static", base=die_size, mod=0)
+        # Add the resource with the die size as the value
+        self.char_resources.add(
+            base_name,
+            value=die_size,
+            name=base_name
+        )
         return True
         
     def remove_resource(self, name):
@@ -227,7 +232,7 @@ class Character(ObjectParent, DefaultCharacter):
         Returns:
             bool: True if removed, False if not found
         """
-        if name in self.char_resources.traits:
+        if self.char_resources.get(name):
             self.char_resources.remove(name)
             return True
         return False
@@ -246,7 +251,8 @@ class Character(ObjectParent, DefaultCharacter):
         Raises:
             ValueError: If resource not found or target is invalid
         """
-        if resource_name not in self.char_resources.traits:
+        trait = self.char_resources.get(resource_name)
+        if not trait:
             raise ValueError(f"Resource '{resource_name}' not found")
             
         from typeclasses.organisations import Organisation
@@ -254,7 +260,7 @@ class Character(ObjectParent, DefaultCharacter):
             raise ValueError("Can only transfer resources to characters or organizations")
             
         # Get the die size before removing
-        die_size = self.char_resources.traits[resource_name].current
+        die_size = trait.value
         
         # Remove from self
         self.char_resources.remove(resource_name)
@@ -275,6 +281,7 @@ class Character(ObjectParent, DefaultCharacter):
             list: List of (name, die_size) tuples
         """
         resources = []
-        for name, trait in self.char_resources.traits.items():
-            resources.append((name, trait.current))
+        for key in self.char_resources.all():
+            trait = self.char_resources.get(key)
+            resources.append((key, trait.value))
         return sorted(resources)
