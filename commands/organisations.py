@@ -555,10 +555,28 @@ class CmdResource(MuxCommand):
             return
             
         try:
+            # Get the resource from the appropriate handler
             if hasattr(source, 'char_resources'):
-                source.transfer_resource(name, target)
-            else:
-                source.transfer_resource(name, target)
+                trait = source.char_resources.get(name)
+                if not trait:
+                    self.msg(f"Resource '{name}' not found on {source.name}.")
+                    return
+                die_size = trait.value
+                source.char_resources.remove(name)
+            else:  # Organization
+                trait = source.org_resources.get(name)
+                if not trait:
+                    self.msg(f"Resource '{name}' not found on {source.name}.")
+                    return
+                die_size = trait.value
+                source.org_resources.remove(name)
+            
+            # Add to target using appropriate method
+            if hasattr(target, 'char_resources'):
+                target.add_resource(name, die_size)
+            else:  # Organization
+                target.add_org_resource(name, die_size)
+                
             self.msg(f"Transferred {name} from {source.name} to {target.name}.")
         except ValueError as e:
             self.msg(str(e))
