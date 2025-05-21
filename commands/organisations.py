@@ -339,10 +339,11 @@ class CmdResource(MuxCommand):
     View and manage resources.
     
     Usage:
-        resource [<name>]                    - View resource info or list all owned
-        resource/org <org> = <name>,<die_size>  - Create resource for an organization
-        resource/char <char> = <name>,<die_size>  - Create resource for a character
-        resource/transfer <name> = <target>  - Transfer resource to target
+        resource [<n>]                    - View resource info or list all owned
+        resource/org <org> = <n>,<die_size>  - Create resource for an organization
+        resource/char <char> = <n>,<die_size>  - Create resource for a character
+        resource/transfer <n> = <target>  - Transfer resource to target
+        resource/delete <n>               - Delete a resource you own
         
     Examples:
         resource                          - List all resources you own
@@ -351,6 +352,7 @@ class CmdResource(MuxCommand):
         resource/org "House Otrese" = "Guard Pool",8  - Names with spaces need quotes
         resource/char Koline = "Personal Guard",6  - Create d6 resource for character
         resource/transfer Guard = Koline  - Transfer to character Koline
+        resource/delete "Guard Pool"      - Delete the Guard Pool resource
         
     When multiple resources share the same name, you can specify which one
     by including a number after the name:
@@ -410,6 +412,8 @@ class CmdResource(MuxCommand):
             self.create_char_resource()
         elif switch == "transfer":
             self.transfer_resource()
+        elif switch == "delete":
+            self.delete_resource()
         else:
             self.msg(f"Unknown switch: {switch}")
             
@@ -587,6 +591,28 @@ class CmdResource(MuxCommand):
             self.msg(f"Transferred {name} to {target.name}.")
         except ValueError as e:
             self.msg(str(e))
+            
+    def delete_resource(self):
+        """Delete a resource owned by the caller."""
+        if not self.args:
+            self.msg("Usage: resource/delete <n>")
+            return
+            
+        owner = self.caller
+        if hasattr(self.caller, 'char'):
+            owner = self.caller.char
+            
+        # Get resources from trait handler
+        if hasattr(owner, 'char_resources') and owner.char_resources:
+            if owner.remove_resource(self.args.strip()):
+                self.msg(f"Deleted resource '{self.args.strip()}'.")
+                return
+        elif hasattr(owner, 'org_resources') and owner.org_resources:
+            if owner.remove_org_resource(self.args.strip()):
+                self.msg(f"Deleted resource '{self.args.strip()}'.")
+                return
+                
+        self.msg(f"No resource found named '{self.args.strip()}'.")
 
 
 class OrgCmdSet(CmdSet):

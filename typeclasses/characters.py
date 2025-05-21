@@ -214,11 +214,10 @@ class Character(ObjectParent, DefaultCharacter):
             counter += 1
             base_name = f"{name} {counter}"
             
-        # Add the resource with the die size as the value
+        # Add the resource with the die size as the base value
         self.char_resources.add(
             base_name,
-            value=die_size,
-            name=base_name
+            base=die_size  # Use base instead of value
         )
         return True
         

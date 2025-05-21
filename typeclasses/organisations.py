@@ -81,7 +81,11 @@ class Organisation(ObjectParent, DefaultObject):
             counter += 1
             name = f"{base_name} {counter}"
             
-        self.org_resources.add(name, die_size)
+        # Add the resource with the die size as the base value
+        self.org_resources.add(
+            name,
+            base=die_size  # Use base instead of directly passing die_size
+        )
         return True
         
     def remove_org_resource(self, name):
