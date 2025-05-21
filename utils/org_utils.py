@@ -156,4 +156,41 @@ def parse_comma(text, expected_parts=2, usage_msg=None, caller=None):
     except (ValueError, IndexError):
         if caller and usage_msg:
             caller.msg(f"Usage: {usage_msg}")
-        return None 
+        return None
+
+
+def get_unique_resource_name(name, existing_resources, caller=None):
+    """Get a unique name for a resource, appending a number if needed.
+    
+    Args:
+        name (str): Base name for the resource
+        existing_resources (dict or TraitHandler): Existing resources to check against
+        caller (optional): Caller to notify about name changes
+        
+    Returns:
+        str: A unique name for the resource
+    """
+    if hasattr(existing_resources, 'traits'):
+        # If it's a TraitHandler, get the traits dict
+        existing_resources = existing_resources.traits
+        
+    # First try to strip any existing number suffix
+    import re
+    base_name = re.sub(r'\s+\d+$', '', name)
+    
+    # If the base name is available, use it
+    if base_name not in existing_resources:
+        if base_name != name and caller:
+            caller.msg(f"Simplified resource name from '{name}' to '{base_name}'.")
+        return base_name
+        
+    # Otherwise, find the next available number
+    counter = 1
+    while f"{base_name} {counter}" in existing_resources:
+        counter += 1
+        
+    new_name = f"{base_name} {counter}"
+    if new_name != name and caller:
+        caller.msg(f"Resource name '{base_name}' already exists, using '{new_name}' instead.")
+        
+    return new_name 

@@ -74,16 +74,13 @@ class Organisation(ObjectParent, DefaultObject):
         if die_size not in valid_sizes:
             raise ValueError(f"Die size must be one of: {', '.join(map(str, valid_sizes))}")
             
-        # For multiple resources with same name, append a number
-        base_name = name
-        counter = 1
-        while name in self.org_resources.traits:
-            counter += 1
-            name = f"{base_name} {counter}"
+        # Get a unique name for the resource
+        from utils.org_utils import get_unique_resource_name
+        unique_name = get_unique_resource_name(name, self.org_resources)
             
         # Add the resource with the die size as the base value
         self.org_resources.add(
-            name,
+            unique_name,
             base=die_size  # Use base instead of directly passing die_size
         )
         return True

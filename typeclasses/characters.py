@@ -13,6 +13,7 @@ from evennia.utils import lazy_property
 from evennia.contrib.rpg.traits import TraitHandler
 from .objects import ObjectParent
 from utils.trait_definitions import ATTRIBUTES, SKILLS, DISTINCTIONS
+from utils.org_utils import get_unique_resource_name
 
 
 class Character(ObjectParent, DefaultCharacter):
@@ -207,16 +208,12 @@ class Character(ObjectParent, DefaultCharacter):
         if die_size not in valid_sizes:
             raise ValueError(f"Die size must be one of: {', '.join(map(str, valid_sizes))}")
             
-        # For multiple resources with same name, append a number
-        base_name = name
-        counter = 1
-        while self.char_resources.get(base_name):
-            counter += 1
-            base_name = f"{name} {counter}"
+        # Get a unique name for the resource
+        unique_name = get_unique_resource_name(name, self.char_resources)
             
         # Add the resource with the die size as the base value
         self.char_resources.add(
-            base_name,
+            unique_name,
             base=die_size  # Use base instead of value
         )
         return True
