@@ -68,7 +68,7 @@ class AccountCmdSet(default_cmds.AccountCmdSet):
         # any commands you add below will overload the default ones.
         #
         # Add request commands - this is an OOC system
-        self.add(requests.RequestCmdSet)
+        self.add(requests.RequestCmdSet())
 
 
 class UnloggedinCmdSet(default_cmds.UnloggedinCmdSet):
