@@ -79,7 +79,7 @@ def get_trait_die(character, trait_spec: str) -> Optional[Tuple[str, str, str, b
         ('attributes', character.character_attributes),
         ('skills', character.skills),
         ('distinctions', character.distinctions),
-        ('resources', character.resources),
+        ('resources', character.char_resources),
         ('signature_assets', character.signature_assets)
     ]
     
