@@ -116,8 +116,6 @@ class Character(ObjectParent, DefaultCharacter):
                 )
                 # Ensure .base is set correctly
                 self.character_attributes.get(trait.key).base = trait.default_value
-            # Debug print
-            self.msg(f"Attribute {trait.key}: default_value={trait.default_value}, base={self.character_attributes.get(trait.key).base}")
 
         # Initialize skills
         for trait in SKILLS:
@@ -133,8 +131,6 @@ class Character(ObjectParent, DefaultCharacter):
                 )
                 # Ensure .base is set correctly
                 self.skills.get(trait.key).base = trait.default_value
-            # Debug print
-            self.msg(f"Skill {trait.key}: default_value={trait.default_value}, base={self.skills.get(trait.key).base}")
 
         # Initialize distinctions
         for trait in DISTINCTIONS:
@@ -150,12 +146,9 @@ class Character(ObjectParent, DefaultCharacter):
                 )
                 # Ensure .base is set correctly
                 self.distinctions.get(trait.key).base = trait.default_value
-            # Debug print
-            self.msg(f"Distinction {trait.key}: default_value={trait.default_value}, base={self.distinctions.get(trait.key).base}")
 
-        # Initialize resources handler with empty trait set
-        self.attributes.add("char_resources", {}, category="char_resources")
-        _ = self.char_resources  # Force lazy property initialization
+        # Initialize resources handler (will be initialized on first access)
+        _ = self.char_resources
 
     def at_init(self):
         """
