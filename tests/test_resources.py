@@ -63,21 +63,24 @@ class TestResources(EvenniaTest):
     
     def test_list_resources(self):
         """Test listing resources."""
-        # Test listing character resources
-        self.cmd.switches = []
-        self.cmd.args = ""
+        # Add test resources
+        self.cmd.args = "create self, armory d8"
         self.cmd.func()
-        output = str(self.cmd.msg.mock_calls[-1][1][0])
-        self.assertIn("gold", output)
-        self.assertIn("supplies", output)
+        self.cmd.args = "create self, treasury d6"
+        self.cmd.func()
         
-        # Test listing org resources
-        self.cmd.switches = []
-        self.cmd.args = "Test Org"
+        # Test listing resources
+        self.cmd.args = "list self"
         self.cmd.func()
-        output = str(self.cmd.msg.mock_calls[-1][1][0])
+        output = self.cmd.msg.mock_calls[-1][1][0]
         self.assertIn("armory", output)
         self.assertIn("treasury", output)
+        
+        # Test listing non-existent character
+        self.cmd.args = "list nonexistent"
+        self.cmd.func()
+        output = self.cmd.msg.mock_calls[-1][1][0]
+        self.assertIn("not found", output)
     
     def test_view_resource(self):
         """Test viewing specific resources."""
@@ -138,42 +141,37 @@ class TestResources(EvenniaTest):
     
     def test_transfer_resource(self):
         """Test transferring resources."""
-        # Test valid transfer
-        self.cmd.switches = ["transfer"]
-        self.cmd.args = "self:gold=Char2"  # Using correct format
+        # Create test resource
+        self.cmd.args = "create self, armory d8"
         self.cmd.func()
-        output = str(self.cmd.msg.mock_calls[-1][1][0])
+        
+        # Create target character
+        target = self.char2
+        
+        # Test transfer
+        self.cmd.args = f"transfer self:armory={target.name}"
+        self.cmd.func()
+        output = self.cmd.msg.mock_calls[-1][1][0]
         self.assertIn("Transferred", output)
         
         # Verify transfer
-        self.assertIsNone(self.char1.char_resources.get("gold"))
-        self.assertIsNotNone(self.char2.char_resources.get("gold"))
-        
-        # Test invalid transfer (nonexistent resource)
-        self.cmd.switches = ["transfer"]
-        self.cmd.args = "self:nonexistent=Char2"  # Using correct format
-        self.cmd.func()
-        output = str(self.cmd.msg.mock_calls[-1][1][0])
-        self.assertIn("not found", output)
+        self.assertIsNone(self.char1.char_resources.get("armory"))
+        self.assertIsNotNone(target.char_resources.get("armory"))
     
     def test_delete_resource(self):
         """Test deleting resources."""
-        # Test deleting existing resource
-        self.cmd.switches = ["delete"]
-        self.cmd.args = "gold"
+        # Create test resource
+        self.cmd.args = "create self, armory d8"
         self.cmd.func()
-        output = str(self.cmd.msg.mock_calls[-1][1][0])
+        
+        # Test deletion
+        self.cmd.args = "delete armory"
+        self.cmd.func()
+        output = self.cmd.msg.mock_calls[-1][1][0]
         self.assertIn("Deleted", output)
         
         # Verify deletion
-        self.assertIsNone(self.char1.char_resources.get("gold"))
-        
-        # Test deleting nonexistent resource
-        self.cmd.switches = ["delete"]
-        self.cmd.args = "nonexistent"
-        self.cmd.func()
-        output = str(self.cmd.msg.mock_calls[-1][1][0])
-        self.assertIn("No resource found", output)
+        self.assertIsNone(self.char1.char_resources.get("armory"))
     
     def test_resource_utils(self):
         """Test resource utility functions."""

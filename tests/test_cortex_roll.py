@@ -7,7 +7,7 @@ from evennia.utils.test_resources import EvenniaTest
 from commands.cortex_roll import CmdCortexRoll, TraitDie
 from evennia.contrib.rpg.traits import TraitHandler
 from evennia.objects.objects import ObjectDB
-from evennia import create_object
+from evennia import create_object, SESSION_HANDLER
 
 class TestCortexRoll(EvenniaTest):
     """Test cases for Cortex Prime dice rolling functionality."""
@@ -31,7 +31,7 @@ class TestCortexRoll(EvenniaTest):
         self.session = MagicMock()
         self.session.sessid = 1  # Give it a real session ID
         self.cmd.session = self.session
-        evennia.SESSION_HANDLER[1] = self.session  # Register the session
+        SESSION_HANDLER[1] = self.session  # Register the session
         
         # Initialize trait handlers
         if not hasattr(self.char1, 'char_attributes'):

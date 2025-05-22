@@ -73,7 +73,7 @@ class TestCharSheetEditor(EvenniaTest):
         self.cmd_settrait.func()
         trait = self.char1.char_attributes.get("strength")
         self.assertIsNotNone(trait)
-        self.assertEqual(int(trait.base), 8)
+        self.assertEqual(trait.base, "8")  # Trait values are stored as strings
         self.assertEqual(trait.desc, "Strong and tough")
         
         # Test setting a skill
@@ -81,7 +81,7 @@ class TestCharSheetEditor(EvenniaTest):
         self.cmd_settrait.func()
         trait = self.char1.skills.get("fighting")
         self.assertIsNotNone(trait)
-        self.assertEqual(int(trait.base), 6)
+        self.assertEqual(trait.base, "6")  # Trait values are stored as strings
         self.assertEqual(trait.desc, "Combat training")
         
         # Test setting a signature asset
@@ -89,7 +89,7 @@ class TestCharSheetEditor(EvenniaTest):
         self.cmd_settrait.func()
         trait = self.char1.signature_assets.get("sword")
         self.assertIsNotNone(trait)
-        self.assertEqual(int(trait.base), 8)
+        self.assertEqual(trait.base, "8")  # Trait values are stored as strings
         self.assertEqual(trait.desc, "Magic blade")
         
         # Test invalid category
@@ -167,7 +167,7 @@ class TestCharSheetEditor(EvenniaTest):
         self.char1.permissions.clear()  # Remove all permissions
         self.cmd_bg.args = "self = Another background"
         self.cmd_bg.func()
-        self.assertIn("don't have permission", self.cmd_bg.msg.mock_calls[-1][1][0])
+        self.assertIn("You don't have permission to edit backgrounds", self.cmd_bg.msg.mock_calls[-1][1][0])
     
     def test_personality(self):
         """Test personality command."""
@@ -186,7 +186,7 @@ class TestCharSheetEditor(EvenniaTest):
         self.char1.permissions.clear()  # Remove all permissions
         self.cmd_pers.args = "self = Another personality"
         self.cmd_pers.func()
-        self.assertIn("don't have permission", self.cmd_pers.msg.mock_calls[-1][1][0])
+        self.assertIn("You don't have permission to edit personalities", self.cmd_pers.msg.mock_calls[-1][1][0])
     
     def test_set_distinction(self):
         """Test setting distinctions."""
@@ -195,7 +195,7 @@ class TestCharSheetEditor(EvenniaTest):
         self.cmd_setdist.func()
         trait = self.char1.distinctions.get("concept")
         self.assertIsNotNone(trait)
-        self.assertEqual(int(trait.base), 8)  # All distinctions are d8
+        self.assertEqual(trait.base, "8")  # All distinctions are d8, stored as string
         self.assertEqual(trait.desc, "Always seeking adventure")
         self.assertEqual(trait.name, "Bold Explorer")
         
@@ -204,7 +204,7 @@ class TestCharSheetEditor(EvenniaTest):
         self.cmd_setdist.func()
         trait = self.char1.distinctions.get("culture")
         self.assertIsNotNone(trait)
-        self.assertEqual(int(trait.base), 8)  # All distinctions are d8
+        self.assertEqual(trait.base, "8")  # All distinctions are d8, stored as string
         self.assertEqual(trait.desc, "Born on the seas")
         self.assertEqual(trait.name, "Islander")
         
