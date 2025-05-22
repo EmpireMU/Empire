@@ -10,13 +10,12 @@ from evennia.utils.utils import datetime_format
 from evennia.utils.search import search_script
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
-from evennia.utils.logger import logger
 
 # Valid request statuses
 VALID_STATUSES = ["Open", "In Progress", "Resolved", "Closed"]
 
 # Default request categories
-DEFAULT_CATEGORIES = ["Bug", "Feature", "Question", "Character", "Other"]
+DEFAULT_CATEGORIES = ["Bug", "Feature", "Question", "Character", "General"]
 
 # Auto-archive and deletion thresholds (in days)
 AUTO_ARCHIVE_DAYS = 30
@@ -47,10 +46,8 @@ class Request(DefaultScript):
         self.db.resolution = ""
         self.db.date_closed = None
         self.db.date_archived = None
-        
-        # Initial tags
-        self.tags.add("Open", category="request_status")
-        self.tags.add("Other", category="request_category")
+        self.db.status = "Open"
+        self.db.category = "General"
         
         # Make sure this script never repeats or times out
         self.interval = None
@@ -60,7 +57,7 @@ class Request(DefaultScript):
     def _get_next_id(cls):
         """Get the next available request ID."""
         # Find all requests
-        requests = search_script(cls.path())
+        requests = search_script("typeclasses.requests.Request")
         if not requests:
             return 1
             
@@ -71,14 +68,12 @@ class Request(DefaultScript):
     @property
     def status(self):
         """Get the current status."""
-        status_tags = self.tags.get(category="request_status")
-        return status_tags[0] if status_tags else "Open"
+        return self.db.status
         
     @property
     def category(self):
         """Get the current category."""
-        category_tags = self.tags.get(category="request_category")
-        return category_tags[0] if category_tags else "Other"
+        return self.db.category
         
     @property
     def is_closed(self):
@@ -96,10 +91,7 @@ class Request(DefaultScript):
             raise ValueError(f"Status must be one of: {', '.join(VALID_STATUSES)}")
             
         old_status = self.status
-        
-        # Remove old status tag and add new one
-        self.tags.remove(old_status, category="request_status")
-        self.tags.add(new_status, category="request_status")
+        self.db.status = new_status
         
         # Update timestamps
         self.db.date_modified = datetime.now()
@@ -114,10 +106,7 @@ class Request(DefaultScript):
             raise ValueError(f"Category must be one of: {', '.join(DEFAULT_CATEGORIES)}")
             
         old_category = self.category
-        
-        # Remove old category tag and add new one
-        self.tags.remove(old_category, category="request_category")
-        self.tags.add(new_category, category="request_category")
+        self.db.category = new_category
         
         # Update timestamp
         self.db.date_modified = datetime.now()
@@ -222,3 +211,28 @@ class Request(DefaultScript):
         # This is a compatibility method for the old system
         # It's not needed anymore since we're using objects directly
         return None 
+
+    def migrate_category(self):
+        """
+        Migrate the request's category to a valid one if it's no longer valid.
+        Returns True if migration was needed, False otherwise.
+        """
+        if self.db.category not in DEFAULT_CATEGORIES:
+            old_category = self.db.category
+            self.db.category = "General"
+            self.db.date_modified = datetime.now()
+            self.notify_all(f"Category migrated from {old_category} to General (old category no longer valid)")
+            return True
+        return False
+
+    @classmethod
+    def migrate_all_categories(cls):
+        """
+        Migrate all requests with invalid categories to use valid ones.
+        Returns the number of requests that were migrated.
+        """
+        count = 0
+        for request in search_script("typeclasses.requests.Request"):
+            if request.migrate_category():
+                count += 1
+        return count 

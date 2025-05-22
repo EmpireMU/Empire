@@ -3,7 +3,7 @@ Commands for the request system.
 """
 
 from evennia.commands.default.muxcommand import MuxCommand
-from evennia import CmdSet, create_script, logger
+from evennia import CmdSet, create_script
 from evennia.utils.utils import datetime_format
 from evennia.utils.evtable import EvTable
 from evennia.utils.search import search_script
@@ -34,24 +34,7 @@ class CmdRequest(MuxCommand):
         request/cleanup           - Archive all closed requests older than 30 days
         
     Valid statuses: Open, In Progress, Resolved, Closed
-    Valid categories: Bug, Feature, Question, Character, Other
-        
-    Examples:
-        request/new Bug Report=The crafting menu is not working
-        request/comment 42=Any update on this?
-        request/close 42=Issue resolved
-        
-    Staff examples:
-        request/assign 42=Bob
-        request/status 42=In Progress
-        request/cleanup
-        
-    This is an OOC command for communication between players and staff.
-    Closed requests are automatically archived after 30 days.
-    Archived requests are deleted after 60 days in the archive.
-    
-    Request numbers (#) are unique and may be reused after a request
-    is permanently deleted from the archive.
+    Valid categories: Bug, Feature, Question, Character, General
     """
     
     key = "request"
@@ -63,7 +46,6 @@ class CmdRequest(MuxCommand):
         """Find a request by its ID number."""
         try:
             id_num = int(str(request_id).lstrip('#'))
-            # Use Evennia's search functionality
             results = search_script(
                 "typeclasses.requests.Request",
                 id=id_num
@@ -73,15 +55,7 @@ class CmdRequest(MuxCommand):
             return None
             
     def _check_request_access(self, request):
-        """
-        Check if the caller has access to the request.
-        
-        Args:
-            request (Request): The request to check
-            
-        Returns:
-            bool: True if access is allowed, False otherwise
-        """
+        """Check if the caller has access to the request."""
         if not request:
             self.caller.msg("Request not found.")
             return False
@@ -96,7 +70,7 @@ class CmdRequest(MuxCommand):
         
     def _format_request_row(self, req):
         """Format a request for table display."""
-        if not req or not req.pk:
+        if not req or not hasattr(req, 'db'):
             return None
             
         return [
@@ -151,53 +125,30 @@ class CmdRequest(MuxCommand):
         
     def _create_request(self, title, text):
         """Create a new request"""
-        try:
-            # Validate input
-            if not title.strip():
-                self.caller.msg("Request title cannot be empty.")
-                return
-            if not text.strip():
-                self.caller.msg("Request text cannot be empty.")
-                return
+        if not title.strip():
+            self.caller.msg("Request title cannot be empty.")
+            return
+        if not text.strip():
+            self.caller.msg("Request text cannot be empty.")
+            return
 
-            # Create the request script
-            request = create_script(
-                "typeclasses.requests.Request",
-                key=f"Request-{datetime.now().strftime('%Y%m%d-%H%M%S')}"  # More unique key
-            )
+        # Create the request script
+        request = create_script(
+            "typeclasses.requests.Request",
+            key=f"Request-{datetime.now().strftime('%Y%m%d-%H%M%S')}"  # More unique key
+        )
 
-            if not request:
-                self.caller.msg("Failed to create request.")
-                logger.log_err("Request creation failed - create_script returned None")
-                return
+        if not request:
+            self.caller.msg("Failed to create request.")
+            return
 
-            # Set up the request
-            try:
-                request.db.title = title.strip()
-                request.db.text = text.strip()
-                request.db.submitter = self.caller.account
-                
-                # Verify the request was properly initialized
-                if not hasattr(request, 'db') or not request.db.id:
-                    self.caller.msg("Request was not properly initialized.")
-                    logger.log_err(f"Request initialization failed - missing attributes: {vars(request)}")
-                    request.delete()
-                    return
-
-                self.caller.msg(f"Request #{request.db.id} created successfully.")
-                
-                # Notify staff about new request
-                request.notify_all(f"New request created: {title[:50]}{'...' if len(title) > 50 else ''}")
-                
-            except Exception as e:
-                # Clean up on initialization error
-                if request:
-                    request.delete()
-                raise
-
-        except Exception as e:
-            self.caller.msg("Error creating request. Please try again or contact an admin.")
-            logger.log_trace(f"Request creation error: {str(e)}")
+        # Set up the request
+        request.db.title = title.strip()
+        request.db.text = text.strip()
+        request.db.submitter = self.caller.account
+        
+        self.caller.msg(f"Request #{request.db.id} created successfully.")
+        request.notify_all(f"New request created: {title[:50]}{'...' if len(title) > 50 else ''}")
         
     def _view_request(self, request_id):
         """View a specific request"""
@@ -356,64 +307,59 @@ Modified: {datetime_format(request.db.date_modified)}"""
             
         switch = self.switches[0].lower()
         
-        try:
-            if switch == "new":
-                if not self.args or "=" not in self.args:
-                    self.caller.msg("Usage: request/new <title>=<text>")
-                    return
-                self._create_request(self.lhs.strip(), self.rhs.strip())
-                
-            elif switch == "comment":
-                if not self.args or "=" not in self.args:
-                    self.caller.msg("Usage: request/comment <#>=<text>")
-                    return
-                self._add_comment(self.lhs, self.rhs)
-                
-            elif switch == "close":
-                if not self.args or "=" not in self.args:
-                    self.caller.msg("Usage: request/close <#>=<resolution>")
-                    return
-                self._close_request(self.lhs, self.rhs)
-                
-            elif switch == "assign":
-                if not self.args or "=" not in self.args:
-                    self.caller.msg("Usage: request/assign <#>=<staff>")
-                    return
-                self._assign_request(self.lhs, self.rhs)
-                
-            elif switch == "status":
-                if not self.args or "=" not in self.args:
-                    self.caller.msg(f"Usage: request/status <#>=<status>\nValid statuses: {', '.join(VALID_STATUSES)}")
-                    return
-                self._change_status(self.lhs, self.rhs)
-                
-            elif switch == "cat":
-                if not self.args or "=" not in self.args:
-                    self.caller.msg(f"Usage: request/cat <#>=<category>\nValid categories: {', '.join(DEFAULT_CATEGORIES)}")
-                    return
-                self._change_category(self.lhs, self.rhs)
-                
-            elif switch == "archive":
-                if self.args == "all":
-                    self._list_requests(personal=False, show_archived=True)
-                else:
-                    self._archive_request(self.args)
-                    
-            elif switch == "unarchive":
-                self._unarchive_request(self.args)
-                
-            elif switch == "cleanup":
-                self._cleanup_old_requests()
-                
-            elif switch == "all":
-                self._list_requests(personal=False)
-                
+        if switch == "new":
+            if not self.args or "=" not in self.args:
+                self.caller.msg("Usage: request/new <title>=<text>")
+                return
+            self._create_request(self.lhs.strip(), self.rhs.strip())
+            
+        elif switch == "comment":
+            if not self.args or "=" not in self.args:
+                self.caller.msg("Usage: request/comment <#>=<text>")
+                return
+            self._add_comment(self.lhs, self.rhs)
+            
+        elif switch == "close":
+            if not self.args or "=" not in self.args:
+                self.caller.msg("Usage: request/close <#>=<resolution>")
+                return
+            self._close_request(self.lhs, self.rhs)
+            
+        elif switch == "assign":
+            if not self.args or "=" not in self.args:
+                self.caller.msg("Usage: request/assign <#>=<staff>")
+                return
+            self._assign_request(self.lhs, self.rhs)
+            
+        elif switch == "status":
+            if not self.args or "=" not in self.args:
+                self.caller.msg(f"Usage: request/status <#>=<status>\nValid statuses: {', '.join(VALID_STATUSES)}")
+                return
+            self._change_status(self.lhs, self.rhs)
+            
+        elif switch == "cat":
+            if not self.args or "=" not in self.args:
+                self.caller.msg(f"Usage: request/cat <#>=<category>\nValid categories: {', '.join(DEFAULT_CATEGORIES)}")
+                return
+            self._change_category(self.lhs, self.rhs)
+            
+        elif switch == "archive":
+            if self.args == "all":
+                self._list_requests(personal=False, show_archived=True)
             else:
-                self.caller.msg("Invalid switch. See help request for valid options.")
+                self._archive_request(self.args)
                 
-        except Exception as e:
-            self.caller.msg("An error occurred. Please try again or contact an admin if the problem persists.")
-            logger.log_trace(f"Request command error in switch '{switch}': {str(e)}")
+        elif switch == "unarchive":
+            self._unarchive_request(self.args)
+            
+        elif switch == "cleanup":
+            self._cleanup_old_requests()
+            
+        elif switch == "all":
+            self._list_requests(personal=False)
+            
+        else:
+            self.caller.msg("Invalid switch. See help request for valid options.")
 
 class RequestCmdSet(CmdSet):
     """
