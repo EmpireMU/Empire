@@ -157,6 +157,10 @@ class TestCortexRoll(EvenniaTest):
         # Set up mock rolls to get a predictable effect die
         mock_roll.side_effect = [8, 6, 4]  # This will make d8 the effect die
         
+        # Set up location mock
+        self.char1.location = MagicMock()
+        self.char1.location.msg_contents = MagicMock()
+        
         # Set up test traits
         self.cmd.args = "strength fighting warrior"
         self.cmd.parse()

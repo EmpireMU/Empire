@@ -64,6 +64,7 @@ class TestResources(EvenniaTest):
     def test_list_resources(self):
         """Test listing resources."""
         # Test listing character resources
+        self.cmd.switches = []
         self.cmd.args = ""
         self.cmd.func()
         output = str(self.cmd.msg.mock_calls[-1][1][0])
@@ -72,6 +73,7 @@ class TestResources(EvenniaTest):
         
         # Test listing org resources
         org = self.org
+        self.cmd.switches = []
         self.cmd.args = org.name
         self.cmd.func()
         output = str(self.cmd.msg.mock_calls[-1][1][0])
@@ -96,7 +98,8 @@ class TestResources(EvenniaTest):
     def test_create_char_resource(self):
         """Test creating character resources."""
         # Test creating with valid die size
-        self.cmd.args = "char weapon d8"
+        self.cmd.switches = ["char"]
+        self.cmd.args = "weapon d8"
         self.cmd.func()
         output = str(self.cmd.msg.mock_calls[-1][1][0])
         self.assertIn("Resource created", output)
@@ -107,7 +110,8 @@ class TestResources(EvenniaTest):
         self.assertEqual(int(trait.base), 8)
         
         # Test creating with invalid die size
-        self.cmd.args = "char invalid d7"
+        self.cmd.switches = ["char"]
+        self.cmd.args = "invalid d7"
         self.cmd.func()
         output = str(self.cmd.msg.mock_calls[-1][1][0])
         self.assertIn("Invalid die size", output)
@@ -115,7 +119,8 @@ class TestResources(EvenniaTest):
     def test_create_org_resource(self):
         """Test creating organization resources."""
         # Test creating with valid die size
-        self.cmd.args = "org barracks d8"
+        self.cmd.switches = ["org"]
+        self.cmd.args = "barracks d8"
         self.cmd.func()
         output = str(self.cmd.msg.mock_calls[-1][1][0])
         self.assertIn("Resource created", output)
@@ -126,7 +131,8 @@ class TestResources(EvenniaTest):
         self.assertEqual(int(trait.base), 8)
         
         # Test creating with invalid die size
-        self.cmd.args = "org invalid d7"
+        self.cmd.switches = ["org"]
+        self.cmd.args = "invalid d7"
         self.cmd.func()
         output = str(self.cmd.msg.mock_calls[-1][1][0])
         self.assertIn("Invalid die size", output)
@@ -134,7 +140,8 @@ class TestResources(EvenniaTest):
     def test_transfer_resource(self):
         """Test transferring resources."""
         # Test valid transfer
-        self.cmd.args = "transfer gold to Char2"
+        self.cmd.switches = ["transfer"]
+        self.cmd.args = "gold to Char2"
         self.cmd.func()
         output = str(self.cmd.msg.mock_calls[-1][1][0])
         self.assertIn("Resource transferred", output)
@@ -144,7 +151,8 @@ class TestResources(EvenniaTest):
         self.assertIsNotNone(self.char2.char_resources.get("gold"))
         
         # Test invalid transfer (nonexistent resource)
-        self.cmd.args = "transfer nonexistent to Char2"
+        self.cmd.switches = ["transfer"]
+        self.cmd.args = "nonexistent to Char2"
         self.cmd.func()
         output = str(self.cmd.msg.mock_calls[-1][1][0])
         self.assertIn("No resource found", output)
@@ -152,7 +160,8 @@ class TestResources(EvenniaTest):
     def test_delete_resource(self):
         """Test deleting resources."""
         # Test deleting existing resource
-        self.cmd.args = "delete gold"
+        self.cmd.switches = ["delete"]
+        self.cmd.args = "gold"
         self.cmd.func()
         output = str(self.cmd.msg.mock_calls[-1][1][0])
         self.assertIn("Resource deleted", output)
@@ -161,7 +170,8 @@ class TestResources(EvenniaTest):
         self.assertIsNone(self.char1.char_resources.get("gold"))
         
         # Test deleting nonexistent resource
-        self.cmd.args = "delete nonexistent"
+        self.cmd.switches = ["delete"]
+        self.cmd.args = "nonexistent"
         self.cmd.func()
         output = str(self.cmd.msg.mock_calls[-1][1][0])
         self.assertIn("No resource found", output)

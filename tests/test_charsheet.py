@@ -62,9 +62,9 @@ class TestCharSheet(EvenniaTest):
         self.assertEqual(desc, "Physical power")
         
         # Test trait without description
-        trait = self.char1.skills.add("test", "Test", trait_type="static", base=6)
+        trait = self.char1.skills.add("test", trait_type="static", base=6, name="Test")
         name, die, desc = get_trait_display(trait)
-        self.assertEqual(name, trait.name)  # Should use trait.name instead of key
+        self.assertEqual(name, "Test")  # Should use trait.name
         self.assertEqual(die, f"d{int(float(trait.base))}")  # Handle float values
         self.assertEqual(desc, "")
         
