@@ -43,7 +43,7 @@ class CmdRequest(MuxCommand):
     locks = "cmd:pperm(Player)"  # Only accounts with Player permission or higher
     help_category = "Communication"
     
-    def _find_request(self, request_id):
+    def find_request(self, request_id):
         """Find a request by its ID number."""
         try:
             id_num = int(str(request_id).lstrip('#'))
@@ -84,44 +84,48 @@ class CmdRequest(MuxCommand):
             datetime_format(req.db.date_modified, "%Y-%m-%d")
         ]
         
-    def _get_requests(self, show_archived=False):
+    def get_requests(self, show_archived=False):
         """Get all requests, optionally filtering for archived ones."""
+        from evennia.scripts.models import ScriptDB
+        
         # First try direct database query
         self.caller.msg("DEBUG: Querying database for requests...")
         requests = ScriptDB.objects.filter(db_typeclass_path__contains="requests.Request")
         self.caller.msg(f"DEBUG: Database query found {requests.count()} scripts")
         
         # Show raw database entries
-        for script_db in requests:
-            self.caller.msg(f"DEBUG: Raw DB entry - path={script_db.db_typeclass_path}, key={script_db.db_key}")
+        for script in requests:
+            self.caller.msg(f"DEBUG: Raw DB entry - path={script.db_typeclass_path}, key={script.db_key}")
         
-        # Convert to list of typeclassed objects
-        requests = [r.typeclass for r in requests]
+        # Filter out RequestHandler and get only Request objects
+        requests = [r for r in requests if "RequestHandler" not in r.db_typeclass_path]
+        self.caller.msg(f"DEBUG: After filtering handlers, found {len(requests)} requests")
         
         # Show details about each found script
         for r in requests:
-            self.caller.msg(f"DEBUG: Found script key={r.key}, dbref={r.dbref}, id={r.id}, typeclass={r.__class__.__module__}.{r.__class__.__name__}")
-            if hasattr(r, 'db'):
-                self.caller.msg(f"DEBUG: - Request ID={r.db.id}, title={r.db.title}, archived={r.db.date_archived}")
+            self.caller.msg(f"DEBUG: Found script key={r.db_key}, id={r.id}")
+            if hasattr(r, 'attributes'):
+                attrs = r.attributes.all()
+                self.caller.msg(f"DEBUG: - Attributes: {', '.join(a.key for a in attrs)}")
             else:
-                self.caller.msg(f"DEBUG: - No db attributes found")
+                self.caller.msg(f"DEBUG: - No attributes found")
         
         if not requests:
             return []
             
         # Filter based on archived status
-        filtered = [r for r in requests if bool(r.db.date_archived is not None) == show_archived]
+        filtered = [r for r in requests if bool(r.attributes.get('date_archived') is not None) == show_archived]
         self.caller.msg(f"DEBUG: After archive filtering, {len(filtered)} requests remain")
         
         # Show what's being returned
         for r in filtered:
-            self.caller.msg(f"DEBUG: Returning request ID={r.db.id}, title={r.db.title}")
+            self.caller.msg(f"DEBUG: Returning request ID={r.attributes.get('id')}, title={r.attributes.get('title')}")
         
         return filtered
         
-    def _list_requests(self, personal=True, show_archived=False):
+    def list_requests(self, personal=True, show_archived=False):
         """List requests"""
-        requests = self._get_requests(show_archived)
+        requests = self.get_requests(show_archived)
         
         if personal:
             requests = [r for r in requests if r.db.submitter == self.caller.account]
@@ -151,7 +155,7 @@ class CmdRequest(MuxCommand):
         self.caller.msg(f"{status} Requests:")
         self.caller.msg(str(table))
         
-    def _create_request(self, title, text):
+    def create_request(self, title, text):
         """Create a new request"""
         if not title.strip():
             self.caller.msg("Request title cannot be empty.")
@@ -160,11 +164,15 @@ class CmdRequest(MuxCommand):
             self.caller.msg("Request text cannot be empty.")
             return
 
+        # Get the next ID first
+        from typeclasses.requests import Request
+        next_id = Request.get_next_id()
+
         # Create the request script
         self.caller.msg("DEBUG: Creating new request script...")
         request = create_script(
             "typeclasses.requests.Request",
-            key=f"Request-{datetime.now().strftime('%Y%m%d-%H%M%S')}"  # More unique key
+            key=f"Request-{next_id}"  # Simple numbered key
         )
 
         if not request:
@@ -184,9 +192,9 @@ class CmdRequest(MuxCommand):
         found = search_script("typeclasses.requests.Request", id=request.db.id)
         self.caller.msg(f"DEBUG: Immediate search found {len(found)} matching requests")
         
-    def _view_request(self, request_id):
+    def view_request(self, request_id):
         """View a specific request"""
-        request = self._find_request(request_id)
+        request = self.find_request(request_id)
         if not self._check_request_access(request):
             return
             
@@ -212,18 +220,18 @@ Modified: {datetime_format(request.db.date_modified)}"""
             
         self.caller.msg(header + text + comments + resolution)
         
-    def _add_comment(self, request_id, text):
+    def add_comment(self, request_id, text):
         """Add a comment to a request"""
-        request = self._find_request(request_id)
+        request = self.find_request(request_id)
         if not self._check_request_access(request):
             return
             
         request.add_comment(self.caller.account.name, text)
         self.caller.msg("Comment added.")
         
-    def _close_request(self, request_id, resolution):
+    def close_request(self, request_id, resolution):
         """Close a request"""
-        request = self._find_request(request_id)
+        request = self.find_request(request_id)
         if not self._check_request_access(request):
             return
             
@@ -231,9 +239,9 @@ Modified: {datetime_format(request.db.date_modified)}"""
         request.set_status("Closed")
         self.caller.msg("Request closed.")
         
-    def _assign_request(self, request_id, staff_name):
+    def assign_request(self, request_id, staff_name):
         """Assign a request to a staff member"""
-        request = self._find_request(request_id)
+        request = self.find_request(request_id)
         if not self._check_request_access(request):
             return
             
@@ -250,9 +258,9 @@ Modified: {datetime_format(request.db.date_modified)}"""
         request.assign_to(staff)
         self.caller.msg(f"Request assigned to {staff.name}.")
         
-    def _change_status(self, request_id, status):
+    def change_status(self, request_id, status):
         """Change request status"""
-        request = self._find_request(request_id)
+        request = self.find_request(request_id)
         if not self._check_request_access(request):
             return
             
@@ -267,9 +275,9 @@ Modified: {datetime_format(request.db.date_modified)}"""
         except ValueError as e:
             self.caller.msg(str(e))
         
-    def _change_category(self, request_id, category):
+    def change_category(self, request_id, category):
         """Change request category"""
-        request = self._find_request(request_id)
+        request = self.find_request(request_id)
         if not self._check_request_access(request):
             return
             
@@ -284,9 +292,9 @@ Modified: {datetime_format(request.db.date_modified)}"""
         except ValueError as e:
             self.caller.msg(str(e))
         
-    def _archive_request(self, request_id):
+    def archive_request(self, request_id):
         """Archive a request"""
-        request = self._find_request(request_id)
+        request = self.find_request(request_id)
         if not self._check_request_access(request):
             return
             
@@ -298,9 +306,9 @@ Modified: {datetime_format(request.db.date_modified)}"""
         request.archive()
         self.caller.msg("Request archived.")
         
-    def _unarchive_request(self, request_id):
+    def unarchive_request(self, request_id):
         """Unarchive a request"""
-        request = self._find_request(request_id)
+        request = self.find_request(request_id)
         if not self._check_request_access(request):
             return
             
@@ -312,7 +320,7 @@ Modified: {datetime_format(request.db.date_modified)}"""
         request.unarchive()
         self.caller.msg("Request unarchived.")
         
-    def _cleanup_old_requests(self):
+    def cleanup_old_requests(self):
         """Archive old closed requests"""
         # Only staff can run cleanup
         if not self.caller.locks.check_lockstring(self.caller, "perm(Admin)"):
@@ -320,7 +328,7 @@ Modified: {datetime_format(request.db.date_modified)}"""
             return
             
         count = 0
-        for request in self._get_requests(show_archived=False):
+        for request in self.get_requests(show_archived=False):
             if request.should_auto_archive():
                 request.archive()
                 count += 1
@@ -331,12 +339,12 @@ Modified: {datetime_format(request.db.date_modified)}"""
         """Handle the request command"""
         if not self.args and not self.switches:
             # List personal active requests
-            self._list_requests()
+            self.list_requests()
             return
             
         if not self.switches:
             # View specific request
-            self._view_request(self.args)
+            self.view_request(self.args)
             return
             
         switch = self.switches[0].lower()
@@ -345,52 +353,52 @@ Modified: {datetime_format(request.db.date_modified)}"""
             if not self.args or "=" not in self.args:
                 self.caller.msg("Usage: request/new <title>=<text>")
                 return
-            self._create_request(self.lhs.strip(), self.rhs.strip())
+            self.create_request(self.lhs.strip(), self.rhs.strip())
             
         elif switch == "comment":
             if not self.args or "=" not in self.args:
                 self.caller.msg("Usage: request/comment <#>=<text>")
                 return
-            self._add_comment(self.lhs, self.rhs)
+            self.add_comment(self.lhs, self.rhs)
             
         elif switch == "close":
             if not self.args or "=" not in self.args:
                 self.caller.msg("Usage: request/close <#>=<resolution>")
                 return
-            self._close_request(self.lhs, self.rhs)
+            self.close_request(self.lhs, self.rhs)
             
         elif switch == "assign":
             if not self.args or "=" not in self.args:
                 self.caller.msg("Usage: request/assign <#>=<staff>")
                 return
-            self._assign_request(self.lhs, self.rhs)
+            self.assign_request(self.lhs, self.rhs)
             
         elif switch == "status":
             if not self.args or "=" not in self.args:
                 self.caller.msg(f"Usage: request/status <#>=<status>\nValid statuses: {', '.join(VALID_STATUSES)}")
                 return
-            self._change_status(self.lhs, self.rhs)
+            self.change_status(self.lhs, self.rhs)
             
         elif switch == "cat":
             if not self.args or "=" not in self.args:
                 self.caller.msg(f"Usage: request/cat <#>=<category>\nValid categories: {', '.join(DEFAULT_CATEGORIES)}")
                 return
-            self._change_category(self.lhs, self.rhs)
+            self.change_category(self.lhs, self.rhs)
             
         elif switch == "archive":
             if self.args == "all":
-                self._list_requests(personal=False, show_archived=True)
+                self.list_requests(personal=False, show_archived=True)
             else:
-                self._archive_request(self.args)
+                self.archive_request(self.args)
                 
         elif switch == "unarchive":
-            self._unarchive_request(self.args)
+            self.unarchive_request(self.args)
             
         elif switch == "cleanup":
-            self._cleanup_old_requests()
+            self.cleanup_old_requests()
             
         elif switch == "all":
-            self._list_requests(personal=False)
+            self.list_requests(personal=False)
             
         else:
             self.caller.msg("Invalid switch. See help request for valid options.")

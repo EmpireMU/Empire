@@ -35,7 +35,7 @@ class Request(DefaultScript):
         now = datetime.now()
         
         # Basic properties using Evennia's attribute system
-        self.db.id = self._get_next_id()
+        self.db.id = self.get_next_id()
         self.db.title = ""
         self.db.text = ""
         self.db.submitter = None
@@ -52,9 +52,9 @@ class Request(DefaultScript):
         # Make sure this script never repeats or times out
         self.interval = -1  # -1 means never repeat
         self.persistent = True
-        
+
     @classmethod
-    def _get_next_id(cls):
+    def get_next_id(cls):
         """Get the next available request ID."""
         from evennia.scripts.models import ScriptDB
         
@@ -73,7 +73,7 @@ class Request(DefaultScript):
                 continue
                 
         return max_id + 1
-        
+
     @property
     def status(self):
         """Get the current status."""
