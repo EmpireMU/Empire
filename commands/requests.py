@@ -10,6 +10,7 @@ from evennia.utils.search import search_script
 from evennia.accounts.models import AccountDB
 from typeclasses.requests import Request, VALID_STATUSES, DEFAULT_CATEGORIES
 from datetime import datetime
+from evennia.scripts.models import ScriptDB
 
 class CmdRequest(MuxCommand):
     """
@@ -85,14 +86,21 @@ class CmdRequest(MuxCommand):
         
     def _get_requests(self, show_archived=False):
         """Get all requests, optionally filtering for archived ones."""
-        # First try direct script search
-        self.caller.msg("DEBUG: Searching for requests...")
-        requests = search_script("typeclasses.requests.Request")
-        self.caller.msg(f"DEBUG: Initial search found {len(requests)} scripts")
+        # First try direct database query
+        self.caller.msg("DEBUG: Querying database for requests...")
+        requests = ScriptDB.objects.filter(db_typeclass_path__contains="requests.Request")
+        self.caller.msg(f"DEBUG: Database query found {requests.count()} scripts")
+        
+        # Show raw database entries
+        for script_db in requests:
+            self.caller.msg(f"DEBUG: Raw DB entry - path={script_db.db_typeclass_path}, key={script_db.db_key}")
+        
+        # Convert to list of typeclassed objects
+        requests = [r.typeclass for r in requests]
         
         # Show details about each found script
         for r in requests:
-            self.caller.msg(f"DEBUG: Found script key={r.key}, dbref={r.dbref}, id={r.id}")
+            self.caller.msg(f"DEBUG: Found script key={r.key}, dbref={r.dbref}, id={r.id}, typeclass={r.__class__.__module__}.{r.__class__.__name__}")
             if hasattr(r, 'db'):
                 self.caller.msg(f"DEBUG: - Request ID={r.db.id}, title={r.db.title}, archived={r.db.date_archived}")
             else:
