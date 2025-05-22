@@ -18,13 +18,19 @@ class TestCharSheet(EvenniaTest):
         self.cmd.caller = self.char1
         self.cmd.obj = self.char1
         
-        # Set up trait handlers properly
-        self.char1.traits = TraitHandler(self.char1)
-        self.char1.character_attributes = TraitHandler(self.char1, db_attribute_key="character_attributes")
-        self.char1.skills = TraitHandler(self.char1, db_attribute_key="skills")
-        self.char1.distinctions = TraitHandler(self.char1, db_attribute_key="distinctions")
-        self.char1.signature_assets = TraitHandler(self.char1, db_attribute_key="signature_assets")
-        self.char1.char_resources = TraitHandler(self.char1, db_attribute_key="char_resources")
+        # Initialize trait handlers properly
+        if not hasattr(self.char1, 'traits'):
+            self.char1.traits = TraitHandler(self.char1)
+        if not hasattr(self.char1, 'character_attributes'):
+            self.char1.character_attributes = TraitHandler(self.char1, db_attribute_key="character_attributes")
+        if not hasattr(self.char1, 'skills'):
+            self.char1.skills = TraitHandler(self.char1, db_attribute_key="skills")
+        if not hasattr(self.char1, 'distinctions'):
+            self.char1.distinctions = TraitHandler(self.char1, db_attribute_key="distinctions")
+        if not hasattr(self.char1, 'signature_assets'):
+            self.char1.signature_assets = TraitHandler(self.char1, db_attribute_key="signature_assets")
+        if not hasattr(self.char1, 'char_resources'):
+            self.char1.char_resources = TraitHandler(self.char1, db_attribute_key="char_resources")
         
         # Set up test traits
         self.setup_test_traits()
@@ -35,28 +41,21 @@ class TestCharSheet(EvenniaTest):
         self.char1.traits.add("plot_points", "Plot Points", trait_type="counter", base=1)
         
         # Add attributes
-        self.char1.character_attributes.add("prowess", "Prowess", trait_type="static", 
-                                          base=8, desc="Physical power")
-        self.char1.character_attributes.add("finesse", "Finesse", trait_type="static",
-                                          base=6, desc="Agility")
+        self.char1.character_attributes.add("prowess", "Prowess", trait_type="static", base=8, desc="Physical power")
+        self.char1.character_attributes.add("finesse", "Finesse", trait_type="static", base=6, desc="Agility")
         
         # Add skills
-        self.char1.skills.add("fighting", "Fighting", trait_type="static",
-                            base=8, desc="Combat ability")
-        self.char1.skills.add("stealth", "Stealth", trait_type="static",
-                            base=6, desc="Moving quietly")
+        self.char1.skills.add("fighting", "Fighting", trait_type="static", base=8, desc="Combat ability")
+        self.char1.skills.add("stealth", "Stealth", trait_type="static", base=6, desc="Moving quietly")
         
         # Add distinctions
-        self.char1.distinctions.add("warrior", "Warrior", trait_type="static",
-                                  base=8, desc="Born fighter")
+        self.char1.distinctions.add("warrior", "Warrior", trait_type="static", base=8, desc="Born fighter")
         
         # Add signature assets
-        self.char1.signature_assets.add("sword", "Magic Sword", trait_type="static",
-                                      base=6, desc="Ancient blade")
+        self.char1.signature_assets.add("sword", "Magic Sword", trait_type="static", base=6, desc="Ancient blade")
         
         # Add resources
-        self.char1.char_resources.add("gold", "Gold", trait_type="static",
-                                    base=6, desc="Wealth")
+        self.char1.char_resources.add("gold", "Gold", trait_type="static", base=6, desc="Wealth")
     
     def test_get_trait_display(self):
         """Test trait display formatting."""
@@ -132,11 +131,15 @@ class TestCharSheet(EvenniaTest):
         # Create another character
         other_char = self.char2
         
-        # Set up trait handlers on other character
-        other_char.traits = TraitHandler(other_char)
-        other_char.character_attributes = TraitHandler(other_char, db_attribute_key="character_attributes")
-        other_char.skills = TraitHandler(other_char, db_attribute_key="skills")
-        other_char.distinctions = TraitHandler(other_char, db_attribute_key="distinctions")
+        # Initialize trait handlers on other character
+        if not hasattr(other_char, 'traits'):
+            other_char.traits = TraitHandler(other_char)
+        if not hasattr(other_char, 'character_attributes'):
+            other_char.character_attributes = TraitHandler(other_char, db_attribute_key="character_attributes")
+        if not hasattr(other_char, 'skills'):
+            other_char.skills = TraitHandler(other_char, db_attribute_key="skills")
+        if not hasattr(other_char, 'distinctions'):
+            other_char.distinctions = TraitHandler(other_char, db_attribute_key="distinctions")
         
         # Try viewing without permission
         self.cmd.args = other_char.name
@@ -164,4 +167,4 @@ class TestCharSheet(EvenniaTest):
         self.assertIn("has no character sheet", self.caller.msg.mock_calls[1][1][0])
 
 if __name__ == '__main__':
-    unittest.main() 
+    unittest.main()

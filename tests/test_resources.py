@@ -22,8 +22,9 @@ class TestResources(EvenniaTest):
         self.cmd.caller = self.char1
         self.cmd.obj = self.char1
         
-        # Set up character resources
-        self.char1.char_resources = TraitHandler(self.char1, db_attribute_key="char_resources")
+        # Initialize trait handlers properly
+        if not hasattr(self.char1, 'char_resources'):
+            self.char1.char_resources = TraitHandler(self.char1, db_attribute_key="char_resources")
         
         # Create and set up an organization
         self.org = self.create_organisation()
@@ -37,7 +38,8 @@ class TestResources(EvenniaTest):
     def create_organisation(self):
         """Create a test organization."""
         org = create_object(Organisation, key="Test Org")
-        org.org_resources = TraitHandler(org, db_attribute_key="org_resources")
+        if not hasattr(org, 'org_resources'):
+            org.org_resources = TraitHandler(org, db_attribute_key="org_resources")
         
         # Add org resources
         org.org_resources.add("armory", "Armory", trait_type="static", base=8)
@@ -133,7 +135,8 @@ class TestResources(EvenniaTest):
     def test_transfer_resource(self):
         """Test transferring resources."""
         # Set up char2 resources
-        self.char2.char_resources = TraitHandler(self.char2, db_attribute_key="char_resources")
+        if not hasattr(self.char2, 'char_resources'):
+            self.char2.char_resources = TraitHandler(self.char2, db_attribute_key="char_resources")
         
         # Test char to char transfer
         self.cmd.args = f"{self.char1.name}:gold={self.char2.name}"

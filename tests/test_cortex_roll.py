@@ -17,12 +17,17 @@ class TestCortexRoll(EvenniaTest):
         self.cmd.caller = self.char1
         self.cmd.obj = self.char1
         
-        # Set up trait handlers properly
-        self.char1.character_attributes = TraitHandler(self.char1, db_attribute_key="character_attributes")
-        self.char1.skills = TraitHandler(self.char1, db_attribute_key="skills")
-        self.char1.distinctions = TraitHandler(self.char1, db_attribute_key="distinctions")
-        self.char1.signature_assets = TraitHandler(self.char1, db_attribute_key="signature_assets")
-        self.char1.char_resources = TraitHandler(self.char1, db_attribute_key="char_resources")
+        # Initialize trait handlers properly
+        if not hasattr(self.char1, 'character_attributes'):
+            self.char1.character_attributes = TraitHandler(self.char1, db_attribute_key="character_attributes")
+        if not hasattr(self.char1, 'skills'):
+            self.char1.skills = TraitHandler(self.char1, db_attribute_key="skills")
+        if not hasattr(self.char1, 'distinctions'):
+            self.char1.distinctions = TraitHandler(self.char1, db_attribute_key="distinctions")
+        if not hasattr(self.char1, 'signature_assets'):
+            self.char1.signature_assets = TraitHandler(self.char1, db_attribute_key="signature_assets")
+        if not hasattr(self.char1, 'char_resources'):
+            self.char1.char_resources = TraitHandler(self.char1, db_attribute_key="char_resources")
         
         # Set up test traits
         self.setup_test_traits()
