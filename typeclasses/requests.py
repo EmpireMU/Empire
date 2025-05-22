@@ -56,13 +56,22 @@ class Request(DefaultScript):
     @classmethod
     def _get_next_id(cls):
         """Get the next available request ID."""
-        # Find all requests
-        requests = search_script("typeclasses.requests.Request")
-        if not requests:
+        from evennia.scripts.models import ScriptDB
+        
+        # Find all requests using direct database query
+        requests = ScriptDB.objects.filter(db_typeclass_path__contains="requests.Request")
+        if not requests.exists():
             return 1
             
         # Get the highest ID and increment
-        max_id = max((r.db.id for r in requests if hasattr(r, 'db') and r.db.id), default=0)
+        max_id = 0
+        for request in requests:
+            try:
+                if request.db.id and request.db.id > max_id:
+                    max_id = request.db.id
+            except AttributeError:
+                continue
+                
         return max_id + 1
         
     @property

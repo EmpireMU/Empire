@@ -85,13 +85,31 @@ class CmdRequest(MuxCommand):
         
     def _get_requests(self, show_archived=False):
         """Get all requests, optionally filtering for archived ones."""
+        # First try direct script search
+        self.caller.msg("DEBUG: Searching for requests...")
         requests = search_script("typeclasses.requests.Request")
+        self.caller.msg(f"DEBUG: Initial search found {len(requests)} scripts")
+        
+        # Show details about each found script
+        for r in requests:
+            self.caller.msg(f"DEBUG: Found script key={r.key}, dbref={r.dbref}, id={r.id}")
+            if hasattr(r, 'db'):
+                self.caller.msg(f"DEBUG: - Request ID={r.db.id}, title={r.db.title}, archived={r.db.date_archived}")
+            else:
+                self.caller.msg(f"DEBUG: - No db attributes found")
+        
         if not requests:
             return []
             
         # Filter based on archived status
-        # A request is archived if it has a date_archived value
-        return [r for r in requests if bool(r.db.date_archived is not None) == show_archived]
+        filtered = [r for r in requests if bool(r.db.date_archived is not None) == show_archived]
+        self.caller.msg(f"DEBUG: After archive filtering, {len(filtered)} requests remain")
+        
+        # Show what's being returned
+        for r in filtered:
+            self.caller.msg(f"DEBUG: Returning request ID={r.db.id}, title={r.db.title}")
+        
+        return filtered
         
     def _list_requests(self, personal=True, show_archived=False):
         """List requests"""
@@ -135,6 +153,7 @@ class CmdRequest(MuxCommand):
             return
 
         # Create the request script
+        self.caller.msg("DEBUG: Creating new request script...")
         request = create_script(
             "typeclasses.requests.Request",
             key=f"Request-{datetime.now().strftime('%Y%m%d-%H%M%S')}"  # More unique key
@@ -145,12 +164,17 @@ class CmdRequest(MuxCommand):
             return
 
         # Set up the request
+        self.caller.msg(f"DEBUG: Setting up request with ID {request.db.id}")
         request.db.title = title.strip()
         request.db.text = text.strip()
         request.db.submitter = self.caller.account
         
         self.caller.msg(f"Request #{request.db.id} created successfully.")
         request.notify_all(f"New request created: {title[:50]}{'...' if len(title) > 50 else ''}")
+        
+        # Debug: verify the request exists and is searchable
+        found = search_script("typeclasses.requests.Request", id=request.db.id)
+        self.caller.msg(f"DEBUG: Immediate search found {len(found)} matching requests")
         
     def _view_request(self, request_id):
         """View a specific request"""
