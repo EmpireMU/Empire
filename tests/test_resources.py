@@ -99,7 +99,7 @@ class TestResources(EvenniaTest):
         """Test creating character resources."""
         # Test creating with valid die size
         self.cmd.switches = ["char"]
-        self.cmd.args = "weapon d8"
+        self.cmd.args = "self, weapon d8"  # Comma-separated format
         self.cmd.func()
         output = str(self.cmd.msg.mock_calls[-1][1][0])
         self.assertIn("Resource created", output)
@@ -111,7 +111,7 @@ class TestResources(EvenniaTest):
         
         # Test creating with invalid die size
         self.cmd.switches = ["char"]
-        self.cmd.args = "invalid d7"
+        self.cmd.args = "self, invalid d7"  # Comma-separated format
         self.cmd.func()
         output = str(self.cmd.msg.mock_calls[-1][1][0])
         self.assertIn("Invalid die size", output)
@@ -120,7 +120,7 @@ class TestResources(EvenniaTest):
         """Test creating organization resources."""
         # Test creating with valid die size
         self.cmd.switches = ["org"]
-        self.cmd.args = "barracks d8"
+        self.cmd.args = "Test Org, barracks d8"  # Comma-separated format
         self.cmd.func()
         output = str(self.cmd.msg.mock_calls[-1][1][0])
         self.assertIn("Resource created", output)
@@ -132,7 +132,7 @@ class TestResources(EvenniaTest):
         
         # Test creating with invalid die size
         self.cmd.switches = ["org"]
-        self.cmd.args = "invalid d7"
+        self.cmd.args = "Test Org, invalid d7"  # Comma-separated format
         self.cmd.func()
         output = str(self.cmd.msg.mock_calls[-1][1][0])
         self.assertIn("Invalid die size", output)
@@ -141,7 +141,7 @@ class TestResources(EvenniaTest):
         """Test transferring resources."""
         # Test valid transfer
         self.cmd.switches = ["transfer"]
-        self.cmd.args = "gold to Char2"
+        self.cmd.args = "self:gold = Char2"  # Using correct format
         self.cmd.func()
         output = str(self.cmd.msg.mock_calls[-1][1][0])
         self.assertIn("Resource transferred", output)
@@ -152,7 +152,7 @@ class TestResources(EvenniaTest):
         
         # Test invalid transfer (nonexistent resource)
         self.cmd.switches = ["transfer"]
-        self.cmd.args = "nonexistent to Char2"
+        self.cmd.args = "self:nonexistent = Char2"  # Using correct format
         self.cmd.func()
         output = str(self.cmd.msg.mock_calls[-1][1][0])
         self.assertIn("No resource found", output)

@@ -7,6 +7,7 @@ from evennia.utils.test_resources import EvenniaTest
 from commands.cortex_roll import CmdCortexRoll, TraitDie
 from evennia.contrib.rpg.traits import TraitHandler
 import evennia
+from evennia.objects.objects import ObjectDB
 
 class TestCortexRoll(EvenniaTest):
     """Test cases for the Cortex roll command."""
@@ -157,9 +158,10 @@ class TestCortexRoll(EvenniaTest):
         # Set up mock rolls to get a predictable effect die
         mock_roll.side_effect = [8, 6, 4]  # This will make d8 the effect die
         
-        # Set up location mock
-        self.char1.location = MagicMock()
-        self.char1.location.msg_contents = MagicMock()
+        # Create a proper mock location
+        mock_location = create_object(ObjectDB, key="Mock Room")
+        mock_location.msg_contents = MagicMock()
+        self.char1.location = mock_location
         
         # Set up test traits
         self.cmd.args = "strength fighting warrior"
@@ -167,10 +169,10 @@ class TestCortexRoll(EvenniaTest):
         self.cmd.func()
         
         # Check that msg_contents was called
-        self.assertTrue(self.char1.location.msg_contents.called)
+        self.assertTrue(mock_location.msg_contents.called)
         
         # Get all messages sent to the room
-        room_messages = [call[1][0] for call in self.char1.location.msg_contents.mock_calls]
+        room_messages = [call[1][0] for call in mock_location.msg_contents.mock_calls]
         
         # Check that at least one message contains the effect die
         self.assertTrue(any("Effect Die: |wd8|n" in msg for msg in room_messages))

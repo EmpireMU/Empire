@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 from evennia.utils.test_resources import EvenniaTest
 from commands.charsheet_editor import (
     CmdSetTrait,
-    CmdDelTrait,
+    CmdDeleteTrait,
     CmdSetDistinction,
     CmdBiography,
     CmdBackground,
@@ -37,7 +37,7 @@ class TestCharSheetEditor(EvenniaTest):
         self.cmd_settrait.obj = self.char1
         self.cmd_settrait.msg = MagicMock()
 
-        self.cmd_deltrait = CmdDelTrait()
+        self.cmd_deltrait = CmdDeleteTrait()
         self.cmd_deltrait.caller = self.char1
         self.cmd_deltrait.obj = self.char1
         self.cmd_deltrait.msg = MagicMock()
