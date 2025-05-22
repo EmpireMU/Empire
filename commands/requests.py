@@ -89,7 +89,9 @@ class CmdRequest(MuxCommand):
         if not requests:
             return []
             
-        return [r for r in requests if bool(r.db.date_archived) == show_archived]
+        # Filter based on archived status
+        # A request is archived if it has a date_archived value
+        return [r for r in requests if bool(r.db.date_archived is not None) == show_archived]
         
     def _list_requests(self, personal=True, show_archived=False):
         """List requests"""

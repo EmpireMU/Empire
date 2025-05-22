@@ -45,7 +45,7 @@ class Request(DefaultScript):
         self.db.comments = []
         self.db.resolution = ""
         self.db.date_closed = None
-        self.db.date_archived = None
+        self.db.date_archived = None  # Explicitly set to None for filtering
         self.db.status = "Open"
         self.db.category = "General"
         
