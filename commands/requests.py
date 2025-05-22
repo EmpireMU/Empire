@@ -3,12 +3,12 @@ Commands for the request system.
 """
 
 from evennia.commands.default.muxcommand import MuxCommand
-from evennia import CmdSet, create_object, logger
+from evennia import CmdSet, create_script, logger
 from evennia.utils.utils import datetime_format
 from evennia.utils.evtable import EvTable
-from evennia.utils.search import search_object_attribute
+from evennia.utils.search import search_script
 from evennia.accounts.models import AccountDB
-from typeclasses.requests import Request, RequestHandler, VALID_STATUSES, DEFAULT_CATEGORIES
+from typeclasses.requests import Request, VALID_STATUSES, DEFAULT_CATEGORIES
 from datetime import datetime
 
 class CmdRequest(MuxCommand):
@@ -59,21 +59,14 @@ class CmdRequest(MuxCommand):
     locks = "cmd:pperm(Player)"  # Only accounts with Player permission or higher
     help_category = "Communication"
     
-    @property
-    def request_handler(self):
-        """Get the request handler."""
-        return Request.get_or_create_handler()
-    
     def _find_request(self, request_id):
         """Find a request by its ID number."""
         try:
             id_num = int(str(request_id).lstrip('#'))
             # Use Evennia's search functionality
-            results = search_object_attribute(
-                key="id",
-                value=id_num,
-                category="request",
-                typeclass=Request.path()
+            results = search_script(
+                "typeclasses.requests.Request",
+                id=id_num
             )
             return results[0] if results else None
         except (ValueError, IndexError):
@@ -116,10 +109,17 @@ class CmdRequest(MuxCommand):
             datetime_format(req.db.date_modified, "%Y-%m-%d")
         ]
         
+    def _get_requests(self, show_archived=False):
+        """Get all requests, optionally filtering for archived ones."""
+        requests = search_script("typeclasses.requests.Request")
+        if not requests:
+            return []
+            
+        return [r for r in requests if bool(r.db.date_archived) == show_archived]
+        
     def _list_requests(self, personal=True, show_archived=False):
         """List requests"""
-        handler = self.request_handler
-        requests = handler.archived_requests if show_archived else handler.active_requests
+        requests = self._get_requests(show_archived)
         
         if personal:
             requests = [r for r in requests if r.db.submitter == self.caller.account]
@@ -151,23 +151,53 @@ class CmdRequest(MuxCommand):
         
     def _create_request(self, title, text):
         """Create a new request"""
-        request = create_object(
-            typeclass="typeclasses.requests.Request",
-            key="Request",  # The handler will manage this
-            location=None,  # Requests don't need a location
-            home=None,     # Or a home
-            permissions=None,
-            locks=None,
-            aliases=None,
-            tags=None,
-            attributes=None,
-            nohome=True
-        )
-        request.db.title = title
-        request.db.text = text
-        request.db.submitter = self.caller.account
-        
-        self.caller.msg(f"Request #{request.db.id} created successfully.")
+        try:
+            # Validate input
+            if not title.strip():
+                self.caller.msg("Request title cannot be empty.")
+                return
+            if not text.strip():
+                self.caller.msg("Request text cannot be empty.")
+                return
+
+            # Create the request script
+            request = create_script(
+                "typeclasses.requests.Request",
+                key=f"Request-{datetime.now().strftime('%Y%m%d-%H%M%S')}"  # More unique key
+            )
+
+            if not request:
+                self.caller.msg("Failed to create request.")
+                logger.log_err("Request creation failed - create_script returned None")
+                return
+
+            # Set up the request
+            try:
+                request.db.title = title.strip()
+                request.db.text = text.strip()
+                request.db.submitter = self.caller.account
+                
+                # Verify the request was properly initialized
+                if not hasattr(request, 'db') or not request.db.id:
+                    self.caller.msg("Request was not properly initialized.")
+                    logger.log_err(f"Request initialization failed - missing attributes: {vars(request)}")
+                    request.delete()
+                    return
+
+                self.caller.msg(f"Request #{request.db.id} created successfully.")
+                
+                # Notify staff about new request
+                request.notify_all(f"New request created: {title[:50]}{'...' if len(title) > 50 else ''}")
+                
+            except Exception as e:
+                # Clean up on initialization error
+                if request:
+                    request.delete()
+                raise
+
+        except Exception as e:
+            self.caller.msg("Error creating request. Please try again or contact an admin.")
+            logger.log_trace(f"Request creation error: {str(e)}")
         
     def _view_request(self, request_id):
         """View a specific request"""
@@ -304,9 +334,8 @@ Modified: {datetime_format(request.db.date_modified)}"""
             self.caller.msg("You don't have permission to run cleanup.")
             return
             
-        handler = self.request_handler
         count = 0
-        for request in handler.active_requests:
+        for request in self._get_requests(show_archived=False):
             if request.should_auto_archive():
                 request.archive()
                 count += 1
@@ -332,7 +361,7 @@ Modified: {datetime_format(request.db.date_modified)}"""
                 if not self.args or "=" not in self.args:
                     self.caller.msg("Usage: request/new <title>=<text>")
                     return
-                self._create_request(self.lhs, self.rhs)
+                self._create_request(self.lhs.strip(), self.rhs.strip())
                 
             elif switch == "comment":
                 if not self.args or "=" not in self.args:
@@ -383,8 +412,8 @@ Modified: {datetime_format(request.db.date_modified)}"""
                 self.caller.msg("Invalid switch. See help request for valid options.")
                 
         except Exception as e:
-            self.caller.msg("An error occurred while processing your request. Please try again or contact an admin if the problem persists.")
-            logger.log_trace()
+            self.caller.msg("An error occurred. Please try again or contact an admin if the problem persists.")
+            logger.log_trace(f"Request command error in switch '{switch}': {str(e)}")
 
 class RequestCmdSet(CmdSet):
     """
