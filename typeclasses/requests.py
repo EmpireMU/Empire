@@ -50,7 +50,7 @@ class Request(DefaultScript):
         self.db.category = "General"
         
         # Make sure this script never repeats or times out
-        self.interval = None
+        self.interval = -1  # -1 means never repeat
         self.persistent = True
         
     @classmethod
