@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 from evennia.utils.test_resources import EvenniaTest
 from commands.charsheet import CmdSheet, get_trait_display, format_trait_section
 from utils.trait_definitions import ATTRIBUTES, SKILLS, DISTINCTIONS
+from evennia.contrib.rpg.traits import TraitHandler
 
 class TestCharSheet(EvenniaTest):
     """Test cases for character sheet functionality."""
@@ -17,89 +18,60 @@ class TestCharSheet(EvenniaTest):
         self.cmd.caller = self.char1
         self.cmd.obj = self.char1
         
-        # Mock trait handlers
-        self.char1.traits = MagicMock()
-        self.char1.character_attributes = MagicMock()
-        self.char1.skills = MagicMock()
-        self.char1.distinctions = MagicMock()
-        self.char1.signature_assets = MagicMock()
-        self.char1.char_resources = MagicMock()
+        # Set up trait handlers properly
+        self.char1.traits = TraitHandler(self.char1)
+        self.char1.character_attributes = TraitHandler(self.char1, db_attribute_key="character_attributes")
+        self.char1.skills = TraitHandler(self.char1, db_attribute_key="skills")
+        self.char1.distinctions = TraitHandler(self.char1, db_attribute_key="distinctions")
+        self.char1.signature_assets = TraitHandler(self.char1, db_attribute_key="signature_assets")
+        self.char1.char_resources = TraitHandler(self.char1, db_attribute_key="char_resources")
         
         # Set up test traits
         self.setup_test_traits()
     
     def setup_test_traits(self):
         """Set up test traits on the character."""
-        # Mock trait objects
-        class MockTrait:
-            def __init__(self, key, name, value, desc=""):
-                self.key = key
-                self.name = name
-                self.value = value
-                self.desc = desc
-                self.base = value
+        # Add plot points
+        self.char1.traits.add("plot_points", "Plot Points", trait_type="counter", base=1)
         
-        # Set up plot points
-        plot_points = MockTrait("plot_points", "Plot Points", 1)
-        self.char1.traits.get.return_value = plot_points
+        # Add attributes
+        self.char1.character_attributes.add("prowess", "Prowess", trait_type="static", 
+                                          base=8, desc="Physical power")
+        self.char1.character_attributes.add("finesse", "Finesse", trait_type="static",
+                                          base=6, desc="Agility")
         
-        # Set up attributes
-        self.attributes = {
-            "prowess": MockTrait("prowess", "Prowess", 8, "Physical power"),
-            "finesse": MockTrait("finesse", "Finesse", 6, "Agility")
-        }
-        self.char1.character_attributes.all.return_value = list(self.attributes.keys())
-        self.char1.character_attributes.get.side_effect = lambda x: self.attributes.get(x)
+        # Add skills
+        self.char1.skills.add("fighting", "Fighting", trait_type="static",
+                            base=8, desc="Combat ability")
+        self.char1.skills.add("stealth", "Stealth", trait_type="static",
+                            base=6, desc="Moving quietly")
         
-        # Set up skills
-        self.skills = {
-            "fighting": MockTrait("fighting", "Fighting", 8, "Combat ability"),
-            "stealth": MockTrait("stealth", "Stealth", 6, "Moving quietly")
-        }
-        self.char1.skills.all.return_value = list(self.skills.keys())
-        self.char1.skills.get.side_effect = lambda x: self.skills.get(x)
+        # Add distinctions
+        self.char1.distinctions.add("warrior", "Warrior", trait_type="static",
+                                  base=8, desc="Born fighter")
         
-        # Set up distinctions
-        self.distinctions = {
-            "warrior": MockTrait("warrior", "Warrior", 8, "Born fighter")
-        }
-        self.char1.distinctions.all.return_value = list(self.distinctions.keys())
-        self.char1.distinctions.get.side_effect = lambda x: self.distinctions.get(x)
+        # Add signature assets
+        self.char1.signature_assets.add("sword", "Magic Sword", trait_type="static",
+                                      base=6, desc="Ancient blade")
         
-        # Set up signature assets
-        self.assets = {
-            "sword": MockTrait("sword", "Magic Sword", 6, "Ancient blade")
-        }
-        self.char1.signature_assets.all.return_value = list(self.assets.keys())
-        self.char1.signature_assets.get.side_effect = lambda x: self.assets.get(x)
-        
-        # Set up resources
-        self.resources = {
-            "gold": MockTrait("gold", "Gold", 6, "Wealth")
-        }
-        self.char1.char_resources.all.return_value = list(self.resources.keys())
-        self.char1.char_resources.get.side_effect = lambda x: self.resources.get(x)
+        # Add resources
+        self.char1.char_resources.add("gold", "Gold", trait_type="static",
+                                    base=6, desc="Wealth")
     
     def test_get_trait_display(self):
         """Test trait display formatting."""
         # Test normal trait
-        trait = self.attributes["prowess"]
+        trait = self.char1.character_attributes.get("prowess")
         name, die, desc = get_trait_display(trait)
         self.assertEqual(name, "Prowess")
         self.assertEqual(die, "d8")
         self.assertEqual(desc, "Physical power")
         
-        # Test trait without name (falls back to key)
-        trait = MagicMock(key="test", value=6)
-        del trait.name
-        name, die, desc = get_trait_display(trait)
-        self.assertEqual(name, "test")
-        self.assertEqual(die, "d6")
-        
         # Test trait without description
-        trait = MagicMock(key="test", name="Test", value=6)
-        del trait.desc
+        trait = self.char1.skills.add("test", "Test", trait_type="static", base=6)
         name, die, desc = get_trait_display(trait)
+        self.assertEqual(name, "Test")
+        self.assertEqual(die, "d6")
         self.assertEqual(desc, "")
         
         # Test None trait
@@ -111,7 +83,10 @@ class TestCharSheet(EvenniaTest):
     def test_format_trait_section(self):
         """Test trait section formatting."""
         # Test attributes section
-        attributes = [self.attributes["prowess"], self.attributes["finesse"]]
+        attributes = [
+            self.char1.character_attributes.get("prowess"),
+            self.char1.character_attributes.get("finesse")
+        ]
         section = format_trait_section("Attributes", attributes)
         self.assertIn("Attributes", section)
         self.assertIn("Prowess", section)
@@ -120,7 +95,7 @@ class TestCharSheet(EvenniaTest):
         self.assertIn("d6", section)
         
         # Test resources section with descriptions
-        resources = [self.resources["gold"]]
+        resources = [self.char1.char_resources.get("gold")]
         section = format_trait_section("Resources", resources, show_desc=True)
         self.assertIn("Resources", section)
         self.assertIn("Gold", section)
@@ -157,11 +132,11 @@ class TestCharSheet(EvenniaTest):
         # Create another character
         other_char = self.char2
         
-        # Set up mock traits on other character
-        other_char.traits = MagicMock()
-        other_char.character_attributes = MagicMock()
-        other_char.skills = MagicMock()
-        other_char.distinctions = MagicMock()
+        # Set up trait handlers on other character
+        other_char.traits = TraitHandler(other_char)
+        other_char.character_attributes = TraitHandler(other_char, db_attribute_key="character_attributes")
+        other_char.skills = TraitHandler(other_char, db_attribute_key="skills")
+        other_char.distinctions = TraitHandler(other_char, db_attribute_key="distinctions")
         
         # Try viewing without permission
         self.cmd.args = other_char.name
@@ -171,7 +146,7 @@ class TestCharSheet(EvenniaTest):
         # Give permission and try again
         self.cmd.caller.permissions.add("Admin")
         self.cmd.func()
-        # Should succeed but show empty sheet since we didn't mock traits
+        # Should succeed but show empty sheet since we didn't add any traits
         self.assertIn("has no character sheet", self.caller.msg.mock_calls[1][1][0])
     
     def test_invalid_sheet_access(self):

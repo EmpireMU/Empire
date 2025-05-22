@@ -5,6 +5,7 @@ Tests for Cortex Prime dice rolling command.
 from unittest.mock import MagicMock, patch
 from evennia.utils.test_resources import EvenniaTest
 from commands.cortex_roll import CmdCortexRoll, TraitDie
+from evennia.contrib.rpg.traits import TraitHandler
 
 class TestCortexRoll(EvenniaTest):
     """Test cases for the Cortex roll command."""
@@ -16,48 +17,31 @@ class TestCortexRoll(EvenniaTest):
         self.cmd.caller = self.char1
         self.cmd.obj = self.char1
         
-        # Mock character attributes
-        self.char1.character_attributes = MagicMock()
-        self.char1.skills = MagicMock()
-        self.char1.distinctions = MagicMock()
-        self.char1.signature_assets = MagicMock()
-        self.char1.char_resources = MagicMock()
+        # Set up trait handlers properly
+        self.char1.character_attributes = TraitHandler(self.char1, db_attribute_key="character_attributes")
+        self.char1.skills = TraitHandler(self.char1, db_attribute_key="skills")
+        self.char1.distinctions = TraitHandler(self.char1, db_attribute_key="distinctions")
+        self.char1.signature_assets = TraitHandler(self.char1, db_attribute_key="signature_assets")
+        self.char1.char_resources = TraitHandler(self.char1, db_attribute_key="char_resources")
         
-        # Set up some test traits
+        # Set up test traits
         self.setup_test_traits()
     
     def setup_test_traits(self):
         """Set up test traits on the character."""
-        # Mock trait objects
-        class MockTrait:
-            def __init__(self, base):
-                self.base = base
-                
-        # Set up attributes
-        self.char1.character_attributes.all.return_value = ["strength", "agility"]
-        self.char1.character_attributes.get.side_effect = lambda x: {
-            "strength": MockTrait(8),
-            "agility": MockTrait(6)
-        }.get(x)
+        # Add attributes
+        self.char1.character_attributes.add("strength", "Strength", trait_type="static", base=8)
+        self.char1.character_attributes.add("agility", "Agility", trait_type="static", base=6)
         
-        # Set up skills
-        self.char1.skills.all.return_value = ["fighting", "stealth"]
-        self.char1.skills.get.side_effect = lambda x: {
-            "fighting": MockTrait(8),
-            "stealth": MockTrait(6)
-        }.get(x)
+        # Add skills
+        self.char1.skills.add("fighting", "Fighting", trait_type="static", base=8)
+        self.char1.skills.add("stealth", "Stealth", trait_type="static", base=6)
         
-        # Set up distinctions
-        self.char1.distinctions.all.return_value = ["warrior"]
-        self.char1.distinctions.get.side_effect = lambda x: {
-            "warrior": MockTrait(8)
-        }.get(x)
+        # Add distinctions
+        self.char1.distinctions.add("warrior", "Warrior", trait_type="static", base=8)
         
-        # Set up signature assets
-        self.char1.signature_assets.all.return_value = ["sword"]
-        self.char1.signature_assets.get.side_effect = lambda x: {
-            "sword": MockTrait(6)
-        }.get(x)
+        # Add signature assets
+        self.char1.signature_assets.add("sword", "Magic Sword", trait_type="static", base=6)
     
     @patch('commands.cortex_roll.roll_die')
     def test_basic_roll(self, mock_roll):

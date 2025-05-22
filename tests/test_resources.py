@@ -9,6 +9,8 @@ from utils.resource_utils import get_unique_resource_name, validate_resource_own
 from utils.org_utils import get_org, get_char
 from typeclasses.characters import Character
 from typeclasses.organisations import Organisation
+from evennia.contrib.rpg.traits import TraitHandler
+from evennia import create_object
 
 class TestResources(EvenniaTest):
     """Test cases for resource system functionality."""
@@ -21,11 +23,13 @@ class TestResources(EvenniaTest):
         self.cmd.obj = self.char1
         
         # Set up character resources
-        self.char1.char_resources = MagicMock()
-        self.setup_char_resources()
+        self.char1.char_resources = TraitHandler(self.char1, db_attribute_key="char_resources")
         
         # Create and set up an organization
         self.org = self.create_organisation()
+        
+        # Set up test resources
+        self.setup_char_resources()
         
         # Set up permissions
         self.cmd.caller.permissions.add("Admin")
@@ -33,38 +37,19 @@ class TestResources(EvenniaTest):
     def create_organisation(self):
         """Create a test organization."""
         org = create_object(Organisation, key="Test Org")
-        org.org_resources = MagicMock()
+        org.org_resources = TraitHandler(org, db_attribute_key="org_resources")
         
-        # Set up org resources
-        class MockTrait:
-            def __init__(self, key, value):
-                self.key = key
-                self.value = value
-                self.base = value
-        
-        org.resources = {
-            "armory": MockTrait("armory", 8),
-            "treasury": MockTrait("treasury", 6)
-        }
-        org.org_resources.all.return_value = list(org.resources.keys())
-        org.org_resources.get.side_effect = lambda x: org.resources.get(x)
+        # Add org resources
+        org.org_resources.add("armory", "Armory", trait_type="static", base=8)
+        org.org_resources.add("treasury", "Treasury", trait_type="static", base=6)
         
         return org
     
     def setup_char_resources(self):
         """Set up character resources."""
-        class MockTrait:
-            def __init__(self, key, value):
-                self.key = key
-                self.value = value
-                self.base = value
-        
-        self.char_resources = {
-            "gold": MockTrait("gold", 6),
-            "supplies": MockTrait("supplies", 4)
-        }
-        self.char1.char_resources.all.return_value = list(self.char_resources.keys())
-        self.char1.char_resources.get.side_effect = lambda x: self.char_resources.get(x)
+        # Add character resources
+        self.char1.char_resources.add("gold", "Gold", trait_type="static", base=6)
+        self.char1.char_resources.add("supplies", "Supplies", trait_type="static", base=4)
     
     def test_list_resources(self):
         """Test listing resources."""
@@ -147,6 +132,9 @@ class TestResources(EvenniaTest):
     
     def test_transfer_resource(self):
         """Test transferring resources."""
+        # Set up char2 resources
+        self.char2.char_resources = TraitHandler(self.char2, db_attribute_key="char_resources")
+        
         # Test char to char transfer
         self.cmd.args = f"{self.char1.name}:gold={self.char2.name}"
         self.cmd.func()
