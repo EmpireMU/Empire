@@ -21,34 +21,21 @@ class TestCharSheetEditor(EvenniaTest):
         """Set up test case."""
         super().setUp()
         
-        # Set up commands
-        self.cmd_settrait = CmdSetTrait()
-        self.cmd_deltrait = CmdDelTrait()
-        self.cmd_setdist = CmdSetDistinction()
-        self.cmd_bio = CmdBiography()
-        self.cmd_bg = CmdBackground()
-        self.cmd_pers = CmdPersonality()
-        
-        # Set caller for all commands
-        for cmd in [self.cmd_settrait, self.cmd_deltrait, self.cmd_setdist,
-                   self.cmd_bio, self.cmd_bg, self.cmd_pers]:
-            cmd.caller = self.char1
-            cmd.obj = self.char1
-            
-            # Set up message mocking for each command
-            cmd.msg = MagicMock()
-        
-        # Set up character trait handlers
-        if not hasattr(self.char1, 'traits'):
-            self.char1.traits = TraitHandler(self.char1)
-        if not hasattr(self.char1, 'character_attributes'):
-            self.char1.character_attributes = TraitHandler(self.char1, db_attribute_key="char_attributes")
+        # Initialize trait handlers
+        if not hasattr(self.char1, 'char_attributes'):
+            self.char1.char_attributes = TraitHandler(self.char1, db_attribute_key="char_attributes")
         if not hasattr(self.char1, 'skills'):
             self.char1.skills = TraitHandler(self.char1, db_attribute_key="skills")
         if not hasattr(self.char1, 'distinctions'):
-            self.char1.distinctions = TraitHandler(self.char1, db_attribute_key="distinctions")
+            self.char1.distinctions = TraitHandler(self.char1, db_attribute_key="char_distinctions")
         if not hasattr(self.char1, 'signature_assets'):
-            self.char1.signature_assets = TraitHandler(self.char1, db_attribute_key="signature_assets")
+            self.char1.signature_assets = TraitHandler(self.char1, db_attribute_key="char_signature_assets")
+        
+        # Set up test commands
+        self.cmd_settrait = CmdSetTrait()
+        self.cmd_settrait.caller = self.char1
+        self.cmd_settrait.obj = self.char1
+        self.cmd_settrait.msg = MagicMock()
         
         # Set up permissions
         self.char1.permissions.add("Admin")
@@ -58,7 +45,7 @@ class TestCharSheetEditor(EvenniaTest):
         # Test setting an attribute
         self.cmd_settrait.args = "self = attributes strength d8 Strong and tough"
         self.cmd_settrait.func()
-        trait = self.char1.character_attributes.get("strength")
+        trait = self.char1.char_attributes.get("strength")
         self.assertIsNotNone(trait)
         self.assertEqual(int(trait.base), 8)
         self.assertEqual(trait.desc, "Strong and tough")
@@ -92,14 +79,14 @@ class TestCharSheetEditor(EvenniaTest):
     def test_delete_trait(self):
         """Test deleting traits."""
         # Add some traits to delete
-        self.char1.character_attributes.add("strength", trait_type="static", base=8)
+        self.char1.char_attributes.add("strength", trait_type="static", base=8)
         self.char1.skills.add("fighting", trait_type="static", base=6)
         self.char1.signature_assets.add("sword", trait_type="static", base=8)
         
         # Test deleting an attribute
         self.cmd_deltrait.args = "self = attributes strength"
         self.cmd_deltrait.func()
-        self.assertIsNone(self.char1.character_attributes.get("strength"))
+        self.assertIsNone(self.char1.char_attributes.get("strength"))
         
         # Test deleting a skill
         self.cmd_deltrait.args = "self = skills fighting"

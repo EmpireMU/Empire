@@ -94,91 +94,85 @@ class CmdSetTrait(MuxCommand):
 
         # Set the trait
         if category == 'attributes':
-            char.attributes.add(name, value=die_size, name=name, description=description)
+            char.char_attributes.add(name, value=die_size, description=description)
         elif category == 'skills':
-            char.skills.add(name, value=die_size, name=name, description=description)
+            char.skills.add(name, value=die_size, description=description)
         elif category == 'signature_assets':
-            char.signature_assets.add(name, value=die_size, name=name, description=description)
+            char.signature_assets.add(name, value=die_size, description=description)
 
         self.msg(f"Set {name} to d{die_size} for {char.name}")
 
-class CmdDelTrait(MuxCommand):
-    """
-    Delete a trait from a character sheet.
-
+class CmdDeleteTrait(Command):
+    """Delete a trait from a character.
+    
     Usage:
-      deltrait <character> = <category> <name>
-
+        deletetrait <character> = <category> <trait>
+        
     Categories:
-      attributes   - Core attributes (d4-d12)
-      skills       - Skills (d4-d12)
-      signature_assets - Signature assets (d4-d12)
-
+        attributes - Core attributes
+        skills - Learned abilities
+        signature_assets - Important items/companions
+        
     Examples:
-      deltrait Bob = attributes strength
-      deltrait Bob = skills fighting
-      deltrait Bob = signature_assets sword
+        deletetrait Bob = attributes strength
+        deletetrait Jane = skills fighting
+        deletetrait Tom = signature_assets sword
     """
-    key = "deltrait"
-    help_category = "Character"
+    key = "deletetrait"
     locks = "cmd:perm(Admin)"
+    help_category = "Character"
 
     def func(self):
         """Execute the command."""
         if not self.args or "=" not in self.args:
-            self.msg("Usage: deltrait <character> = <category> <name>")
+            self.msg("Usage: deletetrait <character> = <category> <trait>")
             return
 
-        # Split into character and trait parts
-        char_name, trait_part = [part.strip() for part in self.args.split("=", 1)]
+        char_name, rest = [part.strip() for part in self.args.split("=", 1)]
         
         # Find the character
         char = self.caller.search(char_name)
         if not char:
             return
-
-        # Parse trait information
-        parts = trait_part.strip().split()
-        if len(parts) != 2:
-            self.msg("Usage: deltrait <character> = <category> <name>")
+            
+        # Parse category and trait name
+        try:
+            category, trait_name = rest.strip().split(None, 1)
+        except ValueError:
+            self.msg("You must specify both a category and a trait name.")
             return
-
-        category = parts[0].lower()
-        if category not in ['attributes', 'skills', 'signature_assets']:
+            
+        category = category.lower()
+        trait_name = trait_name.strip().lower()
+        
+        # Get the appropriate trait handler
+        if category == 'attributes':
+            handler = char.char_attributes
+        elif category == 'skills':
+            handler = char.skills
+        elif category == 'signature_assets':
+            handler = char.signature_assets
+        else:
             self.msg("Invalid category. Must be one of: attributes, skills, signature_assets")
             return
+            
+        # Try to delete the trait
+        if handler.get(trait_name):
+            handler.remove(trait_name)
+            self.msg(f"Deleted {category} trait '{trait_name}' from {char.name}.")
+        else:
+            self.msg(f"No {category} trait found named '{trait_name}' on {char.name}.")
 
-        name = parts[1]
-
-        # Delete the trait
-        if category == 'attributes':
-            char.attributes.remove(name)
-        elif category == 'skills':
-            char.skills.remove(name)
-        elif category == 'signature_assets':
-            char.signature_assets.remove(name)
-
-        self.msg(f"Deleted {name} from {char.name}'s {category}")
-
-class CmdSetDistinction(MuxCommand):
+class CmdSetDistinction(Command):
     """
-    Set a character's distinction name and description.
+    Set a distinction on a character.
     
     Usage:
-        setdist <character> = <slot> : <name> : <description>
+        setdistinction <character> = <slot> : <name> : <description>
         
-    Examples:
-        setdist Bob = concept : Bold Explorer : Always seeking the next horizon
-        setdist Jane = culture : Islander : Born and raised on the Storm Isles
-        setdist Tom = reputation : Mysterious : No one knows their true motives
         
-    The three distinction slots are:
-    - concept (character concept)
-    - culture (cultural background)
-    - reputation (how others see them)
-    
-    Each distinction is always d8 (or d4 for a plot point).
-    Only staff members can use this command.
+    Notes:
+    - All distinctions are d8 (can be used as d4 to gain a plot point)
     """
     
     key = "setdist"
@@ -350,16 +344,15 @@ class CmdBackground(MuxCommand):
             char.db.background = text.strip()
             self.msg(f"Updated {char.name}'s background.")
             char.msg(f"{self.caller.name} updated your background.")
-            
-        except ValueError:
-            self.msg("Usage: background <character> = <text>")
-            return
+        except Exception as e:
+            self.msg(f"Error updating background: {e}")
             
     def show_background(self, char):
         """Show a character's background."""
-        msg = f"\n|w{char.name}'s Background|n"
-        msg += f"\n\n{char.db.background}"
-        self.msg(msg)
+        if not char.db.background:
+            self.msg(f"{char.name} has no background set.")
+            return
+        self.msg(f"\n|w{char.name}'s Background:|n\n{char.db.background}")
 
 class CmdPersonality(MuxCommand):
     """
@@ -421,9 +414,10 @@ class CmdPersonality(MuxCommand):
             
     def show_personality(self, char):
         """Show a character's personality."""
-        msg = f"\n|w{char.name}'s Personality|n"
-        msg += f"\n\n{char.db.personality}"
-        self.msg(msg)
+        if not char.db.personality:
+            self.msg(f"{char.name} has no personality set.")
+            return
+        self.msg(f"\n|w{char.name}'s Personality:|n\n{char.db.personality}")
 
 class CharSheetEditorCmdSet(CmdSet):
     """
@@ -435,7 +429,7 @@ class CharSheetEditorCmdSet(CmdSet):
         Add commands to the command set
         """
         self.add(CmdSetTrait())
-        self.add(CmdDelTrait())
+        self.add(CmdDeleteTrait())
         self.add(CmdSetDistinction())
         self.add(CmdBiography())
         self.add(CmdBackground())

@@ -58,7 +58,7 @@ def get_trait_die(character, trait_spec: str) -> Optional[Tuple[str, str, str, b
         Tuple of (die_size, category_name, step_mod, doubled) or None if not found
         doubled indicates if an extra die of the same size should be added
     """
-    if not hasattr(character, 'character_attributes'):
+    if not hasattr(character, 'char_attributes'):
         return None
         
     # Parse trait specification for modifiers
@@ -76,7 +76,7 @@ def get_trait_die(character, trait_spec: str) -> Optional[Tuple[str, str, str, b
         
     # Try each trait category in order
     categories = [
-        ('attributes', character.character_attributes),
+        ('attributes', character.char_attributes),
         ('skills', character.skills),
         ('distinctions', character.distinctions),
         ('char_resources', character.char_resources),
@@ -180,40 +180,33 @@ def roll_die(sides: int) -> int:
     """Roll a single die."""
     return randint(1, int(sides))
 
-def process_results(rolls: List[Tuple[int, str, int]]) -> Tuple[int, str, List[str]]:
+def process_results(results, hitches=False):
     """
-    Process the dice results according to Cortex Prime rules.
+    Process dice roll results.
     
     Args:
-        rolls: List of (value, die_size, index) tuples
+        results: List of (value, die_size) tuples
+        hitches: Whether to count 1s as hitches
         
     Returns:
-        Tuple of (total, effect_die, hitches) where:
-        - total is the sum of the two highest non-hitch dice
-        - effect_die is the next highest non-hitch die size (or "4" if none)
-        - hitches is a list of dice that rolled 1
+        Tuple of (total, effect_die, hitches)
     """
-    # Identify hitches (1s)
-    hitches = [die for value, die, _ in rolls if value == 1]
-    
-    # Remove hitches from consideration for total and effect
-    valid_rolls = [(value, die) for value, die, _ in rolls if value > 1]
-    
-    # Sort valid rolls by value, highest first
-    valid_rolls.sort(key=lambda x: x[0], reverse=True)
-    
-    if len(valid_rolls) < 2:
-        return 0, "4", hitches  # Default to 4 if not enough valid dice
+    if not results:
+        return 0, 0, 0
         
-    # Get two highest for total
-    total = valid_rolls[0][0] + valid_rolls[1][0]
+    # Sort results by value, highest first
+    sorted_results = sorted(results, key=lambda x: x[0], reverse=True)
     
-    # Get effect die (next highest after the two used for total)
-    effect_die = "4"  # Default
-    if len(valid_rolls) > 2:
-        effect_die = valid_rolls[2][1]  # Use the die size directly
-        
-    return total, effect_die, hitches
+    # Count hitches (1s)
+    hitch_count = sum(1 for value, _ in results if value == 1) if hitches else 0
+    
+    # Get total of highest two dice
+    total = sum(value for value, _ in sorted_results[:2])
+    
+    # Effect die is the highest unused die
+    effect_die = sorted_results[2][0] if len(sorted_results) > 2 else 0
+    
+    return total, effect_die, hitch_count
 
 def get_success_level(total: int, difficulty: Optional[int]) -> Tuple[bool, bool]:
     """

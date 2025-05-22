@@ -26,7 +26,7 @@ def get_trait_display(trait):
         display_name = trait.key
     
     # Get the die size from the value
-    die_size = f"d{trait.value}" if hasattr(trait, 'value') else ""
+    die_size = f"d{int(trait.value)}" if hasattr(trait, 'value') else ""
     
     # Get the description, falling back to empty string if not set
     # Resources don't have descriptions, so we handle that case
@@ -172,23 +172,19 @@ class CmdSheet(Command):
     """
     
     key = "sheet"
-    # Allow viewing own sheet always, require Builder permission to view others
     locks = "cmd:all();view_other:perm(Builder)"
     help_category = "Character"
-    switch_options = ()  # No switches for this command
-    
+    switch_options = ()
+
     def func(self):
-        """Display the character sheet."""
+        """Execute the command."""
         if not self.args:
-            # View own sheet
+            # Viewing own sheet
             char = self.caller
-            # If caller is an account, get their character
-            if hasattr(self.caller, 'char'):
-                char = self.caller.char
         else:
-            # Staff checking other character
+            # Check permission using the lock system
             if not self.access(self.caller, "view_other"):
-                self.caller.msg("You can only view your own character sheet.")
+                self.msg("You can only view your own character sheet.")
                 return
             char = self.caller.search(self.args)
             if not char:
@@ -210,7 +206,7 @@ class CmdSheet(Command):
         # Get trait objects for each category
         # We need the full trait objects to access their properties
         distinctions = [char.distinctions.get(key) for key in char.distinctions.all()]
-        attributes = [char.character_attributes.get(key) for key in char.character_attributes.all()]
+        attributes = [char.char_attributes.get(key) for key in char.char_attributes.all()]
         skills = [char.skills.get(key) for key in char.skills.all()]
         assets = [char.signature_assets.get(key) for key in char.signature_assets.all()]
         resources = [char.char_resources.get(key) for key in char.char_resources.all()]

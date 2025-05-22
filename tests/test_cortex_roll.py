@@ -32,26 +32,21 @@ class TestCortexRoll(EvenniaTest):
         self.cmd.session = self.session
         evennia.SESSION_HANDLER[1] = self.session  # Register the session
         
-        # Initialize trait handlers properly
-        if not hasattr(self.char1, 'character_attributes'):
-            self.char1.character_attributes = TraitHandler(self.char1, db_attribute_key="char_attributes")
+        # Initialize trait handlers
+        if not hasattr(self.char1, 'char_attributes'):
+            self.char1.char_attributes = TraitHandler(self.char1, db_attribute_key="char_attributes")
         if not hasattr(self.char1, 'skills'):
             self.char1.skills = TraitHandler(self.char1, db_attribute_key="skills")
         if not hasattr(self.char1, 'distinctions'):
-            self.char1.distinctions = TraitHandler(self.char1, db_attribute_key="distinctions")
+            self.char1.distinctions = TraitHandler(self.char1, db_attribute_key="char_distinctions")
         if not hasattr(self.char1, 'signature_assets'):
             self.char1.signature_assets = TraitHandler(self.char1, db_attribute_key="signature_assets")
         if not hasattr(self.char1, 'char_resources'):
             self.char1.char_resources = TraitHandler(self.char1, db_attribute_key="char_resources")
         
-        # Set up test traits
-        self.setup_test_traits()
-    
-    def setup_test_traits(self):
-        """Set up test traits on the character."""
-        # Add attributes
-        self.char1.character_attributes.add("strength", "Strength", trait_type="static", base=8)
-        self.char1.character_attributes.add("agility", "Agility", trait_type="static", base=6)
+        # Add test traits
+        self.char1.char_attributes.add("strength", "Strength", trait_type="static", base=8)
+        self.char1.char_attributes.add("agility", "Agility", trait_type="static", base=6)
         
         # Add skills
         self.char1.skills.add("fighting", "Fighting", trait_type="static", base=8)

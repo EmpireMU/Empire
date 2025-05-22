@@ -23,31 +23,21 @@ class TestCharSheet(EvenniaTest):
         self.caller.msg = MagicMock()
         self.cmd.msg = self.caller.msg
         
-        # Initialize trait handlers properly
-        if not hasattr(self.char1, 'traits'):
-            self.char1.traits = TraitHandler(self.char1)
-        if not hasattr(self.char1, 'character_attributes'):
-            self.char1.character_attributes = TraitHandler(self.char1, db_attribute_key="char_attributes")
+        # Initialize trait handlers
+        if not hasattr(self.char1, 'char_attributes'):
+            self.char1.char_attributes = TraitHandler(self.char1, db_attribute_key="char_attributes")
         if not hasattr(self.char1, 'skills'):
             self.char1.skills = TraitHandler(self.char1, db_attribute_key="skills")
         if not hasattr(self.char1, 'distinctions'):
-            self.char1.distinctions = TraitHandler(self.char1, db_attribute_key="distinctions")
-        if not hasattr(self.char1, 'signature_assets'):
-            self.char1.signature_assets = TraitHandler(self.char1, db_attribute_key="signature_assets")
+            self.char1.distinctions = TraitHandler(self.char1, db_attribute_key="char_distinctions")
         if not hasattr(self.char1, 'char_resources'):
             self.char1.char_resources = TraitHandler(self.char1, db_attribute_key="char_resources")
+        if not hasattr(self.char1, 'signature_assets'):
+            self.char1.signature_assets = TraitHandler(self.char1, db_attribute_key="char_signature_assets")
         
-        # Set up test traits
-        self.setup_test_traits()
-    
-    def setup_test_traits(self):
-        """Set up test traits on the character."""
-        # Add plot points
-        self.char1.traits.add("plot_points", "Plot Points", trait_type="counter", base=1)
-        
-        # Add attributes
-        self.char1.character_attributes.add("prowess", "Prowess", trait_type="static", base=8, desc="Physical power")
-        self.char1.character_attributes.add("finesse", "Finesse", trait_type="static", base=6, desc="Agility")
+        # Add test traits
+        self.char1.char_attributes.add("prowess", "Prowess", trait_type="static", base=8, desc="Physical power")
+        self.char1.char_attributes.add("finesse", "Finesse", trait_type="static", base=6, desc="Agility")
         
         # Add skills
         self.char1.skills.add("fighting", "Fighting", trait_type="static", base=8, desc="Combat ability")
@@ -65,7 +55,7 @@ class TestCharSheet(EvenniaTest):
     def test_get_trait_display(self):
         """Test trait display formatting."""
         # Test normal trait
-        trait = self.char1.character_attributes.get("prowess")
+        trait = self.char1.char_attributes.get("prowess")
         name, die, desc = get_trait_display(trait)
         self.assertEqual(name, "Prowess")
         self.assertEqual(die, f"d{int(float(trait.base))}")  # Handle float values
@@ -88,12 +78,12 @@ class TestCharSheet(EvenniaTest):
         """Test trait section formatting."""
         # Test attributes section
         attributes = [
-            self.char1.character_attributes.get("prowess"),
-            self.char1.character_attributes.get("finesse")
+            self.char1.char_attributes.get("prowess"),
+            self.char1.char_attributes.get("finesse")
         ]
         section = format_trait_section("Attributes", attributes)
-        prowess_die = "d" + str(int(self.char1.character_attributes.get("prowess").base))
-        finesse_die = "d" + str(int(self.char1.character_attributes.get("finesse").base))
+        prowess_die = "d" + str(int(self.char1.char_attributes.get("prowess").base))
+        finesse_die = "d" + str(int(self.char1.char_attributes.get("finesse").base))
         
         self.assertIn("Attributes", section)
         self.assertIn("Prowess", section)
@@ -123,7 +113,7 @@ class TestCharSheet(EvenniaTest):
         
         # Check output contains all sections
         output = self.caller.msg.mock_calls[0][1][0]
-        prowess_die = "d" + str(int(self.char1.character_attributes.get("prowess").base))
+        prowess_die = "d" + str(int(self.char1.char_attributes.get("prowess").base))
         
         self.assertIn("Character Sheet", output)
         self.assertIn("Plot Points", output)
@@ -144,14 +134,12 @@ class TestCharSheet(EvenniaTest):
         other_char = self.char2
         
         # Initialize trait handlers on other character
-        if not hasattr(other_char, 'traits'):
-            other_char.traits = TraitHandler(other_char)
-        if not hasattr(other_char, 'character_attributes'):
-            other_char.character_attributes = TraitHandler(other_char, db_attribute_key="char_attributes")
+        if not hasattr(other_char, 'char_attributes'):
+            other_char.char_attributes = TraitHandler(other_char, db_attribute_key="char_attributes")
         if not hasattr(other_char, 'skills'):
             other_char.skills = TraitHandler(other_char, db_attribute_key="skills")
         if not hasattr(other_char, 'distinctions'):
-            other_char.distinctions = TraitHandler(other_char, db_attribute_key="distinctions")
+            other_char.distinctions = TraitHandler(other_char, db_attribute_key="char_distinctions")
         
         # Try viewing without permission
         self.cmd.args = other_char.name

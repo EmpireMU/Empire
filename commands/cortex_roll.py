@@ -34,7 +34,7 @@ def format_colored_roll(value, die, trait_info, extra_value=None):
         # Display name mapping
         display_names = {
             'distinctions': 'Distinction',
-            'character_attributes': 'Attribute',
+            'char_attributes': 'Attribute',
             'skills': 'Skill',
             'char_resources': 'Resource',
             'signature_assets': 'Signature Asset'
@@ -53,8 +53,8 @@ def format_colored_roll(value, die, trait_info, extra_value=None):
         trait = None
         if trait_info.category == 'distinctions':
             trait = trait_info.caller.distinctions.get(trait_info.key)
-        elif trait_info.category == 'character_attributes':
-            trait = trait_info.caller.character_attributes.get(trait_info.key)
+        elif trait_info.category == 'char_attributes':
+            trait = trait_info.caller.char_attributes.get(trait_info.key)
         elif trait_info.category == 'skills':
             trait = trait_info.caller.skills.get(trait_info.key)
         elif trait_info.category == 'char_resources':
@@ -395,8 +395,8 @@ class CmdCortexRoll(Command):
 
     def get_trait_dice(self, trait_info):
         """Get the dice for a trait."""
-        if trait_info.category == 'character_attributes':
-            trait = trait_info.caller.character_attributes.get(trait_info.key)
+        if trait_info.category == 'char_attributes':
+            trait = trait_info.caller.char_attributes.get(trait_info.key)
         elif trait_info.category == 'skills':
             trait = trait_info.caller.skills.get(trait_info.key)
         elif trait_info.category == 'signature_assets':

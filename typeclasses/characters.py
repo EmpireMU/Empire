@@ -59,7 +59,7 @@ class Character(ObjectParent, DefaultCharacter):
         """
         Character skills (d4-d12)
         """
-        return TraitHandler(self, db_attribute_key="char_skills")
+        return TraitHandler(self, db_attribute_key="skills")
         
     @lazy_property
     def signature_assets(self):
