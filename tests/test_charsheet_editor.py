@@ -60,7 +60,7 @@ class TestCharSheetEditor(EvenniaTest):
         self.cmd_settrait.func()
         trait = self.char1.character_attributes.get("strength")
         self.assertIsNotNone(trait)
-        self.assertEqual(trait.base, 8)
+        self.assertEqual(int(trait.base), 8)
         self.assertEqual(trait.desc, "Strong and tough")
         
         # Test setting a skill
@@ -68,7 +68,7 @@ class TestCharSheetEditor(EvenniaTest):
         self.cmd_settrait.func()
         trait = self.char1.skills.get("fighting")
         self.assertIsNotNone(trait)
-        self.assertEqual(trait.base, 6)
+        self.assertEqual(int(trait.base), 6)
         self.assertEqual(trait.desc, "Combat training")
         
         # Test setting a signature asset
@@ -76,7 +76,7 @@ class TestCharSheetEditor(EvenniaTest):
         self.cmd_settrait.func()
         trait = self.char1.signature_assets.get("sword")
         self.assertIsNotNone(trait)
-        self.assertEqual(trait.base, 8)
+        self.assertEqual(int(trait.base), 8)
         self.assertEqual(trait.desc, "Magic blade")
         
         # Test invalid category
@@ -92,9 +92,9 @@ class TestCharSheetEditor(EvenniaTest):
     def test_delete_trait(self):
         """Test deleting traits."""
         # Add some traits to delete
-        self.char1.character_attributes.add("strength", "Strength", trait_type="static", base=8)
-        self.char1.skills.add("fighting", "Fighting", trait_type="static", base=6)
-        self.char1.signature_assets.add("sword", "Sword", trait_type="static", base=8)
+        self.char1.character_attributes.add("strength", trait_type="static", base=8)
+        self.char1.skills.add("fighting", trait_type="static", base=6)
+        self.char1.signature_assets.add("sword", trait_type="static", base=8)
         
         # Test deleting an attribute
         self.cmd_deltrait.args = "self = attributes strength"
@@ -123,7 +123,7 @@ class TestCharSheetEditor(EvenniaTest):
         self.cmd_setdist.func()
         trait = self.char1.distinctions.get("concept")
         self.assertIsNotNone(trait)
-        self.assertEqual(trait.base, 8)
+        self.assertEqual(int(trait.base), 8)  # All distinctions are d8
         self.assertEqual(trait.desc, "Always seeking adventure")
         self.assertEqual(trait.name, "Bold Explorer")
         
@@ -132,7 +132,7 @@ class TestCharSheetEditor(EvenniaTest):
         self.cmd_setdist.func()
         trait = self.char1.distinctions.get("culture")
         self.assertIsNotNone(trait)
-        self.assertEqual(trait.base, 8)
+        self.assertEqual(int(trait.base), 8)  # All distinctions are d8
         self.assertEqual(trait.desc, "Born on the seas")
         self.assertEqual(trait.name, "Islander")
         
@@ -170,13 +170,13 @@ class TestCharSheetEditor(EvenniaTest):
         self.cmd_bg.func()
         self.assertIn("Test background", self.cmd_bg.msg.mock_calls[-1][1][0])
         
-        # Test setting background
+        # Test setting background with permission
         self.cmd_bg.args = "self = New background"
         self.cmd_bg.func()
         self.assertEqual(self.char1.db.background, "New background")
         
         # Test setting without permission
-        self.char1.permissions.remove("Admin")
+        self.char1.permissions.clear()  # Remove all permissions
         self.cmd_bg.args = "self = Another background"
         self.cmd_bg.func()
         self.assertIn("don't have permission", self.cmd_bg.msg.mock_calls[-1][1][0])
@@ -189,13 +189,13 @@ class TestCharSheetEditor(EvenniaTest):
         self.cmd_pers.func()
         self.assertIn("Test personality", self.cmd_pers.msg.mock_calls[-1][1][0])
         
-        # Test setting personality
+        # Test setting personality with permission
         self.cmd_pers.args = "self = New personality"
         self.cmd_pers.func()
         self.assertEqual(self.char1.db.personality, "New personality")
         
         # Test setting without permission
-        self.char1.permissions.remove("Admin")
+        self.char1.permissions.clear()  # Remove all permissions
         self.cmd_pers.args = "self = Another personality"
         self.cmd_pers.func()
         self.assertIn("don't have permission", self.cmd_pers.msg.mock_calls[-1][1][0])

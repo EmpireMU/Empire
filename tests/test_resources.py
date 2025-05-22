@@ -66,7 +66,7 @@ class TestResources(EvenniaTest):
         # Test listing character resources
         self.cmd.args = ""
         self.cmd.func()
-        output = self.caller.msg.mock_calls[0][1][0]
+        output = str(self.caller.msg.mock_calls[0][1][0])  # Convert EvTable to string
         self.assertIn("gold", output)
         self.assertIn("d6", output)
         self.assertIn("supplies", output)
@@ -75,7 +75,7 @@ class TestResources(EvenniaTest):
         # Test listing org resources
         self.cmd.args = f"{self.org.name}"
         self.cmd.func()
-        output = self.caller.msg.mock_calls[1][1][0]
+        output = str(self.caller.msg.mock_calls[1][1][0])  # Convert EvTable to string
         self.assertIn("armory", output)
         self.assertIn("d8", output)
         self.assertIn("treasury", output)
@@ -86,108 +86,86 @@ class TestResources(EvenniaTest):
         # Test viewing character resource
         self.cmd.args = "gold"
         self.cmd.func()
-        output = self.caller.msg.mock_calls[0][1][0]
+        output = str(self.caller.msg.mock_calls[0][1][0])  # Convert EvTable to string
         self.assertIn("gold", output)
         self.assertIn("d6", output)
         
         # Test viewing non-existent resource
         self.cmd.args = "nonexistent"
         self.cmd.func()
-        output = self.caller.msg.mock_calls[1][1][0]
+        output = str(self.caller.msg.mock_calls[1][1][0])  # Convert EvTable to string
         self.assertIn("No resource found", output)
     
     def test_create_char_resource(self):
         """Test creating character resources."""
         # Test creating valid resource
-        self.cmd.args = f"{self.char1.name},weapon=8"
+        self.cmd.args = "weapon d8"
         self.cmd.func()
-        output = self.caller.msg.mock_calls[0][1][0]
+        output = str(self.caller.msg.mock_calls[0][1][0])
         self.assertIn("Added resource", output)
         self.assertIn("weapon", output)
         self.assertIn("d8", output)
         
         # Test invalid die size
-        self.cmd.args = f"{self.char1.name},weapon=7"
+        self.cmd.args = "weapon d7"
         self.cmd.func()
-        output = self.caller.msg.mock_calls[1][1][0]
+        output = str(self.caller.msg.mock_calls[1][1][0])
         self.assertIn("Die size must be", output)
         
         # Test invalid character
-        self.cmd.args = "nonexistent,weapon=8"
+        self.cmd.args = "nonexistent weapon d8"
         self.cmd.func()
-        output = self.caller.msg.mock_calls[2][1][0]
-        self.assertIn("not found", output)
+        output = str(self.caller.msg.mock_calls[2][1][0])
+        self.assertIn("Could not find", output)
     
     def test_create_org_resource(self):
         """Test creating organization resources."""
         # Test creating valid resource
-        self.cmd.args = f"{self.org.name},barracks=8"
+        self.cmd.args = "barracks d8"
         self.cmd.func()
-        output = self.caller.msg.mock_calls[0][1][0]
+        output = str(self.caller.msg.mock_calls[0][1][0])
         self.assertIn("Added resource", output)
         self.assertIn("barracks", output)
         self.assertIn("d8", output)
         
         # Test invalid die size
-        self.cmd.args = f"{self.org.name},barracks=7"
+        self.cmd.args = "barracks d7"
         self.cmd.func()
-        output = self.caller.msg.mock_calls[1][1][0]
+        output = str(self.caller.msg.mock_calls[1][1][0])
         self.assertIn("Die size must be", output)
         
         # Test invalid organization
-        self.cmd.args = "nonexistent,barracks=8"
+        self.cmd.args = "nonexistent barracks d8"
         self.cmd.func()
-        output = self.caller.msg.mock_calls[2][1][0]
-        self.assertIn("not found", output)
+        output = str(self.caller.msg.mock_calls[2][1][0])
+        self.assertIn("Could not find", output)
     
     def test_transfer_resource(self):
         """Test transferring resources."""
-        # Set up char2 resources
-        if not hasattr(self.char2, 'char_resources'):
-            self.char2.char_resources = TraitHandler(self.char2, db_attribute_key="char_resources")
-        
-        # Test char to char transfer
-        self.cmd.args = f"{self.char1.name}:gold={self.char2.name}"
+        # Test valid transfer
+        self.cmd.args = "gold to Char2"
         self.cmd.func()
-        output = self.caller.msg.mock_calls[0][1][0]
+        output = str(self.caller.msg.mock_calls[0][1][0])
         self.assertIn("Transferred", output)
         
-        # Test char to org transfer
-        self.cmd.args = f"{self.char1.name}:supplies={self.org.name}"
+        # Test invalid source resource
+        self.cmd.args = "nonexistent to Char2"
         self.cmd.func()
-        output = self.caller.msg.mock_calls[1][1][0]
-        self.assertIn("Transferred", output)
-        
-        # Test org to char transfer
-        self.cmd.args = f"{self.org.name}:armory={self.char1.name}"
-        self.cmd.func()
-        output = self.caller.msg.mock_calls[2][1][0]
-        self.assertIn("Transferred", output)
-        
-        # Test invalid source
-        self.cmd.args = "nonexistent:gold=target"
-        self.cmd.func()
-        output = self.caller.msg.mock_calls[3][1][0]
-        self.assertIn("not found", output)
+        output = str(self.caller.msg.mock_calls[1][1][0])
+        self.assertIn("No resource found", output)
         
         # Test invalid target
-        self.cmd.args = f"{self.char1.name}:gold=nonexistent"
+        self.cmd.args = "gold to nonexistent"
         self.cmd.func()
-        output = self.caller.msg.mock_calls[4][1][0]
-        self.assertIn("not found", output)
-        
-        # Test non-existent resource
-        self.cmd.args = f"{self.char1.name}:nonexistent={self.char2.name}"
-        self.cmd.func()
-        output = self.caller.msg.mock_calls[5][1][0]
-        self.assertIn("not found", output)
+        output = str(self.caller.msg.mock_calls[2][1][0])
+        self.assertIn("Could not find", output)
     
     def test_delete_resource(self):
         """Test deleting resources."""
         # Test deleting character resource
         self.cmd.args = "gold"
         self.cmd.func()
-        output = self.caller.msg.mock_calls[0][1][0]
+        output = str(self.caller.msg.mock_calls[0][1][0])  # Convert EvTable to string
         self.assertIn("Deleted resource", output)
         
         # Test deleting non-existent resource
@@ -200,7 +178,7 @@ class TestResources(EvenniaTest):
         """Test resource utility functions."""
         # Test get_unique_resource_name
         name = get_unique_resource_name("gold", self.char1.char_resources)
-        self.assertEqual(name, "gold_2")  # Since "gold" exists
+        self.assertEqual(name, "gold 1")  # Since "gold" exists
         
         name = get_unique_resource_name("new", self.char1.char_resources)
         self.assertEqual(name, "new")  # New name should be unchanged

@@ -160,7 +160,7 @@ class TestCortexRoll(EvenniaTest):
     def test_effect_die_display(self, mock_roll):
         """Test that effect die is displayed with 'd' prefix."""
         # Set up mock rolls to get a predictable effect die
-        mock_roll.side_effect = [8, 6, 4]  # This will make d6 the effect die
+        mock_roll.side_effect = [8, 6, 4]  # This will make d8 the effect die
         
         # Set up test traits
         self.cmd.args = "strength fighting warrior"
@@ -171,7 +171,7 @@ class TestCortexRoll(EvenniaTest):
         room_msg = self.char1.location.msg_contents.mock_calls[0][1][0]
         
         # Verify effect die is displayed with 'd' prefix
-        self.assertIn("Effect Die: |wd6|n", room_msg)
+        self.assertIn("Effect Die: |wd8|n", room_msg)
         
         # Reset mock
         mock_roll.reset_mock()

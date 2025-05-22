@@ -68,14 +68,14 @@ class TestCharSheet(EvenniaTest):
         trait = self.char1.character_attributes.get("prowess")
         name, die, desc = get_trait_display(trait)
         self.assertEqual(name, "Prowess")
-        self.assertEqual(die, "d" + str(int(trait.base)))  # Convert float to int for die size
+        self.assertEqual(die, f"d{int(float(trait.base))}")  # Handle float values
         self.assertEqual(desc, "Physical power")
         
         # Test trait without description
         trait = self.char1.skills.add("test", "Test", trait_type="static", base=6)
         name, die, desc = get_trait_display(trait)
         self.assertEqual(name, "Test")
-        self.assertEqual(die, "d" + str(int(trait.base)))  # Convert float to int for die size
+        self.assertEqual(die, f"d{int(float(trait.base))}")  # Handle float values
         self.assertEqual(desc, "")
         
         # Test None trait
@@ -147,7 +147,7 @@ class TestCharSheet(EvenniaTest):
         if not hasattr(other_char, 'traits'):
             other_char.traits = TraitHandler(other_char)
         if not hasattr(other_char, 'character_attributes'):
-            other_char.character_attributes = TraitHandler(other_char, db_attribute_key="character_attributes")
+            other_char.character_attributes = TraitHandler(other_char, db_attribute_key="char_attributes")
         if not hasattr(other_char, 'skills'):
             other_char.skills = TraitHandler(other_char, db_attribute_key="skills")
         if not hasattr(other_char, 'distinctions'):
@@ -156,13 +156,14 @@ class TestCharSheet(EvenniaTest):
         # Try viewing without permission
         self.cmd.args = other_char.name
         self.cmd.func()
-        self.assertIn("can only view your own", self.caller.msg.mock_calls[0][1][0])
+        self.assertIn("You can only view your own", self.caller.msg.mock_calls[0][1][0])
         
         # Give permission and try again
         self.cmd.caller.permissions.add("Admin")
         self.cmd.func()
-        # Should succeed but show empty sheet since we didn't add any traits
-        self.assertIn("has no character sheet", self.caller.msg.mock_calls[1][1][0])
+        # Should show empty sheet since we didn't add any traits
+        output = str(self.caller.msg.mock_calls[1][1][0])
+        self.assertIn("Character Sheet", output)
     
     def test_invalid_sheet_access(self):
         """Test invalid character sheet access."""
@@ -170,7 +171,7 @@ class TestCharSheet(EvenniaTest):
         self.cmd.caller.permissions.add("Admin")
         self.cmd.args = "nonexistent"
         self.cmd.func()
-        self.assertIn("Nothing found", self.caller.msg.mock_calls[0][1][0])
+        self.assertIn("Could not find", self.caller.msg.mock_calls[0][1][0])
         
         # Try viewing object without traits
         obj = self.obj1

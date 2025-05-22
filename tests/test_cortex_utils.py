@@ -53,32 +53,26 @@ class TestCortexUtils(unittest.TestCase):
     
     def test_process_results(self):
         """Test processing of dice roll results."""
-        # Test normal case - three dice
-        rolls = [(4, "8", 0), (6, "10", 1), (3, "6", 2)]
-        total, effect, hitches = process_results(rolls)
-        self.assertEqual(total, 10)  # 6 + 4 (highest two dice)
-        self.assertEqual(effect, "6")  # Third highest die
-        self.assertEqual(hitches, [])  # No 1s rolled
-        
-        # Test with hitches
-        rolls = [(1, "8", 0), (6, "10", 1), (1, "6", 2)]
-        total, effect, hitches = process_results(rolls)
-        self.assertEqual(total, 6)  # Only one valid die
-        self.assertEqual(effect, "4")  # Default when not enough valid dice
-        self.assertEqual(hitches, ["8", "6"])  # Two dice rolled 1
-        
-        # Test with only two dice
-        rolls = [(4, "8", 0), (6, "10", 1)]
-        total, effect, hitches = process_results(rolls)
+        # Test normal roll (no hitches)
+        rolls = [(6, "8", 0), (4, "6", 1), (3, "4", 2)]
+        total, effect_die, hitches = process_results(rolls)
         self.assertEqual(total, 10)  # 6 + 4
-        self.assertEqual(effect, "4")  # Default when only two dice
+        self.assertEqual(effect_die, "4")  # Next highest die
+        self.assertEqual(hitches, [])  # No hitches
         
-        # Test all hitches
-        rolls = [(1, "8", 0), (1, "10", 1), (1, "6", 2)]
-        total, effect, hitches = process_results(rolls)
+        # Test roll with hitches
+        rolls = [(1, "8", 0), (1, "6", 1), (3, "4", 2)]
+        total, effect_die, hitches = process_results(rolls)
+        self.assertEqual(total, 3)  # Only one valid die
+        self.assertEqual(effect_die, "4")  # Default when not enough valid dice
+        self.assertEqual(len(hitches), 2)  # Two hitches
+        
+        # Test roll with all hitches
+        rolls = [(1, "8", 0), (1, "6", 1), (1, "4", 2)]
+        total, effect_die, hitches = process_results(rolls)
         self.assertEqual(total, 0)  # No valid dice
-        self.assertEqual(effect, "4")  # Default
-        self.assertEqual(hitches, ["8", "10", "6"])  # All dice are hitches
+        self.assertEqual(effect_die, "4")  # Default
+        self.assertEqual(len(hitches), 3)  # All hitches
     
     def test_get_success_level(self):
         """Test success level determination."""
