@@ -62,7 +62,7 @@ class TestCharSheet(EvenniaTest):
         self.assertEqual(desc, "Physical power")
         
         # Test trait without description
-        trait = self.char1.skills.add("test", trait_type="static", base=6, name="Test Skill")
+        trait = self.char1.skills.add("test", "Test Skill", trait_type="static", base=6)
         name, die, desc = get_trait_display(trait)
         self.assertEqual(name, "Test Skill")  # Should use trait.name
         self.assertEqual(die, f"d{int(float(trait.base))}")  # Handle float values
@@ -144,7 +144,7 @@ class TestCharSheet(EvenniaTest):
         # Try viewing without Builder permission
         self.cmd.args = other_char.name
         self.cmd.func()
-        self.assertIn("You don't have permission", self.caller.msg.mock_calls[0][1][0])
+        self.assertIn("can only view your own character sheet", self.caller.msg.mock_calls[0][1][0])
         
         # Give permission and try again
         self.cmd.caller.permissions.add("Builder")

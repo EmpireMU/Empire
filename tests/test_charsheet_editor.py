@@ -42,6 +42,27 @@ class TestCharSheetEditor(EvenniaTest):
         self.cmd_deltrait.obj = self.char1
         self.cmd_deltrait.msg = MagicMock()
         
+        # Set up additional commands
+        self.cmd_setdist = CmdSetDistinction()
+        self.cmd_setdist.caller = self.char1
+        self.cmd_setdist.obj = self.char1
+        self.cmd_setdist.msg = MagicMock()
+        
+        self.cmd_bio = CmdBiography()
+        self.cmd_bio.caller = self.char1
+        self.cmd_bio.obj = self.char1
+        self.cmd_bio.msg = MagicMock()
+        
+        self.cmd_bg = CmdBackground()
+        self.cmd_bg.caller = self.char1
+        self.cmd_bg.obj = self.char1
+        self.cmd_bg.msg = MagicMock()
+        
+        self.cmd_pers = CmdPersonality()
+        self.cmd_pers.caller = self.char1
+        self.cmd_pers.obj = self.char1
+        self.cmd_pers.msg = MagicMock()
+        
         # Set up permissions
         self.char1.permissions.add("Admin")
     

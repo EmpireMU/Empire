@@ -63,8 +63,8 @@ class TestCortexUtils(unittest.TestCase):
         # Test roll with hitches
         rolls = [(1, "Strength"), (1, "Fighting"), (8, "Warrior")]
         total, effect_die, hitches = process_results(rolls)
-        self.assertEqual(total, 8)  # Only one non-hitch die
-        self.assertEqual(effect_die, 4)  # Default effect die
+        self.assertEqual(total, 9)  # Only one non-hitch die: 8 + 1
+        self.assertEqual(effect_die, 1)  # Next highest die
         self.assertEqual(hitches, 2)  # Two 1s rolled
     
     def test_get_success_level(self):

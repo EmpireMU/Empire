@@ -72,9 +72,8 @@ class TestResources(EvenniaTest):
         self.assertIn("supplies", output)
         
         # Test listing org resources
-        org = self.org
         self.cmd.switches = []
-        self.cmd.args = org.name
+        self.cmd.args = "Test Org"
         self.cmd.func()
         output = str(self.cmd.msg.mock_calls[-1][1][0])
         self.assertIn("armory", output)
@@ -99,10 +98,10 @@ class TestResources(EvenniaTest):
         """Test creating character resources."""
         # Test creating with valid die size
         self.cmd.switches = ["char"]
-        self.cmd.args = "self, weapon d8"  # Comma-separated format
+        self.cmd.args = "self,weapon=8"  # Using correct format
         self.cmd.func()
         output = str(self.cmd.msg.mock_calls[-1][1][0])
-        self.assertIn("Resource created", output)
+        self.assertIn("Added resource", output)
         
         # Verify resource was created
         trait = self.char1.char_resources.get("weapon")
@@ -111,19 +110,19 @@ class TestResources(EvenniaTest):
         
         # Test creating with invalid die size
         self.cmd.switches = ["char"]
-        self.cmd.args = "self, invalid d7"  # Comma-separated format
+        self.cmd.args = "self,invalid=7"  # Using correct format
         self.cmd.func()
         output = str(self.cmd.msg.mock_calls[-1][1][0])
-        self.assertIn("Invalid die size", output)
+        self.assertIn("Die size must be", output)
     
     def test_create_org_resource(self):
         """Test creating organization resources."""
         # Test creating with valid die size
         self.cmd.switches = ["org"]
-        self.cmd.args = "Test Org, barracks d8"  # Comma-separated format
+        self.cmd.args = "Test Org,barracks=8"  # Using correct format
         self.cmd.func()
         output = str(self.cmd.msg.mock_calls[-1][1][0])
-        self.assertIn("Resource created", output)
+        self.assertIn("Added resource", output)
         
         # Verify resource was created
         trait = self.org.org_resources.get("barracks")
@@ -132,19 +131,19 @@ class TestResources(EvenniaTest):
         
         # Test creating with invalid die size
         self.cmd.switches = ["org"]
-        self.cmd.args = "Test Org, invalid d7"  # Comma-separated format
+        self.cmd.args = "Test Org,invalid=7"  # Using correct format
         self.cmd.func()
         output = str(self.cmd.msg.mock_calls[-1][1][0])
-        self.assertIn("Invalid die size", output)
+        self.assertIn("Die size must be", output)
     
     def test_transfer_resource(self):
         """Test transferring resources."""
         # Test valid transfer
         self.cmd.switches = ["transfer"]
-        self.cmd.args = "self:gold = Char2"  # Using correct format
+        self.cmd.args = "self:gold=Char2"  # Using correct format
         self.cmd.func()
         output = str(self.cmd.msg.mock_calls[-1][1][0])
-        self.assertIn("Resource transferred", output)
+        self.assertIn("Transferred", output)
         
         # Verify transfer
         self.assertIsNone(self.char1.char_resources.get("gold"))
@@ -152,10 +151,10 @@ class TestResources(EvenniaTest):
         
         # Test invalid transfer (nonexistent resource)
         self.cmd.switches = ["transfer"]
-        self.cmd.args = "self:nonexistent = Char2"  # Using correct format
+        self.cmd.args = "self:nonexistent=Char2"  # Using correct format
         self.cmd.func()
         output = str(self.cmd.msg.mock_calls[-1][1][0])
-        self.assertIn("No resource found", output)
+        self.assertIn("not found", output)
     
     def test_delete_resource(self):
         """Test deleting resources."""
@@ -164,7 +163,7 @@ class TestResources(EvenniaTest):
         self.cmd.args = "gold"
         self.cmd.func()
         output = str(self.cmd.msg.mock_calls[-1][1][0])
-        self.assertIn("Resource deleted", output)
+        self.assertIn("Deleted", output)
         
         # Verify deletion
         self.assertIsNone(self.char1.char_resources.get("gold"))
