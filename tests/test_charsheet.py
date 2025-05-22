@@ -27,7 +27,7 @@ class TestCharSheet(EvenniaTest):
         if not hasattr(self.char1, 'traits'):
             self.char1.traits = TraitHandler(self.char1)
         if not hasattr(self.char1, 'character_attributes'):
-            self.char1.character_attributes = TraitHandler(self.char1, db_attribute_key="character_attributes")
+            self.char1.character_attributes = TraitHandler(self.char1, db_attribute_key="char_attributes")
         if not hasattr(self.char1, 'skills'):
             self.char1.skills = TraitHandler(self.char1, db_attribute_key="skills")
         if not hasattr(self.char1, 'distinctions'):

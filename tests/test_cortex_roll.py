@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 from evennia.utils.test_resources import EvenniaTest
 from commands.cortex_roll import CmdCortexRoll, TraitDie
 from evennia.contrib.rpg.traits import TraitHandler
+import evennia
 
 class TestCortexRoll(EvenniaTest):
     """Test cases for the Cortex roll command."""
@@ -27,11 +28,13 @@ class TestCortexRoll(EvenniaTest):
         
         # Set up session
         self.session = MagicMock()
+        self.session.sessid = 1  # Give it a real session ID
         self.cmd.session = self.session
+        evennia.SESSION_HANDLER[1] = self.session  # Register the session
         
         # Initialize trait handlers properly
         if not hasattr(self.char1, 'character_attributes'):
-            self.char1.character_attributes = TraitHandler(self.char1, db_attribute_key="character_attributes")
+            self.char1.character_attributes = TraitHandler(self.char1, db_attribute_key="char_attributes")
         if not hasattr(self.char1, 'skills'):
             self.char1.skills = TraitHandler(self.char1, db_attribute_key="skills")
         if not hasattr(self.char1, 'distinctions'):
