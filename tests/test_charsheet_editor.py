@@ -36,6 +36,11 @@ class TestCharSheetEditor(EvenniaTest):
         self.cmd_settrait.caller = self.char1
         self.cmd_settrait.obj = self.char1
         self.cmd_settrait.msg = MagicMock()
+
+        self.cmd_deltrait = CmdDelTrait()
+        self.cmd_deltrait.caller = self.char1
+        self.cmd_deltrait.obj = self.char1
+        self.cmd_deltrait.msg = MagicMock()
         
         # Set up permissions
         self.char1.permissions.add("Admin")

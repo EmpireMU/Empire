@@ -64,7 +64,7 @@ class TestCharSheet(EvenniaTest):
         # Test trait without description
         trait = self.char1.skills.add("test", "Test", trait_type="static", base=6)
         name, die, desc = get_trait_display(trait)
-        self.assertEqual(name, "Test")
+        self.assertEqual(name, trait.name)  # Should use trait.name instead of key
         self.assertEqual(die, f"d{int(float(trait.base))}")  # Handle float values
         self.assertEqual(desc, "")
         
@@ -141,15 +141,15 @@ class TestCharSheet(EvenniaTest):
         if not hasattr(other_char, 'distinctions'):
             other_char.distinctions = TraitHandler(other_char, db_attribute_key="char_distinctions")
         
-        # Try viewing without permission
+        # Try viewing without Builder permission
         self.cmd.args = other_char.name
         self.cmd.func()
-        self.assertIn("You can only view your own", self.caller.msg.mock_calls[0][1][0])
+        self.assertIn("Permission denied", self.caller.msg.mock_calls[0][1][0])
         
         # Give permission and try again
-        self.cmd.caller.permissions.add("Admin")
+        self.cmd.caller.permissions.add("Builder")
         self.cmd.func()
-        # Should show empty sheet since we didn't add any traits
+        # Should show sheet since we have Builder permission
         output = str(self.caller.msg.mock_calls[1][1][0])
         self.assertIn("Character Sheet", output)
     

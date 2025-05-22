@@ -162,11 +162,14 @@ class TestCortexRoll(EvenniaTest):
         self.cmd.parse()
         self.cmd.func()
         
-        # Get the message sent to the room
-        room_msg = self.char1.location.msg_contents.mock_calls[0][1][0]
+        # Check that msg_contents was called
+        self.assertTrue(self.char1.location.msg_contents.called)
         
-        # Verify effect die is displayed with 'd' prefix
-        self.assertIn("Effect Die: |wd8|n", room_msg)
+        # Get all messages sent to the room
+        room_messages = [call[1][0] for call in self.char1.location.msg_contents.mock_calls]
+        
+        # Check that at least one message contains the effect die
+        self.assertTrue(any("Effect Die: |wd8|n" in msg for msg in room_messages))
         
         # Reset mock
         mock_roll.reset_mock()

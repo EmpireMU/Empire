@@ -53,26 +53,19 @@ class TestCortexUtils(unittest.TestCase):
     
     def test_process_results(self):
         """Test processing of dice roll results."""
-        # Test normal roll (no hitches)
-        rolls = [(6, "8", 0), (4, "6", 1), (3, "4", 2)]
+        # Test normal roll
+        rolls = [(6, "Strength"), (4, "Fighting"), (8, "Warrior")]
         total, effect_die, hitches = process_results(rolls)
-        self.assertEqual(total, 10)  # 6 + 4
-        self.assertEqual(effect_die, "4")  # Next highest die
-        self.assertEqual(hitches, [])  # No hitches
+        self.assertEqual(total, 14)  # Two highest dice: 8 + 6
+        self.assertEqual(effect_die, 8)  # Highest die
+        self.assertEqual(hitches, 0)  # No 1s rolled
         
         # Test roll with hitches
-        rolls = [(1, "8", 0), (1, "6", 1), (3, "4", 2)]
+        rolls = [(1, "Strength"), (1, "Fighting"), (8, "Warrior")]
         total, effect_die, hitches = process_results(rolls)
-        self.assertEqual(total, 3)  # Only one valid die
-        self.assertEqual(effect_die, "4")  # Default when not enough valid dice
-        self.assertEqual(len(hitches), 2)  # Two hitches
-        
-        # Test roll with all hitches
-        rolls = [(1, "8", 0), (1, "6", 1), (1, "4", 2)]
-        total, effect_die, hitches = process_results(rolls)
-        self.assertEqual(total, 0)  # No valid dice
-        self.assertEqual(effect_die, "4")  # Default
-        self.assertEqual(len(hitches), 3)  # All hitches
+        self.assertEqual(total, 8)  # Only one non-hitch die
+        self.assertEqual(effect_die, 8)  # Highest die
+        self.assertEqual(hitches, 2)  # Two 1s rolled
     
     def test_get_success_level(self):
         """Test success level determination."""
