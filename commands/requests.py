@@ -8,27 +8,8 @@ from evennia.utils.utils import datetime_format
 from evennia.utils.evtable import EvTable
 from evennia.utils.search import search_object_attribute
 from evennia.accounts.models import AccountDB
-from typeclasses.requests import Request, RequestHandler
+from typeclasses.requests import Request, RequestHandler, VALID_STATUSES, DEFAULT_CATEGORIES
 from datetime import datetime
-from functools import wraps
-
-def requires_request(func):
-    """Decorator to handle request lookup and permission checks."""
-    @wraps(func)
-    def wrapper(self, request_id, *args, **kwargs):
-        request = self._find_request(request_id)
-        if not request:
-            self.caller.msg("Request not found.")
-            return
-            
-        # Check permissions unless it's a staff member
-        if not self.caller.locks.check_lockstring(self.caller, "perm(Admin)"):
-            if request.db.submitter != self.caller.account:
-                self.caller.msg("You don't have permission to do that.")
-                return
-                
-        return func(self, request, *args, **kwargs)
-    return wrapper
 
 class CmdRequest(MuxCommand):
     """
@@ -51,6 +32,9 @@ class CmdRequest(MuxCommand):
         request/archive <#>        - Archive a request
         request/unarchive <#>      - Unarchive a request
         request/cleanup           - Archive all closed requests older than 30 days
+        
+    Valid statuses: Open, In Progress, Resolved, Closed
+    Valid categories: Bug, Feature, Question, Character, Other
         
     Examples:
         request/new Bug Report=The crafting menu is not working
@@ -94,6 +78,28 @@ class CmdRequest(MuxCommand):
             return results[0] if results else None
         except (ValueError, IndexError):
             return None
+            
+    def _check_request_access(self, request):
+        """
+        Check if the caller has access to the request.
+        
+        Args:
+            request (Request): The request to check
+            
+        Returns:
+            bool: True if access is allowed, False otherwise
+        """
+        if not request:
+            self.caller.msg("Request not found.")
+            return False
+            
+        # Check permissions unless it's a staff member
+        if not self.caller.locks.check_lockstring(self.caller, "perm(Admin)"):
+            if request.db.submitter != self.caller.account:
+                self.caller.msg("You don't have permission to do that.")
+                return False
+                
+        return True
         
     def _format_request_row(self, req):
         """Format a request for table display."""
@@ -103,7 +109,7 @@ class CmdRequest(MuxCommand):
         return [
             f"#{req.db.id}",
             req.db.title[:30],
-            req.db.status,
+            req.status,
             req.db.submitter.name if req.db.submitter else "Unknown",
             req.db.assigned_to.name if req.db.assigned_to else "Unassigned",
             datetime_format(req.db.date_created, "%Y-%m-%d"),
@@ -163,11 +169,14 @@ class CmdRequest(MuxCommand):
         
         self.caller.msg(f"Request #{request.db.id} created successfully.")
         
-    @requires_request
-    def _view_request(self, request):
+    def _view_request(self, request_id):
         """View a specific request"""
+        request = self._find_request(request_id)
+        if not self._check_request_access(request):
+            return
+            
         header = f"""Request #{request.db.id}: {request.db.title}
-Status: {request.db.status}  Category: {request.db.category}
+Status: {request.status}  Category: {request.category}
 Submitted by: {request.db.submitter.name if request.db.submitter else "Unknown"}
 Assigned to: {request.db.assigned_to.name if request.db.assigned_to else "Unassigned"}
 Created: {datetime_format(request.db.date_created)}
@@ -188,22 +197,37 @@ Modified: {datetime_format(request.db.date_modified)}"""
             
         self.caller.msg(header + text + comments + resolution)
         
-    @requires_request
-    def _add_comment(self, request, text):
+    def _add_comment(self, request_id, text):
         """Add a comment to a request"""
+        request = self._find_request(request_id)
+        if not self._check_request_access(request):
+            return
+            
         request.add_comment(self.caller.account.name, text)
         self.caller.msg("Comment added.")
         
-    @requires_request
-    def _close_request(self, request, resolution):
+    def _close_request(self, request_id, resolution):
         """Close a request"""
-        request.change_status("Closed", resolution)
+        request = self._find_request(request_id)
+        if not self._check_request_access(request):
+            return
+            
+        request.db.resolution = resolution
+        request.set_status("Closed")
         self.caller.msg("Request closed.")
         
-    @requires_request
-    def _assign_request(self, request, staff_name):
+    def _assign_request(self, request_id, staff_name):
         """Assign a request to a staff member"""
-        staff = AccountDB.objects.filter(username__iexact=staff_name).first()
+        request = self._find_request(request_id)
+        if not self._check_request_access(request):
+            return
+            
+        # Only staff can assign requests
+        if not self.caller.locks.check_lockstring(self.caller, "perm(Admin)"):
+            self.caller.msg("You don't have permission to assign requests.")
+            return
+            
+        staff = AccountDB.objects.get_account_from_string(staff_name)
         if not staff:
             self.caller.msg(f"Staff member '{staff_name}' not found.")
             return
@@ -211,165 +235,156 @@ Modified: {datetime_format(request.db.date_modified)}"""
         request.assign_to(staff)
         self.caller.msg(f"Request assigned to {staff.name}.")
         
-    @requires_request
-    def _change_status(self, request, status):
+    def _change_status(self, request_id, status):
         """Change request status"""
+        request = self._find_request(request_id)
+        if not self._check_request_access(request):
+            return
+            
+        # Only staff can change status
+        if not self.caller.locks.check_lockstring(self.caller, "perm(Admin)"):
+            self.caller.msg("You don't have permission to change request status.")
+            return
+            
         try:
-            request.change_status(status)
+            request.set_status(status)
             self.caller.msg(f"Status changed to: {status}")
         except ValueError as e:
             self.caller.msg(str(e))
-            
-    @requires_request
-    def _change_category(self, request, category):
-        """Change request category"""
-        request.db.category = category
-        request.db.date_modified = datetime.now()
-        self.caller.msg(f"Category changed to: {category}")
         
-    @requires_request
-    def _archive_request(self, request):
+    def _change_category(self, request_id, category):
+        """Change request category"""
+        request = self._find_request(request_id)
+        if not self._check_request_access(request):
+            return
+            
+        # Only staff can change category
+        if not self.caller.locks.check_lockstring(self.caller, "perm(Admin)"):
+            self.caller.msg("You don't have permission to change request category.")
+            return
+            
+        try:
+            request.set_category(category)
+            self.caller.msg(f"Category changed to: {category}")
+        except ValueError as e:
+            self.caller.msg(str(e))
+        
+    def _archive_request(self, request_id):
         """Archive a request"""
-        if request.is_archived:
-            self.caller.msg("This request is already archived.")
+        request = self._find_request(request_id)
+        if not self._check_request_access(request):
+            return
+            
+        # Only staff can archive
+        if not self.caller.locks.check_lockstring(self.caller, "perm(Admin)"):
+            self.caller.msg("You don't have permission to archive requests.")
             return
             
         request.archive()
-        self.caller.msg(f"Request #{request.db.id} has been archived.")
+        self.caller.msg("Request archived.")
         
-    @requires_request
-    def _unarchive_request(self, request):
+    def _unarchive_request(self, request_id):
         """Unarchive a request"""
-        if not request.is_archived:
-            self.caller.msg("This request is not archived.")
+        request = self._find_request(request_id)
+        if not self._check_request_access(request):
+            return
+            
+        # Only staff can unarchive
+        if not self.caller.locks.check_lockstring(self.caller, "perm(Admin)"):
+            self.caller.msg("You don't have permission to unarchive requests.")
             return
             
         request.unarchive()
-        self.caller.msg(f"Request #{request.db.id} has been unarchived.")
+        self.caller.msg("Request unarchived.")
         
-    @requires_request
     def _cleanup_old_requests(self):
-        """Archive old closed requests and delete old archived ones"""
-        handler = self.request_handler
-        requests = handler.db.requests or []
-        
-        archived_count = 0
-        deleted_count = 0
-        
-        # Process requests in reverse order since we'll be removing items
-        for i in range(len(requests) - 1, -1, -1):
-            request = requests[i]
+        """Archive old closed requests"""
+        # Only staff can run cleanup
+        if not self.caller.locks.check_lockstring(self.caller, "perm(Admin)"):
+            self.caller.msg("You don't have permission to run cleanup.")
+            return
             
-            # Check for deletion first
-            if request.is_archived and request.should_be_deleted():
-                handler.remove_request(request)
-                request.delete()
-                deleted_count += 1
-                continue
-                
-            # Then check for archiving
-            if not request.is_archived and request.should_auto_archive():
+        handler = self.request_handler
+        count = 0
+        for request in handler.active_requests:
+            if request.should_auto_archive():
                 request.archive()
-                archived_count += 1
+                count += 1
                 
-        if archived_count or deleted_count:
-            self.caller.msg(
-                f"Archived {archived_count} old closed request{'s' if archived_count != 1 else ''}. "
-                f"Deleted {deleted_count} old archived request{'s' if deleted_count != 1 else ''}."
-            )
-        else:
-            self.caller.msg("No requests needed cleanup.")
-
+        self.caller.msg(f"Archived {count} old closed requests.")
+        
     def func(self):
-        """Main command function."""
+        """Handle the request command"""
         if not self.args and not self.switches:
-            # No args, no switches - list active requests
+            # List personal active requests
             self._list_requests()
             return
             
-        if "all" in self.switches:
-            # List all requests (staff only)
-            if not self.caller.locks.check_lockstring(self.caller, "perm(Admin)"):
-                self.caller.msg("Only staff can view all requests.")
-                return
-            self._list_requests(personal=False)
+        if not self.switches:
+            # View specific request
+            self._view_request(self.args)
             return
             
-        if "archive" in self.switches:
-            if len(self.switches) > 1 and "all" in self.switches:
-                # List all archived requests (staff only)
-                if not self.caller.locks.check_lockstring(self.caller, "perm(Admin)"):
-                    self.caller.msg("Only staff can view all archived requests.")
+        switch = self.switches[0].lower()
+        
+        try:
+            if switch == "new":
+                if not self.args or "=" not in self.args:
+                    self.caller.msg("Usage: request/new <title>=<text>")
                     return
-                self._list_requests(personal=False, show_archived=True)
-            elif self.args:
-                # Archive a specific request (staff only)
-                self._archive_request(self.args)
+                self._create_request(self.lhs, self.rhs)
+                
+            elif switch == "comment":
+                if not self.args or "=" not in self.args:
+                    self.caller.msg("Usage: request/comment <#>=<text>")
+                    return
+                self._add_comment(self.lhs, self.rhs)
+                
+            elif switch == "close":
+                if not self.args or "=" not in self.args:
+                    self.caller.msg("Usage: request/close <#>=<resolution>")
+                    return
+                self._close_request(self.lhs, self.rhs)
+                
+            elif switch == "assign":
+                if not self.args or "=" not in self.args:
+                    self.caller.msg("Usage: request/assign <#>=<staff>")
+                    return
+                self._assign_request(self.lhs, self.rhs)
+                
+            elif switch == "status":
+                if not self.args or "=" not in self.args:
+                    self.caller.msg(f"Usage: request/status <#>=<status>\nValid statuses: {', '.join(VALID_STATUSES)}")
+                    return
+                self._change_status(self.lhs, self.rhs)
+                
+            elif switch == "cat":
+                if not self.args or "=" not in self.args:
+                    self.caller.msg(f"Usage: request/cat <#>=<category>\nValid categories: {', '.join(DEFAULT_CATEGORIES)}")
+                    return
+                self._change_category(self.lhs, self.rhs)
+                
+            elif switch == "archive":
+                if self.args == "all":
+                    self._list_requests(personal=False, show_archived=True)
+                else:
+                    self._archive_request(self.args)
+                    
+            elif switch == "unarchive":
+                self._unarchive_request(self.args)
+                
+            elif switch == "cleanup":
+                self._cleanup_old_requests()
+                
+            elif switch == "all":
+                self._list_requests(personal=False)
+                
             else:
-                # List personal archived requests
-                self._list_requests(show_archived=True)
-            return
-            
-        if "unarchive" in self.switches:
-            # Unarchive a request (staff only)
-            self._unarchive_request(self.args)
-            return
-            
-        if "cleanup" in self.switches:
-            # Clean up old requests (staff only)
-            self._cleanup_old_requests()
-            return
-            
-        if "new" in self.switches:
-            # Create a new request
-            if not self.rhs:
-                self.caller.msg("Usage: request/new <title>=<text>")
-                return
-            self._create_request(self.lhs, self.rhs)
-            return
-            
-        if "comment" in self.switches:
-            # Add a comment
-            if not self.rhs:
-                self.caller.msg("Usage: request/comment <#>=<text>")
-                return
-            self._add_comment(self.lhs, self.rhs)
-            return
-            
-        if "close" in self.switches:
-            # Close a request
-            if not self.rhs:
-                self.caller.msg("Usage: request/close <#>=<resolution>")
-                return
-            self._close_request(self.lhs, self.rhs)
-            return
-            
-        if "assign" in self.switches:
-            # Assign to staff
-            if not self.rhs:
-                self.caller.msg("Usage: request/assign <#>=<staff>")
-                return
-            self._assign_request(self.lhs, self.rhs)
-            return
-            
-        if "status" in self.switches:
-            # Change status
-            if not self.rhs:
-                self.caller.msg("Usage: request/status <#>=<status>")
-                return
-            self._change_status(self.lhs, self.rhs)
-            return
-            
-        if "cat" in self.switches:
-            # Change category
-            if not self.rhs:
-                self.caller.msg("Usage: request/cat <#>=<category>")
-                return
-            self._change_category(self.lhs, self.rhs)
-            return
-            
-        # No switches but has args - view specific request
-        self._view_request(self.args)
+                self.caller.msg("Invalid switch. See help request for valid options.")
+                
+        except Exception as e:
+            self.caller.msg("An error occurred while processing your request. Please try again or contact an admin if the problem persists.")
+            logger.log_trace()
 
 class RequestCmdSet(CmdSet):
     """
@@ -379,5 +394,5 @@ class RequestCmdSet(CmdSet):
     key = "request_commands"
     
     def at_cmdset_creation(self):
-        """Add commands to the command set"""
+        """Add request command to the command set."""
         self.add(CmdRequest()) 
