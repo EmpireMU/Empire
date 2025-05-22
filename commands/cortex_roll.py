@@ -338,7 +338,7 @@ class CmdCortexRoll(Command):
             
             # Build output message
             result_msg = f"{self.caller.key} rolls: {', '.join(roll_results)}\n"
-            result_msg += f"Total: |w{total}|n | Effect Die: |w{effect_die}|n"
+            result_msg += f"Total: |w{total}|n | Effect Die: |wd{effect_die}|n"
             
             # Add warning if effect die defaulted to d4
             if len(self.dice) == 2:

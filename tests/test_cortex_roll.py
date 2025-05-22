@@ -17,6 +17,18 @@ class TestCortexRoll(EvenniaTest):
         self.cmd.caller = self.char1
         self.cmd.obj = self.char1
         
+        # Set up message mocking
+        self.caller = self.char1
+        self.caller.msg = MagicMock()
+        self.cmd.msg = self.caller.msg
+        
+        # Set up location message mocking
+        self.char1.location.msg_contents = MagicMock()
+        
+        # Set up session
+        self.session = MagicMock()
+        self.cmd.session = self.session
+        
         # Initialize trait handlers properly
         if not hasattr(self.char1, 'character_attributes'):
             self.char1.character_attributes = TraitHandler(self.char1, db_attribute_key="character_attributes")
@@ -71,8 +83,8 @@ class TestCortexRoll(EvenniaTest):
     @patch('commands.cortex_roll.roll_die')
     def test_roll_with_difficulty(self, mock_roll):
         """Test rolling against a difficulty."""
-        # Set up mock rolls
-        mock_roll.side_effect = [6, 4, 8]  # Total will be 14 (8 + 6)
+        # Set up mock rolls with enough values for all tests
+        mock_roll.side_effect = [6, 4, 8, 6, 4, 8]  # Two sets of rolls for two tests
         
         # Test numeric difficulty
         self.cmd.args = "strength fighting warrior vs 12"
@@ -90,8 +102,8 @@ class TestCortexRoll(EvenniaTest):
     @patch('commands.cortex_roll.roll_die')
     def test_roll_with_step(self, mock_roll):
         """Test rolling with stepped dice."""
-        # Set up mock rolls
-        mock_roll.side_effect = [6, 4, 8]
+        # Set up mock rolls with enough values for all tests
+        mock_roll.side_effect = [6, 4, 8, 6, 4, 8]  # Two sets of rolls for two tests
         
         # Test stepping up
         self.cmd.args = "strength(U) fighting warrior"
@@ -140,6 +152,26 @@ class TestCortexRoll(EvenniaTest):
         self.cmd.args = "strength strength strength strength strength strength strength strength strength strength strength"
         self.cmd.parse()
         self.assertFalse(self.cmd.dice)
+
+    @patch('commands.cortex_roll.roll_die')
+    def test_effect_die_display(self, mock_roll):
+        """Test that effect die is displayed with 'd' prefix."""
+        # Set up mock rolls to get a predictable effect die
+        mock_roll.side_effect = [8, 6, 4]  # This will make d6 the effect die
+        
+        # Set up test traits
+        self.cmd.args = "strength fighting warrior"
+        self.cmd.parse()
+        self.cmd.func()
+        
+        # Get the message sent to the room
+        room_msg = self.char1.location.msg_contents.mock_calls[0][1][0]
+        
+        # Verify effect die is displayed with 'd' prefix
+        self.assertIn("Effect Die: |wd6|n", room_msg)
+        
+        # Reset mock
+        mock_roll.reset_mock()
 
 if __name__ == '__main__':
     unittest.main() 

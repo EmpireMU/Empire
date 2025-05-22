@@ -190,7 +190,7 @@ def process_results(rolls: List[Tuple[int, str, int]]) -> Tuple[int, str, List[s
     Returns:
         Tuple of (total, effect_die, hitches) where:
         - total is the sum of the two highest non-hitch dice
-        - effect_die is the next highest non-hitch die (or d4 if none)
+        - effect_die is the next highest non-hitch die size (or "4" if none)
         - hitches is a list of dice that rolled 1
     """
     # Identify hitches (1s)
@@ -203,15 +203,15 @@ def process_results(rolls: List[Tuple[int, str, int]]) -> Tuple[int, str, List[s
     valid_rolls.sort(key=lambda x: x[0], reverse=True)
     
     if len(valid_rolls) < 2:
-        return 0, "d4", hitches  # Default to d4 if not enough valid dice
+        return 0, "4", hitches  # Default to 4 if not enough valid dice
         
     # Get two highest for total
     total = valid_rolls[0][0] + valid_rolls[1][0]
     
     # Get effect die (next highest after the two used for total)
-    effect_die = "d4"  # Default
+    effect_die = "4"  # Default
     if len(valid_rolls) > 2:
-        effect_die = f"d{valid_rolls[2][1]}"
+        effect_die = valid_rolls[2][1]  # Use the die size directly
         
     return total, effect_die, hitches
 

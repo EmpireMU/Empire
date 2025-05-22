@@ -18,6 +18,11 @@ class TestCharSheet(EvenniaTest):
         self.cmd.caller = self.char1
         self.cmd.obj = self.char1
         
+        # Set up message mocking
+        self.caller = self.char1
+        self.caller.msg = MagicMock()
+        self.cmd.msg = self.caller.msg
+        
         # Initialize trait handlers properly
         if not hasattr(self.char1, 'traits'):
             self.char1.traits = TraitHandler(self.char1)
@@ -63,14 +68,14 @@ class TestCharSheet(EvenniaTest):
         trait = self.char1.character_attributes.get("prowess")
         name, die, desc = get_trait_display(trait)
         self.assertEqual(name, "Prowess")
-        self.assertEqual(die, "d8")
+        self.assertEqual(die, "d" + str(int(trait.base)))  # Convert float to int for die size
         self.assertEqual(desc, "Physical power")
         
         # Test trait without description
         trait = self.char1.skills.add("test", "Test", trait_type="static", base=6)
         name, die, desc = get_trait_display(trait)
         self.assertEqual(name, "Test")
-        self.assertEqual(die, "d6")
+        self.assertEqual(die, "d" + str(int(trait.base)))  # Convert float to int for die size
         self.assertEqual(desc, "")
         
         # Test None trait
@@ -87,18 +92,23 @@ class TestCharSheet(EvenniaTest):
             self.char1.character_attributes.get("finesse")
         ]
         section = format_trait_section("Attributes", attributes)
+        prowess_die = "d" + str(int(self.char1.character_attributes.get("prowess").base))
+        finesse_die = "d" + str(int(self.char1.character_attributes.get("finesse").base))
+        
         self.assertIn("Attributes", section)
         self.assertIn("Prowess", section)
-        self.assertIn("d8", section)
+        self.assertIn(prowess_die, section)
         self.assertIn("Finesse", section)
-        self.assertIn("d6", section)
+        self.assertIn(finesse_die, section)
         
         # Test resources section with descriptions
         resources = [self.char1.char_resources.get("gold")]
         section = format_trait_section("Resources", resources, show_desc=True)
+        gold_die = "d" + str(int(self.char1.char_resources.get("gold").base))
+        
         self.assertIn("Resources", section)
         self.assertIn("Gold", section)
-        self.assertIn("d6", section)
+        self.assertIn(gold_die, section)
         self.assertIn("Wealth", section)
         
         # Test empty section
@@ -113,6 +123,8 @@ class TestCharSheet(EvenniaTest):
         
         # Check output contains all sections
         output = self.caller.msg.mock_calls[0][1][0]
+        prowess_die = "d" + str(int(self.char1.character_attributes.get("prowess").base))
+        
         self.assertIn("Character Sheet", output)
         self.assertIn("Plot Points", output)
         self.assertIn("Prime Sets", output)
@@ -120,7 +132,7 @@ class TestCharSheet(EvenniaTest):
         
         # Check specific traits
         self.assertIn("Prowess", output)
-        self.assertIn("d8", output)
+        self.assertIn(prowess_die, output)
         self.assertIn("Fighting", output)
         self.assertIn("Warrior", output)
         self.assertIn("Magic Sword", output)

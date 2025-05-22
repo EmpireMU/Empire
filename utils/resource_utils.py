@@ -17,7 +17,7 @@ def get_unique_resource_name(name, existing_resources, caller=None):
         str: A unique name for the resource
     """
     # First try to strip any existing number suffix
-    base_name = re.sub(r'\s+\d+$', '', name)
+    base_name = re.sub(r'[_\s]+\d+$', '', name)
     
     # If it's a TraitHandler, check if the base name exists
     if hasattr(existing_resources, 'get'):
@@ -28,10 +28,10 @@ def get_unique_resource_name(name, existing_resources, caller=None):
             
         # Find the next available number
         counter = 1
-        while existing_resources.get(f"{base_name} {counter}"):
+        while existing_resources.get(f"{base_name}_{counter}"):
             counter += 1
             
-        new_name = f"{base_name} {counter}"
+        new_name = f"{base_name}_{counter}"
         if new_name != name and caller:
             caller.msg(f"Resource name '{base_name}' already exists, using '{new_name}' instead.")
             
@@ -45,10 +45,10 @@ def get_unique_resource_name(name, existing_resources, caller=None):
             
         # Find the next available number
         counter = 1
-        while f"{base_name} {counter}" in existing_resources:
+        while f"{base_name}_{counter}" in existing_resources:
             counter += 1
             
-        new_name = f"{base_name} {counter}"
+        new_name = f"{base_name}_{counter}"
         if new_name != name and caller:
             caller.msg(f"Resource name '{base_name}' already exists, using '{new_name}' instead.")
             

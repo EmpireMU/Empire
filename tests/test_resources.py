@@ -22,6 +22,14 @@ class TestResources(EvenniaTest):
         self.cmd.caller = self.char1
         self.cmd.obj = self.char1
         
+        # Set up message mocking
+        self.caller = self.char1
+        self.caller.msg = MagicMock()
+        self.cmd.msg = self.caller.msg
+        
+        # Set up command attributes
+        self.cmd.switches = []
+        
         # Initialize trait handlers properly
         if not hasattr(self.char1, 'char_resources'):
             self.char1.char_resources = TraitHandler(self.char1, db_attribute_key="char_resources")
