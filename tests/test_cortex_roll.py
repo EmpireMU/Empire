@@ -6,12 +6,11 @@ from unittest.mock import MagicMock, patch
 from evennia.utils.test_resources import EvenniaTest
 from commands.cortex_roll import CmdCortexRoll, TraitDie
 from evennia.contrib.rpg.traits import TraitHandler
-import evennia
 from evennia.objects.objects import ObjectDB
 from evennia import create_object
 
 class TestCortexRoll(EvenniaTest):
-    """Test cases for the Cortex roll command."""
+    """Test cases for Cortex Prime dice rolling functionality."""
     
     def setUp(self):
         """Set up test case."""

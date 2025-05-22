@@ -129,31 +129,6 @@ class TestCharSheetEditor(EvenniaTest):
         self.cmd_deltrait.func()
         self.assertIn("Invalid category", self.cmd_deltrait.msg.mock_calls[-1][1][0])
     
-    def test_set_distinction(self):
-        """Test setting distinctions."""
-        # Test setting concept distinction
-        self.cmd_setdist.args = "self = concept : Bold Explorer : Always seeking adventure"
-        self.cmd_setdist.func()
-        trait = self.char1.distinctions.get("concept")
-        self.assertIsNotNone(trait)
-        self.assertEqual(int(trait.base), 8)  # All distinctions are d8
-        self.assertEqual(trait.desc, "Always seeking adventure")
-        self.assertEqual(trait.name, "Bold Explorer")
-        
-        # Test setting culture distinction
-        self.cmd_setdist.args = "self = culture : Islander : Born on the seas"
-        self.cmd_setdist.func()
-        trait = self.char1.distinctions.get("culture")
-        self.assertIsNotNone(trait)
-        self.assertEqual(int(trait.base), 8)  # All distinctions are d8
-        self.assertEqual(trait.desc, "Born on the seas")
-        self.assertEqual(trait.name, "Islander")
-        
-        # Test invalid slot
-        self.cmd_setdist.args = "self = invalid : Test : Description"
-        self.cmd_setdist.func()
-        self.assertIn("Invalid distinction slot", self.cmd_setdist.msg.mock_calls[-1][1][0])
-    
     def test_biography(self):
         """Test biography command."""
         # Set up test data
@@ -212,6 +187,31 @@ class TestCharSheetEditor(EvenniaTest):
         self.cmd_pers.args = "self = Another personality"
         self.cmd_pers.func()
         self.assertIn("don't have permission", self.cmd_pers.msg.mock_calls[-1][1][0])
+    
+    def test_set_distinction(self):
+        """Test setting distinctions."""
+        # Test setting concept distinction
+        self.cmd_setdist.args = "self = concept : Bold Explorer : Always seeking adventure"
+        self.cmd_setdist.func()
+        trait = self.char1.distinctions.get("concept")
+        self.assertIsNotNone(trait)
+        self.assertEqual(int(trait.base), 8)  # All distinctions are d8
+        self.assertEqual(trait.desc, "Always seeking adventure")
+        self.assertEqual(trait.name, "Bold Explorer")
+        
+        # Test setting culture distinction
+        self.cmd_setdist.args = "self = culture : Islander : Born on the seas"
+        self.cmd_setdist.func()
+        trait = self.char1.distinctions.get("culture")
+        self.assertIsNotNone(trait)
+        self.assertEqual(int(trait.base), 8)  # All distinctions are d8
+        self.assertEqual(trait.desc, "Born on the seas")
+        self.assertEqual(trait.name, "Islander")
+        
+        # Test invalid slot
+        self.cmd_setdist.args = "self = invalid : Test : Description"
+        self.cmd_setdist.func()
+        self.assertIn("Invalid distinction slot", self.cmd_setdist.msg.mock_calls[-1][1][0])
 
 if __name__ == '__main__':
     unittest.main() 

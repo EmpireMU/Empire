@@ -54,19 +54,19 @@ class TestCharSheet(EvenniaTest):
     
     def test_get_trait_display(self):
         """Test trait display formatting."""
-        # Test normal trait
+        # Test normal trait with name and description
         trait = self.char1.char_attributes.get("prowess")
         name, die, desc = get_trait_display(trait)
         self.assertEqual(name, "Prowess")
-        self.assertEqual(die, f"d{int(float(trait.base))}")  # Handle float values
+        self.assertEqual(die, "d8")
         self.assertEqual(desc, "Physical power")
         
         # Test trait without description
-        trait = self.char1.skills.add("test", "Test Skill", trait_type="static", base=6)
+        trait = self.char1.skills.get("fighting")
         name, die, desc = get_trait_display(trait)
-        self.assertEqual(name, "Test Skill")  # Should use trait.name
-        self.assertEqual(die, f"d{int(float(trait.base))}")  # Handle float values
-        self.assertEqual(desc, "")
+        self.assertEqual(name, "Fighting")
+        self.assertEqual(die, "d8")
+        self.assertEqual(desc, "Combat ability")
         
         # Test None trait
         name, die, desc = get_trait_display(None)
@@ -141,17 +141,21 @@ class TestCharSheet(EvenniaTest):
         if not hasattr(other_char, 'distinctions'):
             other_char.distinctions = TraitHandler(other_char, db_attribute_key="char_distinctions")
         
+        # Add some test traits
+        other_char.char_attributes.add("prowess", "Prowess", trait_type="static", base=6)
+        other_char.skills.add("fighting", "Fighting", trait_type="static", base=6)
+        
         # Try viewing without Builder permission
         self.cmd.args = other_char.name
         self.cmd.func()
-        self.assertIn("can only view your own character sheet", self.caller.msg.mock_calls[0][1][0])
+        self.assertIn("You can only view your own character sheet", self.caller.msg.mock_calls[0][1][0])
         
         # Give permission and try again
-        self.cmd.caller.permissions.add("Builder")
+        self.caller.permissions.add("Builder")
         self.cmd.func()
         # Should show sheet since we have Builder permission
         output = str(self.caller.msg.mock_calls[1][1][0])
-        self.assertIn("Character Sheet", output)
+        self.assertIn(f"{other_char.name}'s Character Sheet", output)
     
     def test_invalid_sheet_access(self):
         """Test invalid character sheet access."""
