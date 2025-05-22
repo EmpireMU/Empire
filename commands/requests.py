@@ -3,10 +3,11 @@ Commands for the request system.
 """
 
 from evennia.commands.default.muxcommand import MuxCommand
-from evennia import CmdSet
+from evennia import CmdSet, create_object
 from evennia.utils.utils import datetime_format
 from evennia.utils.evtable import EvTable
 from evennia.utils.search import search_object_attribute
+from evennia.accounts.models import AccountDB
 from typeclasses.requests import Request, RequestHandler
 from datetime import datetime
 from functools import wraps
@@ -32,7 +33,7 @@ def requires_request(func):
             
         # Check permissions unless it's a staff member
         if not self.caller.locks.check_lockstring(self.caller, "perm(Admin)"):
-            if request.db.submitter != self.account:
+            if request.db.submitter != self.caller.account:
                 self.caller.msg("You don't have permission to do that.")
                 return
                 
@@ -125,7 +126,7 @@ class CmdRequest(MuxCommand):
         requests = handler.archived_requests if show_archived else handler.active_requests
         
         if personal:
-            requests = [r for r in requests if r.db.submitter == self.account]
+            requests = [r for r in requests if r.db.submitter == self.caller.account]
             
         if not requests:
             status = "archived" if show_archived else "active"
@@ -155,12 +156,20 @@ class CmdRequest(MuxCommand):
     def _create_request(self, title, text):
         """Create a new request"""
         request = create_object(
-            "typeclasses.requests.Request",
-            key=f"Request"  # The handler will manage this
+            typeclass="typeclasses.requests.Request",
+            key="Request",  # The handler will manage this
+            location=None,  # Requests don't need a location
+            home=None,     # Or a home
+            permissions=None,
+            locks=None,
+            aliases=None,
+            tags=None,
+            attributes=None,
+            nohome=True
         )
         request.db.title = title
         request.db.text = text
-        request.db.submitter = self.account
+        request.db.submitter = self.caller.account
         
         self.caller.msg(f"Request #{request.db.id} created successfully.")
         
@@ -192,7 +201,7 @@ Modified: {datetime_format(request.db.date_modified)}"""
     @requires_request
     def _add_comment(self, request, text):
         """Add a comment to a request"""
-        request.add_comment(self.account.name, text)
+        request.add_comment(self.caller.account.name, text)
         self.caller.msg("Comment added.")
         
     @requires_request
@@ -205,7 +214,6 @@ Modified: {datetime_format(request.db.date_modified)}"""
     @requires_request
     def _assign_request(self, request, staff_name):
         """Assign a request to a staff member"""
-        from evennia.accounts.models import AccountDB
         staff = AccountDB.objects.filter(username__iexact=staff_name).first()
         if not staff:
             self.caller.msg(f"Staff member '{staff_name}' not found.")
@@ -286,6 +294,102 @@ Modified: {datetime_format(request.db.date_modified)}"""
             )
         else:
             self.caller.msg("No requests needed cleanup.")
+
+    def func(self):
+        """Main command function."""
+        try:
+            if not self.args and not self.switches:
+                # No args, no switches - list active requests
+                self._list_requests()
+                return
+                
+            if "all" in self.switches:
+                # List all requests (staff only)
+                if not self.caller.locks.check_lockstring(self.caller, "perm(Admin)"):
+                    self.caller.msg("Only staff can view all requests.")
+                    return
+                self._list_requests(personal=False)
+                return
+                
+            if "archive" in self.switches:
+                if len(self.switches) > 1 and "all" in self.switches:
+                    # List all archived requests (staff only)
+                    if not self.caller.locks.check_lockstring(self.caller, "perm(Admin)"):
+                        self.caller.msg("Only staff can view all archived requests.")
+                        return
+                    self._list_requests(personal=False, show_archived=True)
+                elif self.args:
+                    # Archive a specific request (staff only)
+                    self._archive_request(self.args)
+                else:
+                    # List personal archived requests
+                    self._list_requests(show_archived=True)
+                return
+                
+            if "unarchive" in self.switches:
+                # Unarchive a request (staff only)
+                self._unarchive_request(self.args)
+                return
+                
+            if "cleanup" in self.switches:
+                # Clean up old requests (staff only)
+                self._cleanup_old_requests()
+                return
+                
+            if "new" in self.switches:
+                # Create a new request
+                if not self.rhs:
+                    self.caller.msg("Usage: request/new <title>=<text>")
+                    return
+                self._create_request(self.lhs, self.rhs)
+                return
+                
+            if "comment" in self.switches:
+                # Add a comment
+                if not self.rhs:
+                    self.caller.msg("Usage: request/comment <#>=<text>")
+                    return
+                self._add_comment(self.lhs, self.rhs)
+                return
+                
+            if "close" in self.switches:
+                # Close a request
+                if not self.rhs:
+                    self.caller.msg("Usage: request/close <#>=<resolution>")
+                    return
+                self._close_request(self.lhs, self.rhs)
+                return
+                
+            if "assign" in self.switches:
+                # Assign to staff
+                if not self.rhs:
+                    self.caller.msg("Usage: request/assign <#>=<staff>")
+                    return
+                self._assign_request(self.lhs, self.rhs)
+                return
+                
+            if "status" in self.switches:
+                # Change status
+                if not self.rhs:
+                    self.caller.msg("Usage: request/status <#>=<status>")
+                    return
+                self._change_status(self.lhs, self.rhs)
+                return
+                
+            if "cat" in self.switches:
+                # Change category
+                if not self.rhs:
+                    self.caller.msg("Usage: request/cat <#>=<category>")
+                    return
+                self._change_category(self.lhs, self.rhs)
+                return
+                
+            # No switches but has args - view specific request
+            self._view_request(self.args)
+        except Exception as e:
+            # Log the error but give a friendly message to the user
+            self.caller.msg("An error occurred while processing your request. Please try again or contact an admin if the problem persists.")
+            self.logger.log_trace()
 
 class RequestCmdSet(CmdSet):
     """

@@ -7,10 +7,10 @@ requests that staff can review and respond to.
 
 from evennia.objects.objects import DefaultObject
 from evennia.scripts.scripts import DefaultScript
-from evennia.utils import lazy_property, create
-from evennia.utils.create import create_object
+from evennia.utils import lazy_property
 from evennia.utils.utils import datetime_format
 from evennia.utils.search import search_object_attribute
+from evennia.utils.create import create_script
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
 
@@ -24,13 +24,39 @@ class RequestHandler(DefaultScript):
         self.key = "request_handler"
         self.desc = "Handles the request/ticket system"
         self.persistent = True
+        self.interval = 3600  # Run cleanup check every hour
         self.db.requests = []
+        
+    def at_repeat(self):
+        """
+        Called every self.interval seconds.
+        Check for requests that need auto-archiving or deletion.
+        """
+        requests = self.db.requests or []
+        
+        for request in requests[:]:  # Copy list since we might modify it
+            if request.is_archived and request.should_be_deleted():
+                self.remove_request(request)
+                request.delete()
+            elif not request.is_archived and request.should_auto_archive():
+                request.archive()
+        
+    def at_start(self):
+        """Called when script starts running."""
+        self.ndb.last_cleanup = datetime.now()
+        
+    def at_server_reload(self):
+        """Called when server reloads."""
+        # Re-validate request list, removing any deleted requests
+        if self.db.requests:
+            self.db.requests = [r for r in self.db.requests if r and r.pk]
         
     def add_request(self, request):
         """Add a request to the system."""
         if not self.db.requests:
             self.db.requests = []
-        self.db.requests.append(request)
+        if request not in self.db.requests:
+            self.db.requests.append(request)
         
     def remove_request(self, request):
         """Remove a request from the system."""
@@ -114,7 +140,7 @@ class Request(DefaultObject):
         
         handler = GLOBAL_SCRIPTS.get("request_handler")
         if not handler:
-            handler = create.create_script(RequestHandler)
+            handler = create_script(RequestHandler)
         return handler
         
     @classmethod
