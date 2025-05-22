@@ -314,7 +314,8 @@ class CmdBackground(MuxCommand):
     """
     
     key = "background"
-    locks = "cmd:all()"  # Everyone can view, but editing requires permissions
+    # Everyone can view, but editing requires Builder permission
+    locks = "cmd:all();edit:perm(Builder)"
     help_category = "Character"
     
     def func(self):
@@ -334,7 +335,7 @@ class CmdBackground(MuxCommand):
             return
             
         # Edit command - check permissions
-        if not self.caller.check_permstring("Builder"):
+        if not self.access(self.caller, "edit"):
             self.msg("You don't have permission to edit backgrounds.")
             return
             
@@ -377,7 +378,8 @@ class CmdPersonality(MuxCommand):
     """
     
     key = "personality"
-    locks = "cmd:all()"  # Everyone can view, but editing requires permissions
+    # Everyone can view, but editing requires Builder permission
+    locks = "cmd:all();edit:perm(Builder)"
     help_category = "Character"
     
     def func(self):
@@ -397,7 +399,7 @@ class CmdPersonality(MuxCommand):
             return
             
         # Edit command - check permissions
-        if not self.caller.check_permstring("Builder"):
+        if not self.access(self.caller, "edit"):
             self.msg("You don't have permission to edit personalities.")
             return
             

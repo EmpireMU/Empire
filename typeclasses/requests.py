@@ -150,7 +150,7 @@ class Request(DefaultObject):
         existing = search_object_attribute(
             key="id",
             category="request",
-            typeclass=cls.path()
+            typeclass=cls.__path
         )
         
         used_ids = {obj.db.id for obj in existing if obj.db.id is not None}

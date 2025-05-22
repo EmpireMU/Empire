@@ -172,7 +172,8 @@ class CmdSheet(Command):
     """
     
     key = "sheet"
-    locks = "cmd:all()"  # Everyone can use this command
+    # Allow viewing own sheet always, require Builder permission to view others
+    locks = "cmd:all();view_other:perm(Builder)"
     help_category = "Character"
     switch_options = ()  # No switches for this command
     
@@ -186,7 +187,7 @@ class CmdSheet(Command):
                 char = self.caller.char
         else:
             # Staff checking other character
-            if not self.caller.check_permstring("Builder"):
+            if not self.access(self.caller, "view_other"):
                 self.caller.msg("You can only view your own character sheet.")
                 return
             char = self.caller.search(self.args)

@@ -119,7 +119,7 @@ class CmdCheckPlotPoints(Command):
     """
     
     key = "pp"
-    locks = "cmd:all()"  # Everyone can use this command
+    locks = "cmd:all();view_other:perm(Builder)"
     help_category = "Game"
     
     def func(self):
@@ -131,7 +131,7 @@ class CmdCheckPlotPoints(Command):
                 char = char.char
         else:
             # Staff checking other character
-            if not self.caller.check_permstring("Builder"):
+            if not self.access(self.caller, "view_other"):
                 self.caller.msg("You can only check your own plot points.")
                 return
             char = self.caller.search(self.args)

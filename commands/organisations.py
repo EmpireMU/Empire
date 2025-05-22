@@ -15,32 +15,17 @@ from utils.org_utils import (
 
 class CmdOrg(MuxCommand):
     """
-    View and manage organizations.
+    Manage organizations.
     
     Usage:
-        org <organization>                    - View organization info
-        org/create <n>                     - Create new organization (Admin)
-        org/member <organization> = <character>[,rank] - Add/set member (Admin)
-        org/remove <organization> = <character> - Remove member (Admin)
-        org/rankname <organization> = <rank>,<n> - Set rank name (Admin)
-        org/delete <organization>             - Delete organization (Admin)
+        org                     - List organisations you're a member of
+        org <name>             - View organisation details
+        org/create <name>      - Create a new organisation
+        org/delete <name>      - Delete an organisation
+        org/member <org>,<char>[,<rank>] - Add/update member
+        org/remove <org>,<char> - Remove member
+        org/rankname <org>,<rank>=<name> - Set rank name
         
-    Organization System:
-    Organizations represent formal groups like noble houses, guilds, or military units.
-    Each organization has:
-    - Hierarchical rank structure (1-10)
-    - Resource pools for member use
-    - Internal leadership roles
-    - Special privileges by rank
-    
-    Rank Structure (Default):
-    1. Leader/Head (Full control)
-    2. Deputy/Second (Resource management)
-    3. Senior Member (Resource access)
-    4. Full Member (Standard privileges)
-    5. Junior Member (Limited privileges)
-    6-10. Custom ranks (Configurable)
-    
     Examples:
         org House Otrese                   - View House Otrese's info
         org/create House Anadun            - Create new noble house
@@ -50,41 +35,15 @@ class CmdOrg(MuxCommand):
         org/rankname House Otrese = 5,Knight - Set rank 5 name to Knight
         org/delete House Otrese            - Delete the organization
         
-    Member Management:
-    - Higher ranks can manage lower-ranked members
-    - Rank determines resource access level
-    - Members can belong to multiple organizations
-    - Rank changes affect resource availability
-    
-    Resource System:
-    - Organizations can create and maintain resources
-    - Resources are shared among members
-    - Higher ranks have access to better resources
-    - Use 'resource' command to manage org resources
-    
-    Notes:
-    - Choose appropriate rank names for org theme
-    - Balance resource distribution by rank
-    - Document org structure and hierarchy
-    - Consider inter-organization relationships
+    Organizations represent formal groups like guilds, companies,
+    or military units. Each has a hierarchy of numbered ranks (1-10).
     """
     
     key = "org"
-    locks = "cmd:all()"
+    locks = "cmd:all();create:perm(Admin);delete:perm(Admin)"
     help_category = "Organizations"
     switch_options = ("create", "member", "remove", "rankname", "delete")
     
-    def _check_admin(self):
-        """Helper method to check admin permissions."""
-        if not self.caller.permissions.check("Admin"):
-            self.msg("You don't have permission to perform this action.")
-            return False
-        return True
-        
-    def _validate_rank(self, rank_str, default=None):
-        """Helper method to validate rank numbers."""
-        return validate_rank(rank_str, default, self.caller)
-        
     def _get_org(self, org_name):
         """Helper method to find and validate an organization."""
         return get_org(org_name, self.caller)
@@ -163,7 +122,7 @@ class CmdOrg(MuxCommand):
             self.msg("Usage: org/create <name>")
             return
             
-        if not self.caller.check_permstring("Admin"):
+        if not self.access(self.caller, "create"):
             self.msg("You don't have permission to create organizations.")
             return
             
@@ -182,7 +141,8 @@ class CmdOrg(MuxCommand):
             
     def delete_org(self):
         """Delete an organization."""
-        if not self._check_admin():
+        if not self.access(self.caller, "delete"):
+            self.msg("You don't have permission to delete organizations.")
             return
             
         # Find the organization
@@ -207,11 +167,12 @@ class CmdOrg(MuxCommand):
         
     def manage_member(self):
         """Add or update a member's rank."""
-        if not self._check_admin():
+        if not self.access(self.caller, "member"):
+            self.msg("You don't have permission to manage members.")
             return
             
         # Parse arguments
-        parts = self._parse_equals("org/member <organization> = <character>[,rank]")
+        parts = self._parse_equals("org/member <organization>,<character>[,<rank>]")
         if not parts:
             return
         org_name, rest = parts
@@ -235,11 +196,12 @@ class CmdOrg(MuxCommand):
             
     def remove_member(self):
         """Remove a member from an organization."""
-        if not self._check_admin():
+        if not self.access(self.caller, "remove"):
+            self.msg("You don't have permission to remove members.")
             return
             
         # Parse arguments
-        parts = self._parse_equals("org/remove <organization> = <character>")
+        parts = self._parse_equals("org/remove <organization>,<character>")
         if not parts:
             return
         org_name, char_name = parts
@@ -262,17 +224,18 @@ class CmdOrg(MuxCommand):
             
     def set_rank_name(self):
         """Set the name for a rank."""
-        if not self._check_admin():
+        if not self.access(self.caller, "rankname"):
+            self.msg("You don't have permission to set rank names.")
             return
             
         # Parse arguments
-        parts = self._parse_equals("org/rankname <organization> = <rank>,<n>")
+        parts = self._parse_equals("org/rankname <organization>,<rank>=<name>")
         if not parts:
             return
         org_name, rest = parts
         
         # Parse rank and name
-        rank_parts = self._parse_comma(rest, 2, "org/rankname <organization> = <rank>,<n>")
+        rank_parts = self._parse_comma(rest, 2, "org/rankname <organization>,<rank>=<name>")
         if not rank_parts:
             return
             
@@ -345,68 +308,31 @@ class CmdOrg(MuxCommand):
 
 class CmdResource(MuxCommand):
     """
-    View and manage resources.
+    Manage organization resources.
     
     Usage:
-        resource [<n>]                    - View resource info or list all owned
-        resource/org <org> = <n>,<die_size>  - Create resource for an organization (Admin)
-        resource/char <char> = <n>,<die_size>  - Create resource for a character (Admin)
-        resource/transfer <source>:<n> = <target>  - Transfer resource to target (Admin)
-        resource/delete <char> = <n>      - Delete a resource from a character (Admin)
+        resource                    - List all resources you can access
+        resource <name>            - View resource details
+        resource/org <org>,<name>=<value>  - Create org resource
+        resource/char <char>,<name>=<value> - Create character resource
+        resource/transfer <from>,<to>,<name> - Transfer resource
+        resource/delete <name>     - Delete a resource
         
-    Resource System:
-    - Resources represent organizational assets and influence
-    - Die sizes (d4-d12) represent resource power/magnitude
-    - Resources can be shared between organization members
-    - Higher-ranking members have access to better resources
-    
-    Die Size Guidelines:
-    d4  - Minor resource (small unit, basic equipment)
-    d6  - Standard resource (regular unit, good equipment)
-    d8  - Significant resource (elite unit, excellent equipment)
-    d10 - Major resource (specialized unit, superior equipment)
-    d12 - Exceptional resource (legendary unit, masterwork equipment)
-    
     Examples:
-        resource                          - List all resources you own
-        resource House Guard              - View details of House Guard resource
-        resource/org HouseOtrese = Guard Pool,8    - Create d8 resource for org
-        resource/org "House Otrese" = "Guard Pool",8  - Names with spaces need quotes
-        resource/char Koline = "Personal Guard",6  - Create d6 resource for character
-        resource/transfer Guard = Koline  - Transfer to character Koline
-        resource/delete Koline = "Guard Pool"  - Delete Koline's Guard Pool resource
+        resource/org "Storm Guard",armory=100
+        resource/char Bob,savings=50
+        resource/transfer "Storm Guard",Bob,gold=10
+        resource/delete old_supplies
         
-    Resource Management:
-    - Organizations can create and maintain multiple resources
-    - Resources can be transferred between org members
-    - Only high-ranking members can manage major resources
-    - Resources can be combined for more effective actions
-    - Lost or damaged resources may be reduced in die size
-    
-    When multiple resources share the same name, you can specify which one
-    by including a number after the name:
-        resource "Political Capital 2"
-        resource/transfer "Wealth 3" = "House Anadun"
-        
-    Notes:
-    - Resource names should be descriptive and unique
-    - Consider balance when assigning die sizes
-    - Resources should match organization's theme
-    - Document resource purposes and limitations
+    Resources represent assets that can be owned by organizations
+    or characters and transferred between them.
     """
     
     key = "resource"
     aliases = ["res"]
-    locks = "cmd:all()"
+    locks = "cmd:all();create:perm(Admin);delete:perm(Admin);transfer:perm(Admin)"
     help_category = "Resources"
     
-    def _check_admin(self):
-        """Helper method to check admin permissions."""
-        if not self.caller.permissions.check("Admin"):
-            self.msg("You don't have permission to perform this action.")
-            return False
-        return True
-        
     def _get_org(self, org_name):
         """Helper method to find and validate an organization."""
         return get_org(org_name, self.caller)
@@ -431,12 +357,24 @@ class CmdResource(MuxCommand):
         switch = self.switches[0]
         
         if switch == "org":
+            if not self.access(self.caller, "create"):
+                self.msg("You don't have permission to create organization resources.")
+                return
             self.create_org_resource()
         elif switch == "char":
+            if not self.access(self.caller, "create"):
+                self.msg("You don't have permission to create character resources.")
+                return
             self.create_char_resource()
         elif switch == "transfer":
+            if not self.access(self.caller, "transfer"):
+                self.msg("You don't have permission to transfer resources.")
+                return
             self.transfer_resource()
         elif switch == "delete":
+            if not self.access(self.caller, "delete"):
+                self.msg("You don't have permission to delete resources.")
+                return
             self.delete_resource()
         else:
             self.msg(f"Unknown switch: {switch}")
@@ -513,32 +451,26 @@ class CmdResource(MuxCommand):
         
     def create_org_resource(self):
         """Create a resource for an organization."""
-        if not self._check_admin():
-            return
-            
         if not self.args:
-            self.msg("Usage: resource/org <org>=<name>,<die_size>")
+            self.msg("Usage: resource/org <org>,<name>=<value>")
             return
             
-        if not self.rhs:
-            self.msg("You must provide both a name and die size.")
-            return
-            
+        org_name, rest = self.args.split(",", 1)
+        name, value = [part.strip() for part in rest.split("=", 1)]
+        
         # Get organization
-        org = self.caller.search(self.lhs)
+        org = self._get_org(org_name)
         if not org:
             return
             
-        # Parse die size
+        # Parse value
         try:
-            name, die_size = self.rhs.split(",", 1)
-            name = name.strip()
-            die_size = int(die_size.strip())
-            if die_size not in [4, 6, 8, 10, 12]:
+            value = int(value.strip())
+            if value not in [4, 6, 8, 10, 12]:
                 self.msg("Die size must be one of: 4, 6, 8, 10, 12")
                 return
         except ValueError:
-            self.msg("You must provide both a name and valid die size.")
+            self.msg("You must provide a valid die size.")
             return
             
         # Add resource to organization
@@ -547,39 +479,33 @@ class CmdResource(MuxCommand):
                 self.msg("That organization cannot have resources.")
                 return
                 
-            org.add_org_resource(name, die_size)
-            self.msg(f"Added resource '{name}' (d{die_size}) to {org.name}.")
+            org.add_org_resource(name, value)
+            self.msg(f"Added resource '{name}' (d{value}) to {org.name}.")
         except ValueError as e:
             self.msg(str(e))
             
     def create_char_resource(self):
         """Create a resource for a character."""
-        if not self._check_admin():
-            return
-            
         if not self.args:
-            self.msg("Usage: resource/char <char>=<name>,<die_size>")
+            self.msg("Usage: resource/char <char>,<name>=<value>")
             return
             
-        if not self.rhs:
-            self.msg("You must provide both a name and die size.")
-            return
-            
+        char_name, rest = self.args.split(",", 1)
+        name, value = [part.strip() for part in rest.split("=", 1)]
+        
         # Get character
-        char = self.caller.search(self.lhs)
+        char = self._get_char(char_name)
         if not char:
             return
             
-        # Parse die size
+        # Parse value
         try:
-            name, die_size = self.rhs.split(",", 1)
-            name = name.strip()
-            die_size = int(die_size.strip())
-            if die_size not in [4, 6, 8, 10, 12]:
+            value = int(value.strip())
+            if value not in [4, 6, 8, 10, 12]:
                 self.msg("Die size must be one of: 4, 6, 8, 10, 12")
                 return
         except ValueError:
-            self.msg("You must provide both a name and valid die size.")
+            self.msg("You must provide a valid die size.")
             return
             
         # Add resource to character
@@ -588,8 +514,8 @@ class CmdResource(MuxCommand):
                 self.msg("That character cannot have resources.")
                 return
                 
-            char.add_resource(name, die_size)
-            self.msg(f"Added resource '{name}' (d{die_size}) to {char.name}.")
+            char.add_resource(name, value)
+            self.msg(f"Added resource '{name}' (d{value}) to {char.name}.")
         except ValueError as e:
             self.msg(str(e))
             
@@ -689,25 +615,22 @@ class CmdResource(MuxCommand):
             
     def delete_resource(self):
         """Delete a resource from a character."""
-        if not self._check_admin():
-            return
-            
         if not self.args or "=" not in self.args:
-            self.msg("Usage: resource/delete <char> = <n>")
+            self.msg("Usage: resource/delete <name>")
             return
             
-        char_name, resource_name = [part.strip() for part in self.args.split("=", 1)]
+        name = self.args.split("=")[0].strip()
         
         # Get character
-        char = self._get_char(char_name)
+        char = self._get_char(name)
         if not char:
             return
             
         # Delete the resource
-        if char.remove_resource(resource_name):
-            self.msg(f"Deleted resource '{resource_name}' from {char.name}.")
+        if char.remove_resource(name):
+            self.msg(f"Deleted resource '{name}' from {char.name}.")
         else:
-            self.msg(f"No resource found named '{resource_name}' on {char.name}.")
+            self.msg(f"No resource found named '{name}' on {char.name}.")
 
 
 class OrgCmdSet(CmdSet):
