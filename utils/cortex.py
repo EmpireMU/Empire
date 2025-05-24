@@ -58,7 +58,7 @@ def get_trait_die(character, trait_spec: str) -> Optional[Tuple[str, str, str, b
         Tuple of (die_size, category_name, step_mod, doubled) or None if not found
         doubled indicates if an extra die of the same size should be added
     """
-    if not hasattr(character, 'char_attributes'):
+    if not hasattr(character, 'character_attributes'):
         return None
         
     # Parse trait specification for modifiers
@@ -73,21 +73,23 @@ def get_trait_die(character, trait_spec: str) -> Optional[Tuple[str, str, str, b
         elif mod.lower() == 'double':
             doubled = True
         trait_key = trait_key.strip()
-        
+    
     # Try each trait category in order
     categories = [
-        ('attributes', character.char_attributes),
+        ('character_attributes', character.character_attributes),
         ('skills', character.skills),
         ('distinctions', character.distinctions),
         ('char_resources', character.char_resources),
         ('signature_assets', character.signature_assets)
     ]
     
+    trait_key = trait_key.lower()
+    
     for category_name, handler in categories:
         # For distinctions, check both key and name
         if category_name == 'distinctions':
             # First try by key
-            trait = handler.get(trait_key.lower())
+            trait = handler.get(trait_key)
             if not trait:
                 # If not found by key, try to find by name
                 for key in handler.all():
@@ -145,7 +147,7 @@ def validate_dice_pool(dice: List[TraitDie]) -> Optional[str]:
     
     for die in dice:
         if die.category:  # It's a trait, not a raw die
-            if die.category == 'attributes':
+            if die.category == 'character_attributes':
                 has_attribute = True
                 requires_prime_sets = True
             elif die.category == 'skills':

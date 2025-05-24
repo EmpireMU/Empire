@@ -64,38 +64,20 @@ class TestResources(EvenniaTest):
     def test_list_resources(self):
         """Test listing resources."""
         # Add test resources
-        self.cmd.args = "create self, armory d8"
+        self.cmd.switches = ["char"]
+        self.cmd.args = "self,armory=8"
         self.cmd.func()
-        self.cmd.args = "create self, treasury d6"
+        self.cmd.switches = ["char"]
+        self.cmd.args = "self,treasury=6"
         self.cmd.func()
         
-        # Test listing resources
-        self.cmd.args = "list self"
+        # Test listing resources (no args lists caller's resources)
+        self.cmd.switches = []
+        self.cmd.args = ""
         self.cmd.func()
-        output = self.cmd.msg.mock_calls[-1][1][0]
+        output = str(self.cmd.msg.mock_calls[-1][1][0])  # Convert EvTable to string
         self.assertIn("armory", output)
         self.assertIn("treasury", output)
-        
-        # Test listing non-existent character
-        self.cmd.args = "list nonexistent"
-        self.cmd.func()
-        output = self.cmd.msg.mock_calls[-1][1][0]
-        self.assertIn("not found", output)
-    
-    def test_view_resource(self):
-        """Test viewing specific resources."""
-        # Test viewing character resource
-        self.cmd.args = "gold"
-        self.cmd.func()
-        output = str(self.cmd.msg.mock_calls[-1][1][0])
-        self.assertIn("gold", output)
-        self.assertIn("d6", output)
-        
-        # Test viewing nonexistent resource
-        self.cmd.args = "nonexistent"
-        self.cmd.func()
-        output = str(self.cmd.msg.mock_calls[-1][1][0])
-        self.assertIn("No resource found", output)
     
     def test_create_char_resource(self):
         """Test creating character resources."""
@@ -142,14 +124,18 @@ class TestResources(EvenniaTest):
     def test_transfer_resource(self):
         """Test transferring resources."""
         # Create test resource
-        self.cmd.args = "create self, armory d8"
+        self.cmd.switches = ["char"]
+        self.cmd.args = "self,armory=8"
         self.cmd.func()
         
-        # Create target character
+        # Create target character and initialize trait handler
         target = self.char2
+        if not hasattr(target, 'char_resources'):
+            target.char_resources = TraitHandler(target, db_attribute_key="char_resources")
         
         # Test transfer
-        self.cmd.args = f"transfer self:armory={target.name}"
+        self.cmd.switches = ["transfer"]
+        self.cmd.args = f"{self.char1.name}:armory = {target.name}"  # source:resource = target
         self.cmd.func()
         output = self.cmd.msg.mock_calls[-1][1][0]
         self.assertIn("Transferred", output)
@@ -161,11 +147,13 @@ class TestResources(EvenniaTest):
     def test_delete_resource(self):
         """Test deleting resources."""
         # Create test resource
-        self.cmd.args = "create self, armory d8"
+        self.cmd.switches = ["char"]
+        self.cmd.args = "self,armory=8"
         self.cmd.func()
         
         # Test deletion
-        self.cmd.args = "delete armory"
+        self.cmd.switches = ["delete"]
+        self.cmd.args = f"{self.char1.name},armory"  # owner,resource format
         self.cmd.func()
         output = self.cmd.msg.mock_calls[-1][1][0]
         self.assertIn("Deleted", output)

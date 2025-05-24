@@ -94,11 +94,11 @@ class CmdSetTrait(MuxCommand):
 
         # Set the trait
         if category == 'attributes':
-            char.char_attributes.add(name, value=die_size, description=description)
+            char.character_attributes.add(name, name.title(), trait_type="static", base=die_size, desc=description)
         elif category == 'skills':
-            char.skills.add(name, value=die_size, description=description)
+            char.skills.add(name, name.title(), trait_type="static", base=die_size, desc=description)
         elif category == 'signature_assets':
-            char.signature_assets.add(name, value=die_size, description=description)
+            char.signature_assets.add(name, name.title(), trait_type="static", base=die_size, desc=description)
 
         self.msg(f"Set {name} to d{die_size} for {char.name}")
 
@@ -147,7 +147,7 @@ class CmdDeleteTrait(Command):
         
         # Get the appropriate trait handler
         if category == 'attributes':
-            handler = char.char_attributes
+            handler = char.character_attributes
         elif category == 'skills':
             handler = char.skills
         elif category == 'signature_assets':
@@ -168,7 +168,7 @@ class CmdSetDistinction(Command):
     Set a distinction on a character.
     
     Usage:
-        setdistinction <character> = <slot> : <name> : <description>
+        setdist <character> = <slot> : <n> : <description>
         
         
     Notes:
@@ -182,16 +182,16 @@ class CmdSetDistinction(Command):
     def func(self):
         """Handle setting the distinction."""
         if not self.args or ":" not in self.args or "=" not in self.args:
-            self.caller.msg("Usage: setdist <character> = <slot> : <name> : <description>")
+            self.caller.msg("Usage: setdist <character> = <slot> : <n> : <description>")
             return
             
         char_name, rest = self.args.split("=", 1)
         char_name = char_name.strip()
         
         try:
-            slot, name, desc = [part.strip() for part in rest.split(":")]
+            slot, name, desc = [part.strip() for part in rest.split(":", 2)]
         except ValueError:
-            self.caller.msg("You must provide a slot, name, and description separated by colons (:)")
+            self.caller.msg("Usage: setdist <character> = <slot> : <n> : <description>")
             return
             
         # Find the character
@@ -199,28 +199,20 @@ class CmdSetDistinction(Command):
         if not char:
             return
             
-        # Validate slot
-        valid_slots = {'concept', 'culture', 'reputation'}
-        if slot.lower() not in valid_slots:
-            self.caller.msg(f"Invalid distinction slot. Must be one of: {', '.join(valid_slots)}")
-            return
-            
-        # Set the distinction
+        # Verify character has distinctions
         if not hasattr(char, 'distinctions'):
-            self.caller.msg(f"{char.name} does not have distinction support.")
+            self.caller.msg(f"{char.name} does not have distinctions.")
             return
             
-        try:
-            # All distinctions are d8
-            char.distinctions.add(slot, value=8, desc=desc, name=name)
+        # Validate slot
+        valid_slots = ["concept", "culture", "reputation"]
+        if slot not in valid_slots:
+            self.caller.msg(f"Invalid slot. Must be one of: {', '.join(valid_slots)}")
+            return
             
-            # Notify relevant parties
-            self.caller.msg(f"Set {char.name}'s {slot} distinction to '{name}'.")
-            if char != self.caller:
-                char.msg(f"{self.caller.name} sets your {slot} distinction to '{name}'.")
-            
-        except Exception as e:
-            self.caller.msg(f"Error setting distinction: {e}")
+        # Set the distinction (all distinctions are d8)
+        char.distinctions.add(slot, name, trait_type="static", base=8, desc=desc)
+        self.caller.msg(f"Set {char.name}'s {slot} distinction to '{name}' (d8)")
 
 class CmdBiography(MuxCommand):
     """

@@ -24,8 +24,8 @@ class TestCharSheet(EvenniaTest):
         self.cmd.msg = self.caller.msg
         
         # Initialize trait handlers
-        if not hasattr(self.char1, 'char_attributes'):
-            self.char1.char_attributes = TraitHandler(self.char1, db_attribute_key="char_attributes")
+        if not hasattr(self.char1, 'character_attributes'):
+            self.char1.character_attributes = TraitHandler(self.char1, db_attribute_key="char_attributes")
         if not hasattr(self.char1, 'skills'):
             self.char1.skills = TraitHandler(self.char1, db_attribute_key="skills")
         if not hasattr(self.char1, 'distinctions'):
@@ -36,8 +36,8 @@ class TestCharSheet(EvenniaTest):
             self.char1.signature_assets = TraitHandler(self.char1, db_attribute_key="char_signature_assets")
         
         # Add test traits
-        self.char1.char_attributes.add("prowess", "Prowess", trait_type="static", base=8, desc="Physical power")
-        self.char1.char_attributes.add("finesse", "Finesse", trait_type="static", base=6, desc="Agility")
+        self.char1.character_attributes.add("prowess", "Prowess", trait_type="static", base=8, desc="Physical power")
+        self.char1.character_attributes.add("finesse", "Finesse", trait_type="static", base=6, desc="Agility")
         
         # Add skills
         self.char1.skills.add("fighting", "Fighting", trait_type="static", base=8, desc="Combat ability")
@@ -55,7 +55,7 @@ class TestCharSheet(EvenniaTest):
     def test_get_trait_display(self):
         """Test trait display formatting."""
         # Test normal trait with name and description
-        trait = self.char1.char_attributes.get("prowess")
+        trait = self.char1.character_attributes.get("prowess")
         name, die, desc = get_trait_display(trait)
         self.assertEqual(name, "Prowess")
         self.assertEqual(die, "d8")
@@ -78,12 +78,12 @@ class TestCharSheet(EvenniaTest):
         """Test trait section formatting."""
         # Test attributes section
         attributes = [
-            self.char1.char_attributes.get("prowess"),
-            self.char1.char_attributes.get("finesse")
+            self.char1.character_attributes.get("prowess"),
+            self.char1.character_attributes.get("finesse")
         ]
         section = format_trait_section("Attributes", attributes)
-        prowess_die = "d" + str(int(self.char1.char_attributes.get("prowess").base))
-        finesse_die = "d" + str(int(self.char1.char_attributes.get("finesse").base))
+        prowess_die = "d" + str(int(self.char1.character_attributes.get("prowess").base))
+        finesse_die = "d" + str(int(self.char1.character_attributes.get("finesse").base))
         
         self.assertIn("Attributes", section)
         self.assertIn("Prowess", section)
@@ -113,7 +113,7 @@ class TestCharSheet(EvenniaTest):
         
         # Check output contains all sections
         output = self.caller.msg.mock_calls[0][1][0]
-        prowess_die = "d" + str(int(self.char1.char_attributes.get("prowess").base))
+        prowess_die = "d" + str(int(self.char1.character_attributes.get("prowess").base))
         
         self.assertIn("Character Sheet", output)
         self.assertIn("Plot Points", output)
@@ -134,15 +134,15 @@ class TestCharSheet(EvenniaTest):
         other_char = self.char2
         
         # Initialize trait handlers on other character
-        if not hasattr(other_char, 'char_attributes'):
-            other_char.char_attributes = TraitHandler(other_char, db_attribute_key="char_attributes")
+        if not hasattr(other_char, 'character_attributes'):
+            other_char.character_attributes = TraitHandler(other_char, db_attribute_key="char_attributes")
         if not hasattr(other_char, 'skills'):
             other_char.skills = TraitHandler(other_char, db_attribute_key="skills")
         if not hasattr(other_char, 'distinctions'):
             other_char.distinctions = TraitHandler(other_char, db_attribute_key="char_distinctions")
         
         # Add some test traits
-        other_char.char_attributes.add("prowess", "Prowess", trait_type="static", base=6)
+        other_char.character_attributes.add("prowess", "Prowess", trait_type="static", base=6)
         other_char.skills.add("fighting", "Fighting", trait_type="static", base=6)
         
         # Try viewing without Builder permission

@@ -34,7 +34,7 @@ def format_colored_roll(value, die, trait_info, extra_value=None):
         # Display name mapping
         display_names = {
             'distinctions': 'Distinction',
-            'char_attributes': 'Attribute',
+            'character_attributes': 'Attribute',
             'skills': 'Skill',
             'char_resources': 'Resource',
             'signature_assets': 'Signature Asset'
@@ -53,8 +53,8 @@ def format_colored_roll(value, die, trait_info, extra_value=None):
         trait = None
         if trait_info.category == 'distinctions':
             trait = trait_info.caller.distinctions.get(trait_info.key)
-        elif trait_info.category == 'char_attributes':
-            trait = trait_info.caller.char_attributes.get(trait_info.key)
+        elif trait_info.category == 'character_attributes':
+            trait = trait_info.caller.character_attributes.get(trait_info.key)
         elif trait_info.category == 'skills':
             trait = trait_info.caller.skills.get(trait_info.key)
         elif trait_info.category == 'char_resources':
@@ -274,7 +274,7 @@ class CmdCortexRoll(Command):
                     if doubled:
                         dice_pool.append(TraitDie(die_size, None, None, None, self.caller))
                 else:
-                    self.msg(f"Unknown trait or invalid die: {arg}")
+                    self.msg(f"Unknown trait '{arg}'. Use 'help roll' to see available traits and modifiers.")
                     self.dice = None
                     return
         
@@ -321,7 +321,9 @@ class CmdCortexRoll(Command):
                 return
             
             # Process results
-            total, effect_die, hitches = process_results(rolls)
+            # Convert rolls to the format process_results expects (value, die_size)
+            process_rolls = [(value, die) for value, die, _ in rolls]
+            total, effect_die, hitches = process_results(process_rolls)
             
             # Format individual roll results with trait names
             roll_results = []
@@ -395,8 +397,8 @@ class CmdCortexRoll(Command):
 
     def get_trait_dice(self, trait_info):
         """Get the dice for a trait."""
-        if trait_info.category == 'char_attributes':
-            trait = trait_info.caller.char_attributes.get(trait_info.key)
+        if trait_info.category == 'character_attributes':
+            trait = trait_info.caller.character_attributes.get(trait_info.key)
         elif trait_info.category == 'skills':
             trait = trait_info.caller.skills.get(trait_info.key)
         elif trait_info.category == 'signature_assets':

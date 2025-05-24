@@ -312,17 +312,16 @@ class CmdResource(MuxCommand):
     
     Usage:
         resource                    - List all resources you can access
-        resource <name>            - View resource details
         resource/org <org>,<name>=<value>  - Create org resource
         resource/char <char>,<name>=<value> - Create character resource
         resource/transfer <from>,<to>,<name> - Transfer resource
-        resource/delete <name>     - Delete a resource
+        resource/delete <owner>,<name>     - Delete a resource (Admin only)
         
     Examples:
         resource/org "Storm Guard",armory=100
         resource/char Bob,savings=50
         resource/transfer "Storm Guard",Bob,gold=10
-        resource/delete old_supplies
+        resource/delete "Storm Guard",armory
         
     Resources represent assets that can be owned by organizations
     or characters and transferred between them.
@@ -614,23 +613,47 @@ class CmdResource(MuxCommand):
             self.msg(str(e))
             
     def delete_resource(self):
-        """Delete a resource from a character."""
-        if not self.args or "=" not in self.args:
-            self.msg("Usage: resource/delete <name>")
+        """Delete a resource from any character or organization."""
+        if not self.args or "," not in self.args:
+            self.msg("Usage: resource/delete <owner>,<name>")
             return
             
-        name = self.args.split("=")[0].strip()
+        owner_name, name = [part.strip() for part in self.args.split(",", 1)]
         
-        # Get character
-        char = self._get_char(name)
-        if not char:
+        # Find the owner
+        from evennia.utils.search import search_object
+        from typeclasses.organisations import Organisation
+        from typeclasses.characters import Character
+        
+        owner_matches = search_object(owner_name)
+        if not owner_matches:
+            self.msg(f"Owner '{owner_name}' not found.")
+            return
+        owner = owner_matches[0]
+        
+        # Verify owner type and resource capability
+        if not (isinstance(owner, (Character, Organisation)) and 
+                (hasattr(owner, 'char_resources') or hasattr(owner, 'org_resources'))):
+            self.msg(f"{owner.name} cannot have resources.")
+            return
+            
+        # Get resources from trait handler
+        resources = None
+        if hasattr(owner, 'char_resources') and owner.char_resources:
+            resources = owner.char_resources
+        elif hasattr(owner, 'org_resources') and owner.org_resources:
+            resources = owner.org_resources
+            
+        if not resources:
+            self.msg(f"{owner.name} doesn't own any resources.")
             return
             
         # Delete the resource
-        if char.remove_resource(name):
-            self.msg(f"Deleted resource '{name}' from {char.name}.")
+        if resources.get(name):
+            resources.remove(name)
+            self.msg(f"Deleted resource '{name}' from {owner.name}.")
         else:
-            self.msg(f"No resource found named '{name}' on {char.name}.")
+            self.msg(f"No resource found named '{name}' on {owner.name}.")
 
 
 class OrgCmdSet(CmdSet):

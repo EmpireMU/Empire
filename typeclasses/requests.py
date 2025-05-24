@@ -134,9 +134,14 @@ class Request(DefaultScript):
         self.notify_all(msg)
         
     def add_comment(self, author, text):
-        """Add a comment to the request."""
+        """Add a comment to the request.
+        
+        Args:
+            author (AccountDB): The account adding the comment
+            text (str): The comment text
+        """
         comment = {
-            "author": author,
+            "author": author,  # Store the account object
             "text": text,
             "date": datetime.now()
         }
@@ -147,7 +152,7 @@ class Request(DefaultScript):
         self.db.comments.append(comment)
         self.db.date_modified = datetime.now()
         
-        self.notify_all(f"New comment by {author}")
+        self.notify_all(f"New comment by {author.name}")
         
     def get_comments(self):
         """Get all comments on this request."""

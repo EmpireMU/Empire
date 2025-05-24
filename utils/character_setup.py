@@ -57,7 +57,7 @@ def initialize_traits(character: Any, force: bool = False) -> Tuple[bool, str]:
     try:
         _ = character.traits
         _ = character.distinctions
-        _ = character.char_attributes
+        _ = character.character_attributes
         _ = character.skills
         _ = character.signature_assets
     except AttributeError:
@@ -71,7 +71,7 @@ def initialize_traits(character: Any, force: bool = False) -> Tuple[bool, str]:
         changes.append(plot_point_change)
     
     # Initialize attributes
-    changes.extend(initialize_trait_group(character, ATTRIBUTES, "char_attributes", force))
+    changes.extend(initialize_trait_group(character, ATTRIBUTES, "character_attributes", force))
     
     # Initialize skills
     changes.extend(initialize_trait_group(character, SKILLS, "skills", force))

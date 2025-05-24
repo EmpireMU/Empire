@@ -178,69 +178,80 @@ class CmdSheet(Command):
 
     def func(self):
         """Execute the command."""
+        # Get the target character
         if not self.args:
-            # Viewing own sheet
             char = self.caller
         else:
-            # Check permission using the lock system
-            if not self.access(self.caller, "view_other"):
-                self.msg("You can only view your own character sheet.")
-                return
             char = self.caller.search(self.args)
             if not char:
                 return
-                
-        # Get all traits
-        if not hasattr(char, 'traits'):
-            self.caller.msg(f"{char.name} has no character sheet.")
-            return
             
         # Build the character sheet
-        sheet = [f"|c{char.name}'s Character Sheet|n\n"]
+        sheet = f"\n|w{char.name}'s Character Sheet|n\n"
         
-        # Plot Points
-        pp = char.traits.get("plot_points")
-        if pp:
-            sheet.append(f"|wPlot Points:|n {pp.base}\n")
+        # Add Prime Sets header
+        sheet += "\n|yPrime Sets|n\n"
         
-        # Get trait objects for each category
-        # We need the full trait objects to access their properties
-        distinctions = [char.distinctions.get(key) for key in char.distinctions.all()]
-        attributes = [char.char_attributes.get(key) for key in char.char_attributes.all()]
-        skills = [char.skills.get(key) for key in char.skills.all()]
-        assets = [char.signature_assets.get(key) for key in char.signature_assets.all()]
-        resources = [char.char_resources.get(key) for key in char.char_resources.all()]
+        # Add attributes section if they exist
+        if hasattr(char, 'character_attributes'):
+            sheet += "\n|wAttributes:|n\n"
+            for trait in [char.character_attributes.get(key) for key in char.character_attributes.all()]:
+                if trait:
+                    sheet += f"  {trait.name}: d{int(trait.value)}\n"
         
-        # Format each section
-        if distinctions:
-            sheet.append(format_distinctions_short(distinctions))
+        # Add skills section if they exist
+        if hasattr(char, 'skills'):
+            sheet += "\n|wSkills:|n\n"
+            for trait in [char.skills.get(key) for key in char.skills.all()]:
+                if trait:
+                    sheet += f"  {trait.name}: d{int(trait.value)}\n"
         
-        # Prime Sets
-        sheet.append("\n|rPrime Sets|n")
-        sheet.append("-" * 78 + "\n")
+        # Add distinctions section if they exist
+        if hasattr(char, 'distinctions'):
+            sheet += "\n|wDistinctions:|n\n"
+            for trait in [char.distinctions.get(key) for key in char.distinctions.all()]:
+                if trait:
+                    sheet += f"  {trait.name}: d{int(trait.value)}"
+                    if hasattr(trait, 'desc') and trait.desc:
+                        sheet += f" ({trait.desc})"
+                    sheet += "\n"
         
-        if attributes:
-            sheet.append(format_trait_section("Attributes", attributes))
+        # Get optional handlers
+        has_signature_assets = hasattr(char, 'signature_assets')
+        has_resources = hasattr(char, 'char_resources')
+        
+        # Add Additional Sets header if any optional sets exist
+        if has_signature_assets or has_resources:
+            sheet += "\n|yAdditional Sets|n\n"
             
-        if skills:
-            sheet.append(format_trait_section("Skills", skills))
-        
-        # Additional Sets
-        sheet.append("\n|gAdditional Sets|n")
-        sheet.append("-" * 78 + "\n")
-        
-        if resources:
-            sheet.append(format_trait_section("Resources", resources, show_desc=True))
+            # Add signature assets section if they exist
+            if has_signature_assets:
+                sheet += "\n|wSignature Assets:|n\n"
+                for trait in [char.signature_assets.get(key) for key in char.signature_assets.all()]:
+                    if trait:
+                        sheet += f"  {trait.name}: d{int(trait.value)}"
+                        if hasattr(trait, 'desc') and trait.desc:
+                            sheet += f" ({trait.desc})"
+                        sheet += "\n"
             
-        if assets:
-            sheet.append(format_trait_section("Signature Assets", assets, show_desc=True))
+            # Add resources section if they exist
+            if has_resources:
+                sheet += "\n|wResources:|n\n"
+                for trait in [char.char_resources.get(key) for key in char.char_resources.all()]:
+                    if trait:
+                        sheet += f"  {trait.name}: d{int(trait.value)}"
+                        if hasattr(trait, 'desc') and trait.desc:
+                            sheet += f" ({trait.desc})"
+                        sheet += "\n"
         
-        # Distinction Details
-        if distinctions:
-            sheet.append("\n" + format_distinctions_full(distinctions))
+        # Add plot points if they exist
+        if hasattr(char, 'traits'):
+            plot_points = char.traits.get("plot_points")
+            if plot_points:
+                sheet += f"\n|wPlot Points:|n {int(plot_points.value)}\n"
         
-        # Send the sheet
-        self.caller.msg("\n".join(sheet))
+        # Send the sheet to the caller
+        self.msg(sheet)
 
 
 class CharSheetCmdSet(CmdSet):
