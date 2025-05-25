@@ -67,7 +67,7 @@ def get_trait_die(character, trait_spec: str) -> Optional[Tuple[str, str, str, b
     doubled = False
     if '(' in trait_spec and ')' in trait_spec:
         trait_key, mod = trait_spec.split('(', 1)
-        mod = mod.rstrip(')')
+        mod = mod.rstrip(')').upper()  # Convert to uppercase for comparison
         if mod in ('U', 'D'):
             step_mod = mod
         elif mod.lower() == 'double':

@@ -12,7 +12,8 @@ from utils.cortex import (
     roll_die,
     process_results,
     get_success_level,
-    format_roll_result
+    format_roll_result,
+    step_die
 )
 from collections import defaultdict
 
@@ -77,13 +78,13 @@ class CmdCortexRoll(Command):
     
     Usage:
         roll <trait1> [<trait2>...] [vs <difficulty>]
-        roll/step <trait1> [<trait2>...] - Step up the highest die
         
     Examples:
         roll strength fighting - Roll Strength + Fighting dice
         roll strength d8 - Roll Strength + a d8
+        roll strength(U) fighting - Roll Strength stepped up + Fighting
+        roll strength fighting(D) - Roll Strength + Fighting stepped down
         roll strength fighting signature_sword vs 12 - Roll against difficulty 12
-        roll/step strength fighting - Step up highest die by one size
         
     Dice Mechanics:
     - Each trait adds its die to the pool (e.g., d6, d8, d10, d12)
@@ -91,7 +92,7 @@ class CmdCortexRoll(Command):
     - If rolling against difficulty, must beat the target number
     - Distinctions can be used as d8 or d4 (d4 gives you a plot point)
     - Plot points can be spent to:
-      * Step up the size of one die
+      * Step up or down a die by adding (U) or (D) after the trait name
       * Keep an additional die in the total
     
     Special Rules:
@@ -240,15 +241,18 @@ class CmdCortexRoll(Command):
                 continue
                 
             # Check if it's a raw die (must match pattern 'd' followed by a valid die size)
-            if arg.startswith('d'):
+            # or just a valid die size number
+            if arg.startswith('d') or arg in VALID_DIE_SIZES:
+                # Get the die size, either after 'd' or the full arg
+                die = arg[1:] if arg.startswith('d') else arg
+                
                 # Check for step modifiers on raw dice
                 if '(' in arg:
-                    self.msg("Raw dice (like 'd8') cannot be stepped up or down. Only traits can be modified.")
+                    self.msg("Raw dice (like 'd8' or '8') cannot be stepped up or down. Only traits can be modified.")
                     self.dice = None
                     return
                 
-                if len(arg) > 1 and arg[1:] in VALID_DIE_SIZES:
-                    die = arg[1:]
+                if die in VALID_DIE_SIZES:
                     dice_pool.append(TraitDie(die, None, None, None, self.caller))
                 else:
                     self.msg(f"Invalid die size: {arg}")
@@ -413,6 +417,40 @@ class CmdCortexRoll(Command):
             
         return [trait.base]
 
+class CmdSpendPlot(Command):
+    """
+    Spend a plot point.
+    
+    Usage:
+        plot
+        
+    Spends one plot point from your character's available plot points.
+    Plot points can be spent to:
+    - Add an extra die to your total
+    - Create an asset
+    - Power special abilities
+    """
+    
+    key = "plot"
+    locks = "cmd:all()"
+    help_category = "Game"
+    
+    def func(self):
+        """Execute the plot point spending."""
+        # Get current plot points
+        plot_points = self.caller.db.plot_points or 0
+        
+        if plot_points < 1:
+            self.msg("You don't have any plot points to spend.")
+            return
+            
+        # Spend the plot point
+        self.caller.db.plot_points = plot_points - 1
+        
+        # Notify the player and the room
+        self.msg(f"You spend a plot point. ({plot_points-1} remaining)")
+        self.caller.location.msg_contents(f"{self.caller.key} spends a plot point.", exclude=[self.caller])
+
 class CortexCmdSet(CmdSet):
     """
     Command set for Cortex Prime dice rolling.
@@ -422,3 +460,4 @@ class CortexCmdSet(CmdSet):
     def at_cmdset_creation(self):
         """Add commands to the command set."""
         self.add(CmdCortexRoll())
+        self.add(CmdSpendPlot())
