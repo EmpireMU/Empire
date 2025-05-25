@@ -187,18 +187,21 @@ class TestRequest(EvenniaTest):
         # Remove admin permissions
         self.caller.permissions.remove("Admin")
         
+        # Store original status
+        original_status = other_request.db.status
+        
         # Try to close someone else's request
         self.cmd.switches = ["status"]
         self.cmd.args = "2=Closed"
-        self.cmd.lhs = "2"  # Request ID
-        self.cmd.rhs = "Closed"
-        
-        # Run the command
         self.cmd.func()
         
         # Verify request was not modified
-        request = Request.objects.get(db_key="Request-2")
-        self.assertEqual(request.db.status, "Open")  # Status should remain unchanged
+        self.assertEqual(other_request.db.status, original_status)
+        
+        # Clean up
+        self.caller.permissions.add("Admin")  # Add back permission for cleanup
+        other_request.delete()
+        self.caller.permissions.remove("Admin")  # Remove again
         
     def test_viewing(self):
         """Test viewing requests."""

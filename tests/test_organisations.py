@@ -8,6 +8,7 @@ from commands.organisations import CmdOrg, CmdResource
 from typeclasses.organisations import Organisation
 from evennia import create_object
 from utils.org_utils import validate_rank, parse_equals, parse_comma, get_org, get_char, get_org_and_char
+import unittest
 
 class TestOrganisation(EvenniaTest):
     """Test cases for organization functionality."""
@@ -20,6 +21,7 @@ class TestOrganisation(EvenniaTest):
         self.cmd = CmdOrg()
         self.cmd.caller = self.char1
         self.cmd.obj = self.char1
+        self.cmd.session = self.session
         
         # Set up message mocking
         self.caller = self.char1
@@ -129,36 +131,31 @@ class TestOrganisation(EvenniaTest):
         
     def test_permissions(self):
         """Test permission checks."""
-        # Clean up any existing organizations
-        Organisation.objects.all().delete()
+        # Try to create an organization without permission
+        with unittest.mock.patch.object(self.cmd, 'access', return_value=False):
+            self.cmd.switches = ["create"]
+            self.cmd.args = "New House"
+            self.cmd.func()
+            
+            # Verify organization wasn't created
+            orgs = Organisation.objects.filter(db_key="New House")
+            self.assertEqual(len(orgs), 0)
+            self.caller.msg.assert_called_with("You don't have permission to create organizations.")
         
-        # Remove admin permissions
-        self.caller.permissions.remove("Admin")
-        
-        # Try to create an organization
-        self.cmd.switches = ["create"]
-        self.cmd.args = "New House"
-        self.cmd.func()
-        
-        # Verify organization wasn't created
-        orgs = Organisation.objects.filter(db_key="New House")
-        self.assertEqual(len(orgs), 0)
-        
-        # Create a test org for deletion test
-        self.caller.permissions.add("Admin")  # Temporarily add permission
+        # Try to delete an organization without permission
         org = create_object(
             typeclass=Organisation,
             key="Test House"
         )
-        self.caller.permissions.remove("Admin")  # Remove permission again
         
-        # Try to delete an organization
-        self.cmd.switches = ["delete"]
-        self.cmd.args = "Test House"
-        self.cmd.func()
-        
-        # Verify organization wasn't deleted
-        self.assertIsNotNone(org.pk)
+        with unittest.mock.patch.object(self.cmd, 'access', return_value=False):
+            self.cmd.switches = ["delete"]
+            self.cmd.args = "Test House"
+            self.cmd.func()
+            
+            # Verify organization wasn't deleted
+            self.assertIsNotNone(org.pk)
+            self.caller.msg.assert_called_with("You don't have permission to delete organizations.")
         
         # Clean up
         org.delete()
@@ -207,6 +204,7 @@ class TestResource(EvenniaTest):
         self.cmd = CmdResource()
         self.cmd.caller = self.char1
         self.cmd.obj = self.char1
+        self.cmd.session = self.session
         
         # Set up message mocking
         self.caller = self.char1
@@ -288,21 +286,18 @@ class TestResource(EvenniaTest):
         
     def test_resource_permissions(self):
         """Test resource permission checks."""
-        # Remove any existing resources
-        if hasattr(self.org, 'org_resources'):
-            for resource in list(self.org.org_resources.all()):
-                self.org.org_resources.remove(resource)
+        # Clear resources directly
+        self.org.org_resources.clear()
         
-        # Remove admin permissions
-        self.caller.permissions.remove("Admin")
-        
-        # Try to create a resource
-        self.cmd.switches = ["org"]
-        self.cmd.args = "Test House,new_resource=8"
-        self.cmd.func()
-        
-        # Verify resource wasn't created
-        self.assertIsNone(self.org.org_resources.get("new_resource"))
+        # Try to create a resource without permission
+        with unittest.mock.patch.object(self.cmd, 'access', return_value=False):
+            self.cmd.switches = ["org"]
+            self.cmd.args = "Test House,new_resource=8"
+            self.cmd.func()
+            
+            # Verify resource wasn't created
+            self.assertIsNone(self.org.org_resources.get("new_resource"))
+            self.caller.msg.assert_called_with("You don't have permission to create organization resources.")
         
         # Clean up
         self.org.delete()
