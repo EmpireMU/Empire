@@ -2,7 +2,7 @@
 Tests for Cortex Prime game system utilities.
 """
 
-import unittest
+from evennia.utils.test_resources import EvenniaTest
 from utils.cortex import (
     DIFFICULTIES,
     DIE_SIZES,
@@ -14,7 +14,7 @@ from utils.cortex import (
     validate_dice_pool
 )
 
-class TestCortexUtils(unittest.TestCase):
+class TestCortexUtils(EvenniaTest):
     """Test cases for Cortex utility functions."""
     
     def test_step_die(self):
@@ -36,8 +36,7 @@ class TestCortexUtils(unittest.TestCase):
         # Test multiple steps
         self.assertEqual(step_die("4", 2), "8")
         self.assertEqual(step_die("12", -2), "8")
-        
-        # Test invalid die sizes
+         # Test invalid die sizes
         self.assertEqual(step_die("5", 1), "5")  # Invalid die returns unchanged
         self.assertEqual(step_die("", 1), "")  # Empty string returns unchanged
     
@@ -50,22 +49,56 @@ class TestCortexUtils(unittest.TestCase):
                 result = roll_die(sides)
                 self.assertGreaterEqual(result, 1)
                 self.assertLessEqual(result, sides)
-    
+                
     def test_process_results(self):
         """Test processing of dice roll results."""
-        # Test normal roll
-        rolls = [(6, "Strength"), (4, "Fighting"), (8, "Warrior")]
+        # Test normal roll: 6 on d8, 4 on d6, 8 on d10
+        # Sorted by value: 8(d10), 6(d8), 4(d6)
+        # Total: 8 + 6 = 14, Effect die: largest unused die size = d6 = 6
+        rolls = [(6, 8), (4, 6), (8, 10)]  # (rolled_value, die_size)
         total, effect_die, hitches = process_results(rolls)
         self.assertEqual(total, 14)  # Two highest dice: 8 + 6
-        self.assertEqual(effect_die, 4)  # Next highest die
-        self.assertEqual(hitches, 0)  # No 1s rolled
+        self.assertEqual(effect_die, 6)  # Largest unused die size (d6)
+        self.assertEqual(len(hitches), 0)  # No 1s rolled
         
         # Test roll with hitches
-        rolls = [(1, "Strength"), (1, "Fighting"), (8, "Warrior")]
+        rolls = [(1, 8), (1, 6), (8, 10)]  # (rolled_value, die_size)
         total, effect_die, hitches = process_results(rolls)
         self.assertEqual(total, 8)  # Only one non-hitch die
-        self.assertEqual(effect_die, 1)  # Next highest die
-        self.assertEqual(hitches, 2)  # Two 1s rolled
+        self.assertEqual(effect_die, 4)  # Defaults to 4 when no third die available
+        self.assertEqual(len(hitches), 2)  # Two 1s rolled
+        self.assertEqual(hitches, [8, 6])  # Die sizes that rolled 1s
+        
+        # Test with multiple dice of same size unused
+        # Rolls: 5 on d8, 3 on d6, 9 on d10, 2 on d8
+        # Sorted by value: 9(d10), 5(d8), 3(d6), 2(d8)
+        # Total: 9 + 5 = 14, Effect die: largest unused die size = max(d6, d8) = d8 = 8
+        rolls = [(5, 8), (3, 6), (9, 10), (2, 8)]
+        total, effect_die, hitches = process_results(rolls)
+        self.assertEqual(total, 14)  # 9 + 5
+        self.assertEqual(effect_die, 8)  # Largest unused die size (d8)
+        self.assertEqual(len(hitches), 0)
+        
+        # Test edge case: only two dice
+        rolls = [(6, 8), (4, 6)]
+        total, effect_die, hitches = process_results(rolls)
+        self.assertEqual(total, 10)  # 6 + 4
+        self.assertEqual(effect_die, 4)  # Defaults to 4 when no unused dice
+        self.assertEqual(len(hitches), 0)
+        # Sorted by value: 9(d10), 5(d8), 3(d6), 2(d8)
+        # Total: 9 + 5 = 14, Effect die: largest unused die size = max(d6, d8) = d8 = 8
+        rolls = [(5, 8), (3, 6), (9, 10), (2, 8)]
+        total, effect_die, hitches = process_results(rolls)
+        self.assertEqual(total, 14)  # 9 + 5
+        self.assertEqual(effect_die, 8)  # Largest unused die size (d8)
+        self.assertEqual(len(hitches), 0)
+        
+        # Test edge case: only two dice
+        rolls = [(6, 8), (4, 6)]
+        total, effect_die, hitches = process_results(rolls)
+        self.assertEqual(total, 10)  # 6 + 4
+        self.assertEqual(effect_die, 4)  # Defaults to 4 when no unused dice
+        self.assertEqual(len(hitches), 0)
     
     def test_get_success_level(self):
         """Test success level determination."""
@@ -80,13 +113,12 @@ class TestCortexUtils(unittest.TestCase):
         
         # Test edge cases
         self.assertEqual(get_success_level(0, 1), (False, False))    # Zero total
-        self.assertEqual(get_success_level(100, 11), (True, True))   # Very high roll
-        self.assertEqual(get_success_level(10, None), (True, False)) # No difficulty
+        self.assertEqual(get_success_level(100, 11), (True, True))   # Very high roll        self.assertEqual(get_success_level(10, None), (True, False)) # No difficulty
     
     def test_validate_dice_pool(self):
         """Test dice pool validation."""
         # Create some test dice
-        attribute = TraitDie("8", "attributes", "strength", None)
+        attribute = TraitDie("8", "character_attributes", "strength", None)
         skill = TraitDie("6", "skills", "fighting", None)
         distinction = TraitDie("8", "distinctions", "warrior", None)
         asset = TraitDie("6", "signature_assets", "sword", None)
@@ -95,14 +127,10 @@ class TestCortexUtils(unittest.TestCase):
         # Test valid pools
         self.assertIsNone(validate_dice_pool([raw_die]))  # Single raw die is valid
         self.assertIsNone(validate_dice_pool([raw_die, raw_die]))  # Multiple raw dice are valid
-        self.assertIsNone(validate_dice_pool([attribute, skill, distinction]))  # Complete prime set
-        self.assertIsNone(validate_dice_pool([attribute, skill, distinction, asset]))  # Prime set with asset
+        self.assertIsNone(validate_dice_pool([attribute, skill, distinction]))  # Complete prime set        self.assertIsNone(validate_dice_pool([attribute, skill, distinction, asset]))  # Prime set with asset
         
         # Test invalid pools
         self.assertIsNotNone(validate_dice_pool([attribute]))  # Missing skill and distinction
         self.assertIsNotNone(validate_dice_pool([attribute, skill]))  # Missing distinction
         self.assertIsNotNone(validate_dice_pool([asset]))  # Asset without prime set
         self.assertIsNotNone(validate_dice_pool([attribute, distinction, asset]))  # Missing skill
-
-if __name__ == '__main__':
-    unittest.main() 

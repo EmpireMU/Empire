@@ -11,6 +11,7 @@ from evennia.accounts.models import AccountDB
 from typeclasses.requests import Request, VALID_STATUSES, DEFAULT_CATEGORIES
 from datetime import datetime
 from evennia.scripts.models import ScriptDB
+from utils.request_manager import RequestManager
 
 class CmdRequest(MuxCommand):
     """
@@ -63,7 +64,7 @@ class CmdRequest(MuxCommand):
             return False
             
         # Check permissions unless it's a staff member
-        if not self.caller.locks.check_lockstring(self.caller, "perm(Admin)"):
+        if not self.caller.permissions.check("Admin"):
             if request.db.submitter != self.caller.account:
                 self.caller.msg("You don't have permission to do that.")
                 return False
@@ -130,36 +131,12 @@ class CmdRequest(MuxCommand):
         
     def create_request(self, title, text):
         """Create a new request"""
-        if not title.strip():
-            self.caller.msg("Request title cannot be empty.")
-            return
-        if not text.strip():
-            self.caller.msg("Request text cannot be empty.")
-            return
-
-        # Get the next ID first
-        from typeclasses.requests import Request
-        next_id = Request.get_next_id()
-
-        # Create the request script
-        request = create_script(
-            "typeclasses.requests.Request",
-            key=f"Request-{next_id}"  # Simple numbered key
-        )
-
-        if not request:
-            self.caller.msg("Failed to create request.")
-            return
-
-        # Set up the request
-        request.db.id = next_id
-        request.db.title = title.strip()
-        request.db.text = text.strip()
-        request.db.submitter = self.caller.account
-        
-        self.caller.msg(f"Request #{request.db.id} created successfully.")
-        request.notify_all(f"New request created: {title[:50]}{'...' if len(title) > 50 else ''}")
-        
+        try:
+            request = RequestManager.create(title, text, self.caller.account)
+            self.caller.msg(f"Request #{request.db.id} created successfully.")
+        except ValueError as e:
+            self.caller.msg(str(e))
+            
     def view_request(self, request_id):
         """View a specific request"""
         request = self.find_request(request_id)
@@ -191,30 +168,54 @@ Modified: {datetime_format(request.db.date_modified)}"""
     def add_comment(self, request_id, text):
         """Add a comment to a request"""
         request = self.find_request(request_id)
-        if not self._check_request_access(request):
+        if not request:
+            self.caller.msg("Request not found.")
             return
             
-        request.add_comment(self.caller.account, text)  # Pass account object
-        self.caller.msg("Comment added.")
+        # Check permissions - only staff and request owner can comment
+        if not self.caller.permissions.check("Admin"):
+            if request.db.submitter != self.caller.account:
+                self.caller.msg("You don't have permission to comment on this request.")
+                return
+                
+        try:
+            RequestManager.add_comment(request, self.caller.account, text)
+            self.caller.msg("Comment added.")
+        except ValueError as e:
+            self.caller.msg(str(e))
         
     def close_request(self, request_id, resolution):
         """Close a request"""
         request = self.find_request(request_id)
-        if not self._check_request_access(request):
+        if not request:
+            self.caller.msg("Request not found.")
             return
             
-        request.db.resolution = resolution
-        request.set_status("Closed")
-        self.caller.msg("Request closed.")
-        
+        # Check permissions
+        if not self.caller.permissions.check("Admin"):
+            if request.db.submitter != self.caller.account:
+                self.caller.msg("You don't have permission to close this request.")
+                return
+            if request.status != "Open":
+                self.caller.msg("You can only close requests that are currently open.")
+                return
+                
+        try:
+            request.set_resolution(resolution)
+            request.set_status("Closed")
+            self.caller.msg("Request closed.")
+        except ValueError as e:
+            self.caller.msg(str(e))
+            
     def assign_request(self, request_id, staff_name):
         """Assign a request to a staff member"""
         request = self.find_request(request_id)
-        if not self._check_request_access(request):
+        if not request:
+            self.caller.msg("Request not found.")
             return
             
         # Only staff can assign requests
-        if not self.caller.locks.check_lockstring(self.caller, "perm(Admin)"):
+        if not self.caller.permissions.check("Admin"):
             self.caller.msg("You don't have permission to assign requests.")
             return
             
@@ -224,9 +225,12 @@ Modified: {datetime_format(request.db.date_modified)}"""
             self.caller.msg(f"Staff member '{staff_name}' not found.")
             return
             
-        request.assign_to(staff)
-        self.caller.msg(f"Request assigned to {staff.name}.")
-        
+        try:
+            RequestManager.assign(request, staff)
+            self.caller.msg(f"Request assigned to {staff.name}.")
+        except ValueError as e:
+            self.caller.msg(str(e))
+            
     def set_request_status(self, request_id, new_status):
         """Change a request's status"""
         request = self.find_request(request_id)
@@ -234,13 +238,21 @@ Modified: {datetime_format(request.db.date_modified)}"""
             self.caller.msg("Request not found.")
             return
             
-        # Only staff can change status
-        if not self.caller.locks.check_lockstring(self.caller, "perm(Admin)"):
-            self.caller.msg("You don't have permission to change request status.")
-            return
+        # Check permissions
+        if not self.caller.permissions.check("Admin"):
+            # Non-staff can only close their own open requests
+            if request.db.submitter != self.caller.account:
+                self.caller.msg("You don't have permission to change request status.")
+                return
+            if new_status != "Closed":
+                self.caller.msg("You can only close your own requests.")
+                return
+            if request.status != "Open":
+                self.caller.msg("You can only close requests that are currently open.")
+                return
             
         try:
-            request.set_status(new_status)
+            RequestManager.set_status(request, new_status)
             self.caller.msg(f"Request status changed to {new_status}.")
         except ValueError as e:
             self.caller.msg(str(e))
@@ -248,16 +260,17 @@ Modified: {datetime_format(request.db.date_modified)}"""
     def set_request_category(self, request_id, new_category):
         """Change a request's category"""
         request = self.find_request(request_id)
-        if not self._check_request_access(request):
+        if not request:
+            self.caller.msg("Request not found.")
             return
             
         # Only staff can change category
-        if not self.caller.locks.check_lockstring(self.caller, "perm(Admin)"):
+        if not self.caller.permissions.check("Admin"):
             self.caller.msg("You don't have permission to change request category.")
             return
             
         try:
-            request.set_category(new_category)
+            RequestManager.set_category(request, new_category)
             self.caller.msg(f"Request category changed to {new_category}.")
         except ValueError as e:
             self.caller.msg(str(e))
@@ -265,35 +278,43 @@ Modified: {datetime_format(request.db.date_modified)}"""
     def archive_request(self, request_id):
         """Archive a request"""
         request = self.find_request(request_id)
-        if not self._check_request_access(request):
+        if not request:
+            self.caller.msg("Request not found.")
             return
             
         # Only staff can archive
-        if not self.caller.locks.check_lockstring(self.caller, "perm(Admin)"):
+        if not self.caller.permissions.check("Admin"):
             self.caller.msg("You don't have permission to archive requests.")
             return
             
-        request.archive()
-        self.caller.msg("Request archived.")
-        
+        try:
+            RequestManager.set_archived(request, True)
+            self.caller.msg("Request archived.")
+        except ValueError as e:
+            self.caller.msg(str(e))
+            
     def unarchive_request(self, request_id):
         """Unarchive a request"""
         request = self.find_request(request_id)
-        if not self._check_request_access(request):
+        if not request:
+            self.caller.msg("Request not found.")
             return
             
         # Only staff can unarchive
-        if not self.caller.locks.check_lockstring(self.caller, "perm(Admin)"):
+        if not self.caller.permissions.check("Admin"):
             self.caller.msg("You don't have permission to unarchive requests.")
             return
             
-        request.unarchive()
-        self.caller.msg("Request unarchived.")
-        
+        try:
+            RequestManager.set_archived(request, False)
+            self.caller.msg("Request unarchived.")
+        except ValueError as e:
+            self.caller.msg(str(e))
+            
     def cleanup_requests(self):
         """Archive old closed requests"""
         # Only staff can run cleanup
-        if not self.caller.locks.check_lockstring(self.caller, "perm(Admin)"):
+        if not self.caller.permissions.check("Admin"):
             self.caller.msg("You don't have permission to run request cleanup.")
             return
             
@@ -319,7 +340,7 @@ Modified: {datetime_format(request.db.date_modified)}"""
             
         if "all" in self.switches:
             # List all active requests (staff only)
-            if not self.caller.locks.check_lockstring(self.caller, "perm(Admin)"):
+            if not self.caller.permissions.check("Admin"):
                 self.caller.msg("You don't have permission to list all requests.")
                 return
             self.list_requests(personal=False, show_archived=False)
@@ -329,7 +350,7 @@ Modified: {datetime_format(request.db.date_modified)}"""
             if not self.args:
                 if "all" in self.switches:
                     # List all archived requests (staff only)
-                    if not self.caller.locks.check_lockstring(self.caller, "perm(Admin)"):
+                    if not self.caller.permissions.check("Admin"):
                         self.caller.msg("You don't have permission to list all archived requests.")
                         return
                     self.list_requests(personal=False, show_archived=True)

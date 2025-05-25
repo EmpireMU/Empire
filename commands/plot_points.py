@@ -5,8 +5,9 @@ Commands for managing Cortex Prime plot points.
 from evennia.commands.command import Command
 from evennia.commands.default.muxcommand import MuxCommand
 from evennia import CmdSet
+from utils.command_mixins import CharacterLookupMixin
 
-class CmdGivePlotPoint(Command):
+class CmdGivePlotPoint(CharacterLookupMixin, MuxCommand):
     """
     Award a plot point to a character.
     
@@ -28,7 +29,7 @@ class CmdGivePlotPoint(Command):
             self.caller.msg("Usage: givepp <character>")
             return
             
-        char = self.caller.search(self.args.strip())
+        char = self.find_character(self.args.strip())
         if not char:
             return
             
@@ -107,7 +108,7 @@ class CmdSpendPlotPoint(Command):
         except Exception as e:
             self.caller.msg(f"Error spending plot point: {e}")
 
-class CmdCheckPlotPoints(Command):
+class CmdCheckPlotPoints(CharacterLookupMixin, MuxCommand):
     """
     Check how many plot points you or another character has.
     
@@ -134,7 +135,7 @@ class CmdCheckPlotPoints(Command):
             if not self.access(self.caller, "view_other"):
                 self.caller.msg("You can only check your own plot points.")
                 return
-            char = self.caller.search(self.args)
+            char = self.find_character(self.args)
             if not char:
                 return
                 
@@ -184,7 +185,7 @@ class CmdSetRoomPlotPoints(MuxCommand):
             if "=" in self.args:
                 # Setting for specific character
                 char_name, amount = self.args.split("=", 1)
-                char = self.caller.search(char_name.strip())
+                char = self.find_character(char_name.strip())
                 if not char:
                     return
                 chars = [char]
@@ -230,7 +231,7 @@ class CmdSetRoomPlotPoints(MuxCommand):
         else:
             self.caller.msg(f"Set plot points to {amount} for {success_count} character{'s' if success_count != 1 else ''}.")
 
-class CmdSetCharacterPlotPoints(MuxCommand):
+class CmdSetCharacterPlotPoints(CharacterLookupMixin, MuxCommand):
     """
     Set a character's plot points to a specific value.
     
@@ -255,7 +256,7 @@ class CmdSetCharacterPlotPoints(MuxCommand):
             self.caller.msg("Usage: setpp <character>=<amount>")
             return
             
-        char = self.caller.search(self.lhs)
+        char = self.find_character(self.lhs)
         if not char:
             return
             

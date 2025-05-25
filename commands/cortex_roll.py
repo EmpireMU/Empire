@@ -336,15 +336,15 @@ class CmdCortexRoll(Command):
                     i += 2
                 else:
                     roll_results.append(format_colored_roll(rolls[i][0], rolls[i][1], trait_info))
-                    i += 1
-            
-            # Build output message
+                    i += 1            # Build output message
             result_msg = f"{self.caller.key} rolls: {', '.join(roll_results)}\n"
-            result_msg += f"Total: |w{total}|n | Effect Die: |wd{effect_die}|n"
             
-            # Add warning if effect die defaulted to d4
-            if len(self.dice) == 2:
-                result_msg += " |y(defaulted to d4 - only two dice rolled)|n"
+            # Display effect die - show the actual die size or d4 default
+            non_hitch_count = len([r for r in rolls if r[0] != 1])
+            if effect_die == 4 and non_hitch_count < 3:
+                result_msg += f"Total: |w{total}|n | Effect Die: |wd{effect_die}|n |y(defaulted to d4)|n"
+            else:
+                result_msg += f"Total: |w{total}|n | Effect Die: |wd{effect_die}|n"
             
             # Track traits used from each category for GM notification
             category_count = defaultdict(int)

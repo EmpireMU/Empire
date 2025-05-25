@@ -5,6 +5,7 @@ Character sheet commands for viewing and editing character information.
 from evennia import Command, CmdSet
 from evennia.utils import evtable
 from evennia.utils.search import search_object
+from utils.command_mixins import CharacterLookupMixin
 
 def get_trait_display(trait):
     """
@@ -127,7 +128,7 @@ def format_distinctions_full(distinctions):
     
     return section + str(table) + "\n"
 
-class CmdSheet(Command):
+class CmdSheet(CharacterLookupMixin, Command):
     """
     View a character sheet.
     
@@ -166,8 +167,7 @@ class CmdSheet(Command):
     Die Size Guide:
        d4: Untrained/Weak
        d6: Average/Basic Training
-       d8: Professional/Well Trained
-       d10: Expert/Exceptional
+       d8: Professional/Well Trained       d10: Expert/Exceptional
        d12: Master/Peak Human
     """
     
@@ -182,9 +182,17 @@ class CmdSheet(Command):
         if not self.args:
             char = self.caller
         else:
-            char = self.caller.search(self.args)
-            if not char:
+            # Try to find the character
+            found_obj = self.caller.search(self.args)
+            if not found_obj:
                 return
+            
+            # Check if it's actually a character with trait support
+            if not hasattr(found_obj, 'character_attributes'):
+                self.msg(f"{found_obj.name} has no character sheet.")
+                return
+                
+            char = found_obj
             
         # Build the character sheet
         sheet = f"\n|w{char.name}'s Character Sheet|n\n"

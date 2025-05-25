@@ -21,7 +21,7 @@ from commands.charsheet_admin import CharSheetAdminCmdSet
 from commands.plot_points import PlotPointCmdSet
 from commands.cortex_roll import CortexCmdSet
 from commands.organisations import OrgCmdSet
-from commands import requests
+from commands.requests import CmdRequest
 
 
 class CharacterCmdSet(default_cmds.CharacterCmdSet):
@@ -68,7 +68,7 @@ class AccountCmdSet(default_cmds.AccountCmdSet):
         # any commands you add below will overload the default ones.
         #
         # Add request commands - this is an OOC system
-        self.add(requests.CmdRequest())
+        self.add(CmdRequest())
 
 
 class UnloggedinCmdSet(default_cmds.UnloggedinCmdSet):

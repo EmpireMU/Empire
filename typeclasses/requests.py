@@ -25,7 +25,8 @@ class Request(DefaultScript):
     """
     A request/ticket in the request system.
     
-    This is an OOC system for communication between players and staff.
+    This typeclass defines the basic properties and data storage for requests.
+    All workflow logic is handled by RequestManager.
     """
     
     def at_script_creation(self):
@@ -35,7 +36,7 @@ class Request(DefaultScript):
         now = datetime.now()
         
         # Basic properties using Evennia's attribute system
-        self.db.id = self.get_next_id()
+        self.db.id = None  # Set by manager
         self.db.title = ""
         self.db.text = ""
         self.db.submitter = None
@@ -45,34 +46,13 @@ class Request(DefaultScript):
         self.db.comments = []
         self.db.resolution = ""
         self.db.date_closed = None
-        self.db.date_archived = None  # Explicitly set to None for filtering
+        self.db.date_archived = None
         self.db.status = "Open"
         self.db.category = "General"
         
         # Make sure this script never repeats or times out
-        self.interval = -1  # -1 means never repeat
+        self.interval = -1
         self.persistent = True
-
-    @classmethod
-    def get_next_id(cls):
-        """Get the next available request ID."""
-        from evennia.scripts.models import ScriptDB
-        
-        # Find all requests using direct database query
-        requests = ScriptDB.objects.filter(db_typeclass_path__contains="requests.Request")
-        if not requests.exists():
-            return 1
-            
-        # Get the highest ID and increment
-        max_id = 0
-        for request in requests:
-            try:
-                if request.db.id and request.db.id > max_id:
-                    max_id = request.db.id
-            except AttributeError:
-                continue
-                
-        return max_id + 1
 
     @property
     def status(self):
@@ -95,14 +75,18 @@ class Request(DefaultScript):
         return bool(self.db.date_archived)
         
     def set_status(self, new_status):
-        """Change the request status."""
+        """Change the request status.
+        
+        Args:
+            new_status (str): The new status to set
+        Raises:
+            ValueError: If status is not valid
+        """
         if new_status not in VALID_STATUSES:
             raise ValueError(f"Status must be one of: {', '.join(VALID_STATUSES)}")
             
         old_status = self.status
         self.db.status = new_status
-        
-        # Update timestamps
         self.db.date_modified = datetime.now()
         if new_status == "Closed":
             self.db.date_closed = datetime.now()
@@ -110,20 +94,27 @@ class Request(DefaultScript):
         self.notify_all(f"Status changed from {old_status} to {new_status}")
         
     def set_category(self, new_category):
-        """Change the request category."""
+        """Change the request category.
+        
+        Args:
+            new_category (str): The new category
+        Raises:
+            ValueError: If category is not valid
+        """
         if new_category not in DEFAULT_CATEGORIES:
             raise ValueError(f"Category must be one of: {', '.join(DEFAULT_CATEGORIES)}")
             
         old_category = self.category
         self.db.category = new_category
-        
-        # Update timestamp
         self.db.date_modified = datetime.now()
-        
         self.notify_all(f"Category changed from {old_category} to {new_category}")
         
     def assign_to(self, staff_account):
-        """Assign the request to a staff member."""
+        """Assign the request to a staff member.
+        
+        Args:
+            staff_account (AccountDB): The staff account to assign to
+        """
         old_assigned = self.db.assigned_to
         self.db.assigned_to = staff_account
         self.db.date_modified = datetime.now()
@@ -140,9 +131,12 @@ class Request(DefaultScript):
             author (AccountDB): The account adding the comment
             text (str): The comment text
         """
+        if not text.strip():
+            raise ValueError("Comment text cannot be empty")
+            
         comment = {
-            "author": author,  # Store the account object
-            "text": text,
+            "author": author,
+            "text": text.strip(),
             "date": datetime.now()
         }
         
@@ -151,7 +145,6 @@ class Request(DefaultScript):
             
         self.db.comments.append(comment)
         self.db.date_modified = datetime.now()
-        
         self.notify_all(f"New comment by {author.name}")
         
     def get_comments(self):
@@ -160,18 +153,22 @@ class Request(DefaultScript):
         
     def archive(self):
         """Archive this request."""
-        if not self.is_archived:
-            self.db.date_archived = datetime.now()
-            self.db.date_modified = datetime.now()
-            self.notify_all("This request has been archived.")
+        if self.is_archived:
+            raise ValueError("Request is already archived")
             
+        self.db.date_archived = datetime.now()
+        self.db.date_modified = datetime.now()
+        self.notify_all("This request has been archived.")
+        
     def unarchive(self):
         """Unarchive this request."""
-        if self.is_archived:
-            self.db.date_archived = None
-            self.db.date_modified = datetime.now()
-            self.notify_all("This request has been unarchived.")
+        if not self.is_archived:
+            raise ValueError("Request is not archived")
             
+        self.db.date_archived = None
+        self.db.date_modified = datetime.now()
+        self.notify_all("This request has been unarchived.")
+        
     def should_auto_archive(self):
         """Check if this request should be automatically archived."""
         if not self.is_closed or not self.db.date_closed:
@@ -250,3 +247,92 @@ class Request(DefaultScript):
             if request.migrate_category():
                 count += 1
         return count 
+
+    def set_resolution(self, text):
+        """Set the resolution text for this request.
+        
+        Args:
+            text (str): The resolution text
+        Raises:
+            ValueError: If text is empty
+        """
+        if not text.strip():
+            raise ValueError("Resolution text cannot be empty")
+            
+        self.db.resolution = text.strip()
+        self.db.date_modified = datetime.now()
+        self.notify_all("Resolution added to request")
+
+    def store_comment(self, author, text, date=None):
+        """Store a comment in the request.
+        
+        Args:
+            author (AccountDB): The account adding the comment
+            text (str): The comment text
+            date (datetime, optional): Comment date, defaults to now
+        Raises:
+            ValueError: If text is empty
+        """
+        if not text.strip():
+            raise ValueError("Comment text cannot be empty")
+            
+        comment = {
+            "author": author,
+            "text": text.strip(),
+            "date": date or datetime.now()
+        }
+        
+        if not self.db.comments:
+            self.db.comments = []
+            
+        self.db.comments.append(comment)
+        self.db.date_modified = datetime.now()
+        return comment
+        
+    def store_assignment(self, staff_account):
+        """Store staff assignment.
+        
+        Args:
+            staff_account (AccountDB): The staff account to assign
+        Returns:
+            tuple: (old_assigned, new_assigned) for notification purposes
+        """
+        old_assigned = self.db.assigned_to
+        self.db.assigned_to = staff_account
+        self.db.date_modified = datetime.now()
+        return (old_assigned, staff_account)
+        
+    def set_archived(self, archived=True):
+        """Set the archived status.
+        
+        Args:
+            archived (bool): Whether to archive (True) or unarchive (False)
+        Raises:
+            ValueError: If already in requested state
+        """
+        if archived and self.is_archived:
+            raise ValueError("Request is already archived")
+        if not archived and not self.is_archived:
+            raise ValueError("Request is not archived")
+            
+        self.db.date_archived = datetime.now() if archived else None
+        self.db.date_modified = datetime.now()
+        
+    @property
+    def participants(self):
+        """Get all participants who should receive notifications.
+        
+        Returns:
+            list: List of (account, is_connected) tuples
+        """
+        participants = []
+        
+        # Add submitter
+        if self.db.submitter:
+            participants.append((self.db.submitter, self.db.submitter.is_connected))
+            
+        # Add assigned staff if different from submitter
+        if self.db.assigned_to and self.db.assigned_to != self.db.submitter:
+            participants.append((self.db.assigned_to, self.db.assigned_to.is_connected))
+            
+        return participants 

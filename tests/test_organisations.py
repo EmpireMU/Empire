@@ -57,8 +57,8 @@ class TestOrganisation(EvenniaTest):
         
         # Add helper methods to command
         self.cmd._validate_rank = lambda rank_str, default=None: validate_rank(rank_str, default, self.caller)
-        self.cmd._parse_equals = lambda usage_msg: parse_equals(self.cmd.args, usage_msg, self.caller)
-        self.cmd._parse_comma = lambda text, expected_parts=2, usage_msg=None: parse_comma(text, expected_parts, usage_msg, self.caller)
+        self.cmd._parse_equals = lambda usage_msg: parse_equals(self.cmd.args)
+        self.cmd._parse_comma = lambda text, expected_parts=2, usage_msg=None: parse_comma(text, expected_parts)
         self.cmd._get_org = lambda org_name: get_org(org_name, self.caller)
         self.cmd._get_character = lambda char_name: get_char(char_name, self.caller)
         self.cmd._get_org_and_char = lambda org_name, char_name: get_org_and_char(org_name, char_name, self.caller)
@@ -114,11 +114,11 @@ class TestOrganisation(EvenniaTest):
         """Test setting and getting rank names."""
         # Test setting a rank name
         self.cmd.switches = ["rankname"]
-        self.cmd.args = "Test House=5,Knight"  # Changed format to match command
+        self.cmd.args = "Test House=5,Servant"  # Changed format to match command
         self.cmd.func()
         
         # Verify rank name was set
-        self.assertEqual(self.org.db.rank_names[5], "Knight")
+        self.assertEqual(self.org.db.rank_names[5], "Servant")
         
         # Test invalid rank number
         self.cmd.args = "Test House=11,Invalid"  # Rank 11 doesn't exist
@@ -129,6 +129,9 @@ class TestOrganisation(EvenniaTest):
         
     def test_permissions(self):
         """Test permission checks."""
+        # Clean up any existing organizations
+        Organisation.objects.all().delete()
+        
         # Remove admin permissions
         self.caller.permissions.remove("Admin")
         
@@ -141,13 +144,24 @@ class TestOrganisation(EvenniaTest):
         orgs = Organisation.objects.filter(db_key="New House")
         self.assertEqual(len(orgs), 0)
         
+        # Create a test org for deletion test
+        self.caller.permissions.add("Admin")  # Temporarily add permission
+        org = create_object(
+            typeclass=Organisation,
+            key="Test House"
+        )
+        self.caller.permissions.remove("Admin")  # Remove permission again
+        
         # Try to delete an organization
         self.cmd.switches = ["delete"]
         self.cmd.args = "Test House"
         self.cmd.func()
         
         # Verify organization wasn't deleted
-        self.assertIsNotNone(self.org.pk)
+        self.assertIsNotNone(org.pk)
+        
+        # Clean up
+        org.delete()
         
     def test_viewing(self):
         """Test viewing organization information."""
@@ -229,8 +243,8 @@ class TestResource(EvenniaTest):
         self.caller.permissions.add("Admin")
         
         # Add helper methods to command
-        self.cmd._parse_equals = lambda usage_msg: parse_equals(self.cmd.args, usage_msg, self.caller)
-        self.cmd._parse_comma = lambda text, expected_parts=2, usage_msg=None: parse_comma(text, expected_parts, usage_msg, self.caller)
+        self.cmd._parse_equals = lambda usage_msg: parse_equals(self.cmd.args)
+        self.cmd._parse_comma = lambda text, expected_parts=2, usage_msg=None: parse_comma(text, expected_parts)
         self.cmd._get_org = lambda org_name: get_org(org_name, self.caller)
         self.cmd._get_char = lambda char_name: get_char(char_name, self.caller, check_resources=True)
         
@@ -274,19 +288,24 @@ class TestResource(EvenniaTest):
         
     def test_resource_permissions(self):
         """Test resource permission checks."""
-        # Create a resource first
-        self.org.add_org_resource("armory", 8)
+        # Remove any existing resources
+        if hasattr(self.org, 'org_resources'):
+            for resource in list(self.org.org_resources.all()):
+                self.org.org_resources.remove(resource)
         
         # Remove admin permissions
         self.caller.permissions.remove("Admin")
         
         # Try to create a resource
         self.cmd.switches = ["org"]
-        self.cmd.args = "Test House,armory=8"
+        self.cmd.args = "Test House,new_resource=8"
         self.cmd.func()
         
         # Verify resource wasn't created
-        self.assertIsNone(self.org.org_resources.get("armory"))
+        self.assertIsNone(self.org.org_resources.get("new_resource"))
+        
+        # Clean up
+        self.org.delete()
         
     def test_resource_listing(self):
         """Test listing resources."""

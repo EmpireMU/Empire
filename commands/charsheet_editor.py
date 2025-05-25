@@ -7,10 +7,11 @@ from evennia import CmdSet, create_object
 from evennia.utils import dbserialize
 from evennia.utils import evtable
 from evennia.utils.search import search_object
+from utils.command_mixins import CharacterLookupMixin, TraitCommand
 
 UNDELETABLE_TRAITS = ["attributes", "skills"]
 
-class CmdSetTrait(MuxCommand):
+class CmdSetTrait(CharacterLookupMixin, MuxCommand):
     """
     Set a trait on a character sheet.
 
@@ -62,8 +63,8 @@ class CmdSetTrait(MuxCommand):
         # Split into character and trait parts
         char_name, trait_part = [part.strip() for part in self.args.split("=", 1)]
         
-        # Find the character
-        char = self.caller.search(char_name)
+        # Find the character using inherited method
+        char = self.find_character(char_name)
         if not char:
             return
 
@@ -102,7 +103,7 @@ class CmdSetTrait(MuxCommand):
 
         self.msg(f"Set {name} to d{die_size} for {char.name}")
 
-class CmdDeleteTrait(Command):
+class CmdDeleteTrait(CharacterLookupMixin, MuxCommand):
     """Delete a trait from a character.
     
     Usage:
@@ -130,11 +131,11 @@ class CmdDeleteTrait(Command):
 
         char_name, rest = [part.strip() for part in self.args.split("=", 1)]
         
-        # Find the character
-        char = self.caller.search(char_name)
+        # Find the character using inherited method
+        char = self.find_character(char_name)
         if not char:
             return
-            
+
         # Parse category and trait name
         try:
             category, trait_name = rest.strip().split(None, 1)
@@ -144,8 +145,7 @@ class CmdDeleteTrait(Command):
             
         category = category.lower()
         trait_name = trait_name.strip().lower()
-        
-        # Get the appropriate trait handler
+          # Get the appropriate trait handler
         if category == 'attributes':
             handler = char.character_attributes
         elif category == 'skills':
@@ -156,22 +156,32 @@ class CmdDeleteTrait(Command):
             self.msg("Invalid category. Must be one of: attributes, skills, signature_assets")
             return
             
-        # Try to delete the trait
-        if handler.get(trait_name):
-            handler.remove(trait_name)
-            self.msg(f"Deleted {category} trait '{trait_name}' from {char.name}.")
+        # Try to delete the trait - use case-insensitive lookup
+        actual_key = None
+        for key in handler.all():
+            if key.lower() == trait_name.lower():
+                actual_key = key
+                break
+        
+        if actual_key:
+            # Check if trait is undeletable
+            if category in UNDELETABLE_TRAITS and trait_name in handler.all():
+                self.msg(f"Cannot delete {category} trait '{actual_key}' - it is a required trait.")
+                return
+            
+            handler.remove(actual_key)
+            self.msg(f"Deleted {category} trait '{actual_key}' from {char.name}.")
         else:
             self.msg(f"No {category} trait found named '{trait_name}' on {char.name}.")
 
-class CmdSetDistinction(Command):
+class CmdSetDistinction(CharacterLookupMixin, MuxCommand):
     """
     Set a distinction on a character.
     
     Usage:
         setdist <character> = <slot> : <n> : <description>
         
-        
-    Notes:
+          Notes:
     - All distinctions are d8 (can be used as d4 to gain a plot point)
     """
     
@@ -182,7 +192,7 @@ class CmdSetDistinction(Command):
     def func(self):
         """Handle setting the distinction."""
         if not self.args or ":" not in self.args or "=" not in self.args:
-            self.caller.msg("Usage: setdist <character> = <slot> : <n> : <description>")
+            self.msg("Usage: setdist <character> = <slot> : <n> : <description>")
             return
             
         char_name, rest = self.args.split("=", 1)
@@ -191,30 +201,30 @@ class CmdSetDistinction(Command):
         try:
             slot, name, desc = [part.strip() for part in rest.split(":", 2)]
         except ValueError:
-            self.caller.msg("Usage: setdist <character> = <slot> : <n> : <description>")
+            self.msg("Usage: setdist <character> = <slot> : <n> : <description>")
             return
             
-        # Find the character
-        char = self.caller.search(char_name)
+        # Find the character using inherited method
+        char = self.find_character(char_name)
         if not char:
             return
             
         # Verify character has distinctions
         if not hasattr(char, 'distinctions'):
-            self.caller.msg(f"{char.name} does not have distinctions.")
+            self.msg(f"{char.name} does not have distinctions.")
             return
             
         # Validate slot
         valid_slots = ["concept", "culture", "reputation"]
         if slot not in valid_slots:
-            self.caller.msg(f"Invalid slot. Must be one of: {', '.join(valid_slots)}")
+            self.msg(f"Invalid slot. Must be one of: {', '.join(valid_slots)}")
             return
             
         # Set the distinction (all distinctions are d8)
         char.distinctions.add(slot, name, trait_type="static", base=8, desc=desc)
-        self.caller.msg(f"Set {char.name}'s {slot} distinction to '{name}' (d8)")
+        self.msg(f"Set {char.name}'s {slot} distinction to '{name}' (d8)")
 
-class CmdBiography(MuxCommand):
+class CmdBiography(CharacterLookupMixin, MuxCommand):
     """
     View a character's complete biography.
     
@@ -242,8 +252,8 @@ class CmdBiography(MuxCommand):
             self.show_biography(self.caller)
             return
             
-        # View command
-        char = self.caller.search(self.args)
+        # View command using inherited method
+        char = self.find_character(self.args)
         if not char:
             return
         self.show_biography(char)
@@ -283,7 +293,7 @@ class CmdBiography(MuxCommand):
         
         self.msg(msg)
 
-class CmdBackground(MuxCommand):
+class CmdBackground(CharacterLookupMixin, MuxCommand):
     """
     View or edit a character's background.
     
@@ -313,8 +323,8 @@ class CmdBackground(MuxCommand):
             
         # Check if this is a view or edit command
         if "=" not in self.args:
-            # View command
-            char = self.caller.search(self.args)
+            # View command using inherited method
+            char = self.find_character(self.args)
             if not char:
                 return
             self.show_background(char)
@@ -328,7 +338,7 @@ class CmdBackground(MuxCommand):
         # Parse edit command
         try:
             char_name, text = self.args.split("=", 1)
-            char = self.caller.search(char_name.strip())
+            char = self.find_character(char_name.strip())
             if not char:
                 return
                 
@@ -338,15 +348,17 @@ class CmdBackground(MuxCommand):
             char.msg(f"{self.caller.name} updated your background.")
         except Exception as e:
             self.msg(f"Error updating background: {e}")
-            
+    
     def show_background(self, char):
         """Show a character's background."""
-        if not char.db.background:
+        background = char.db.background
+        if not background:
             self.msg(f"{char.name} has no background set.")
             return
-        self.msg(f"\n|w{char.name}'s Background:|n\n{char.db.background}")
+            
+        self.msg(f"\n|w{char.name}'s Background:|n\n{background}")
 
-class CmdPersonality(MuxCommand):
+class CmdPersonality(CharacterLookupMixin, MuxCommand):
     """
     View or edit a character's personality.
     
@@ -369,15 +381,15 @@ class CmdPersonality(MuxCommand):
     
     def func(self):
         """Execute the command."""
-        # If no arguments, show caller's personality
+        # If no arguments, show caller's personality 
         if not self.args:
             self.show_personality(self.caller)
             return
             
         # Check if this is a view or edit command
         if "=" not in self.args:
-            # View command
-            char = self.caller.search(self.args)
+            # View command using inherited method
+            char = self.find_character(self.args)
             if not char:
                 return
             self.show_personality(char)
@@ -391,7 +403,7 @@ class CmdPersonality(MuxCommand):
         # Parse edit command
         try:
             char_name, text = self.args.split("=", 1)
-            char = self.caller.search(char_name.strip())
+            char = self.find_character(char_name.strip())
             if not char:
                 return
                 
@@ -399,17 +411,17 @@ class CmdPersonality(MuxCommand):
             char.db.personality = text.strip()
             self.msg(f"Updated {char.name}'s personality.")
             char.msg(f"{self.caller.name} updated your personality.")
-            
-        except ValueError:
-            self.msg("Usage: personality <character> = <text>")
-            return
-            
+        except Exception as e:
+            self.msg(f"Error updating personality: {e}")
+    
     def show_personality(self, char):
         """Show a character's personality."""
-        if not char.db.personality:
+        personality = char.db.personality
+        if not personality:
             self.msg(f"{char.name} has no personality set.")
             return
-        self.msg(f"\n|w{char.name}'s Personality:|n\n{char.db.personality}")
+            
+        self.msg(f"\n|w{char.name}'s Personality:|n\n{personality}")
 
 class CharSheetEditorCmdSet(CmdSet):
     """
@@ -425,4 +437,4 @@ class CharSheetEditorCmdSet(CmdSet):
         self.add(CmdSetDistinction())
         self.add(CmdBiography())
         self.add(CmdBackground())
-        self.add(CmdPersonality()) 
+        self.add(CmdPersonality())

@@ -2,6 +2,7 @@
 Tests for character sheet editor functionality.
 """
 
+import unittest
 from unittest.mock import MagicMock, patch
 from evennia.utils.test_resources import EvenniaTest
 from commands.charsheet_editor import (
@@ -40,9 +41,14 @@ class TestCharSheetEditor(EvenniaTest):
         self.cmd_pers.obj = self.char1
         self.cmd_pers.msg = MagicMock()
         
+        self.cmd_bio = CmdBiography()
+        self.cmd_bio.caller = self.char1
+        self.cmd_bio.obj = self.char1
+        self.cmd_bio.msg = MagicMock()
+        
         # Initialize trait handlers
-        if not hasattr(self.char1, 'char_attributes'):
-            self.char1.char_attributes = TraitHandler(self.char1, db_attribute_key="char_attributes")
+        if not hasattr(self.char1, 'character_attributes'):
+            self.char1.character_attributes = TraitHandler(self.char1, db_attribute_key="character_attributes")
         if not hasattr(self.char1, 'skills'):
             self.char1.skills = TraitHandler(self.char1, db_attribute_key="skills")
         if not hasattr(self.char1, 'distinctions'):
@@ -51,7 +57,7 @@ class TestCharSheetEditor(EvenniaTest):
             self.char1.signature_assets = TraitHandler(self.char1, db_attribute_key="char_signature_assets")
         
         # Add test traits
-        self.char1.char_attributes.add("strength", "Strength", trait_type="static", base=8, desc="Strong and tough")
+        self.char1.character_attributes.add("strength", "Strength", trait_type="static", base=8, desc="Strong and tough")
         self.char1.skills.add("fighting", "Fighting", trait_type="static", base=6, desc="Combat training")
         self.char1.signature_assets.add("sword", "Sword", trait_type="static", base=8, desc="Magic blade")
         
@@ -75,7 +81,7 @@ class TestCharSheetEditor(EvenniaTest):
         # Test setting an attribute
         self.cmd_settrait.args = "self = attributes strength d8 Strong and tough"
         self.cmd_settrait.func()
-        trait = self.char1.char_attributes.get("strength")
+        trait = self.char1.character_attributes.get("strength")
         self.assertIsNotNone(trait)
         self.assertEqual(trait.value, 8)  # Trait values are stored as integers
         self.assertEqual(trait.desc, "Strong and tough")
@@ -108,47 +114,47 @@ class TestCharSheetEditor(EvenniaTest):
     
     def test_delete_trait(self):
         """Test deleting traits."""
-        # Add some traits to delete
-        self.char1.char_attributes.add("strength", "Strength", trait_type="static", base=8, desc="Strong and tough")
-        self.char1.skills.add("fighting", "Fighting", trait_type="static", base=6, desc="Combat training")
-        self.char1.signature_assets.add("sword", "Sword", trait_type="static", base=8, desc="Magic blade")
+        # Add some signature assets to delete (these are not protected)
+        self.char1.signature_assets.add("test_sword", "Test Sword", trait_type="static", base=8, desc="Magic blade")
+        self.char1.signature_assets.add("test_armor", "Test Armor", trait_type="static", base=6, desc="Protective gear")
         
-        # Test deleting an attribute
-        self.cmd_deltrait.args = "self = attributes strength"
+        # Test deleting signature assets (allowed)
+        self.cmd_deltrait.args = "self = signature_assets test_sword"
         self.cmd_deltrait.func()
-        self.assertIsNone(self.char1.char_attributes.get("strength"))
+        self.assertIsNone(self.char1.signature_assets.get("test_sword"))
         
-        # Test deleting a skill
-        self.cmd_deltrait.args = "self = skills fighting"
+        self.cmd_deltrait.args = "self = signature_assets test_armor" 
         self.cmd_deltrait.func()
-        self.assertIsNone(self.char1.skills.get("fighting"))
+        self.assertIsNone(self.char1.signature_assets.get("test_armor"))
         
-        # Test deleting a signature asset
-        self.cmd_deltrait.args = "self = signature_assets sword"
+        # Test trying to delete protected attributes (should fail)
+        self.char1.character_attributes.add("test_str", "Test Strength", trait_type="static", base=8, desc="Strong and tough")
+        self.cmd_deltrait.args = "self = attributes test_str"
         self.cmd_deltrait.func()
-        self.assertIsNone(self.char1.signature_assets.get("sword"))
+        # The trait should still exist since it's protected
+        self.assertIsNotNone(self.char1.character_attributes.get("test_str"))
+        # Check that the error message was sent
+        self.assertIn("Cannot delete", self.cmd_deltrait.msg.mock_calls[-1][1][0])
         
         # Test invalid category
-        self.cmd_deltrait.args = "self = invalid strength"
+        self.cmd_deltrait.args = "self = invalid test_str"
         self.cmd_deltrait.func()
         self.assertIn("Invalid category", self.cmd_deltrait.msg.mock_calls[-1][1][0])
-    
     def test_biography(self):
         """Test biography command."""
         # Test viewing own biography
-        self.cmd_pers.args = ""
-        self.cmd_pers.func()
-        self.assertIn("Test background", self.cmd_pers.msg.mock_calls[-1][1][0])
-        self.assertIn("Test personality", self.cmd_pers.msg.mock_calls[-1][1][0])
-        self.assertIn("Test description", self.cmd_pers.msg.mock_calls[-1][1][0])
+        self.cmd_bio.args = ""
+        self.cmd_bio.func()
+        self.assertIn("Test background", self.cmd_bio.msg.mock_calls[-1][1][0])
+        self.assertIn("Test personality", self.cmd_bio.msg.mock_calls[-1][1][0])
+        self.assertIn("Test description", self.cmd_bio.msg.mock_calls[-1][1][0])
         
         # Test viewing other's biography
-        self.cmd_pers.args = "self"
-        self.cmd_pers.func()
-        self.assertIn("Test background", self.cmd_pers.msg.mock_calls[-1][1][0])
-        self.assertIn("Test personality", self.cmd_pers.msg.mock_calls[-1][1][0])
-        self.assertIn("Test description", self.cmd_pers.msg.mock_calls[-1][1][0])
-    
+        self.cmd_bio.args = "self"
+        self.cmd_bio.func()
+        self.assertIn("Test background", self.cmd_bio.msg.mock_calls[-1][1][0])
+        self.assertIn("Test personality", self.cmd_bio.msg.mock_calls[-1][1][0])
+        self.assertIn("Test description", self.cmd_bio.msg.mock_calls[-1][1][0])
     def test_background(self):
         """Test background command."""
         # Test viewing background
@@ -158,17 +164,20 @@ class TestCharSheetEditor(EvenniaTest):
         
         # Test setting background with permission
         self.cmd_bg.args = "self = New background"
+        self.cmd_bg.lhs = "self"
+        self.cmd_bg.rhs = "New background"
         self.cmd_bg.func()
         self.assertEqual(self.char1.db.background, "New background")
         
-        # Test setting without permission
-        self.char1.permissions.clear()  # Remove all permissions first
-        self.cmd_bg.args = "self = Another background"
-        self.cmd_bg.func()
-        self.assertIn("You don't have permission to edit backgrounds", self.cmd_bg.msg.mock_calls[-1][1][0])
-        # Verify background wasn't changed
-        self.assertEqual(self.char1.db.background, "New background")
-    
+        # Test setting without permission - mock the access method
+        with unittest.mock.patch.object(self.cmd_bg, 'access', return_value=False):
+            self.cmd_bg.args = "self = Another background"
+            self.cmd_bg.lhs = "self"
+            self.cmd_bg.rhs = "Another background"
+            self.cmd_bg.func()
+            self.assertIn("You don't have permission to edit backgrounds", self.cmd_bg.msg.mock_calls[-1][1][0])
+            # Verify background wasn't changed
+            self.assertEqual(self.char1.db.background, "New background")
     def test_personality(self):
         """Test personality command."""
         # Test viewing personality
@@ -178,16 +187,20 @@ class TestCharSheetEditor(EvenniaTest):
         
         # Test setting personality with permission
         self.cmd_pers.args = "self = New personality"
+        self.cmd_pers.lhs = "self"
+        self.cmd_pers.rhs = "New personality"
         self.cmd_pers.func()
         self.assertEqual(self.char1.db.personality, "New personality")
         
-        # Test setting without permission
-        self.char1.permissions.clear()  # Remove all permissions first
-        self.cmd_pers.args = "self = Another personality"
-        self.cmd_pers.func()
-        self.assertIn("You don't have permission to edit personalities", self.cmd_pers.msg.mock_calls[-1][1][0])
-        # Verify personality wasn't changed
-        self.assertEqual(self.char1.db.personality, "New personality")
+        # Test setting without permission - mock the access method
+        with unittest.mock.patch.object(self.cmd_pers, 'access', return_value=False):
+            self.cmd_pers.args = "self = Another personality"
+            self.cmd_pers.lhs = "self"
+            self.cmd_pers.rhs = "Another personality"
+            self.cmd_pers.func()
+            self.assertIn("You don't have permission to edit personalities", self.cmd_pers.msg.mock_calls[-1][1][0])
+            # Verify personality wasn't changed
+            self.assertEqual(self.char1.db.personality, "New personality")
     
     def test_set_distinction(self):
         """Test setting distinctions."""

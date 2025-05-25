@@ -5,8 +5,9 @@ These commands are for staff use only and should not be used in normal gameplay.
 from evennia.commands.default.muxcommand import MuxCommand
 from evennia import CmdSet
 from utils.character_setup import initialize_traits
+from utils.command_mixins import CharacterLookupMixin
 
-class CmdInitTraits(MuxCommand):
+class CmdInitTraits(CharacterLookupMixin, MuxCommand):
     """
     Initialize missing traits on a character.
     
@@ -93,13 +94,12 @@ class CmdInitTraits(MuxCommand):
                         self.caller.msg(f"{char.name}: {msg}")
             self.caller.msg(f"\nInitialized traits for {count} character{'s' if count != 1 else ''}.")
             return
-            
-        # Initialize specific character
+              # Initialize specific character
         if not self.args:
             self.caller.msg("Usage: inittraits <character> or inittraits/all")
             return
             
-        char = self.caller.search(self.args)
+        char = self.find_character(self.args)
         if not char:
             return
             
@@ -122,7 +122,7 @@ class CmdInitTraits(MuxCommand):
         self.caller.db.init_traits_confirming = True
         return  # Add this to prevent the command from continuing
 
-class CmdWipeTraits(MuxCommand):
+class CmdWipeTraits(CharacterLookupMixin, MuxCommand):
     """
     Wipe and reinitialize a character's traits.
     
@@ -166,13 +166,12 @@ class CmdWipeTraits(MuxCommand):
                         self.caller.msg(f"{char.name}: {msg}")
             self.caller.msg(f"\nWiped and reinitialized traits for {count} character{'s' if count != 1 else ''}.")
             return
-            
-        # Wipe specific character
+              # Wipe specific character
         if not self.args:
             self.caller.msg("Usage: wipetraits <character> or wipetraits/all")
             return
             
-        char = self.caller.search(self.args)
+        char = self.find_character(self.args)
         if not char:
             return
             
