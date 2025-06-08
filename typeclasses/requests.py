@@ -12,14 +12,10 @@ from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
 
 # Valid request statuses
-VALID_STATUSES = ["Open", "In Progress", "Resolved", "Closed"]
+VALID_STATUSES = ["Open", "In Progress", "Closed"]
 
 # Default request categories
 DEFAULT_CATEGORIES = ["Bug", "Feature", "Question", "Character", "General"]
-
-# Auto-archive and deletion thresholds (in days)
-AUTO_ARCHIVE_DAYS = 30
-AUTO_DELETE_DAYS = 60
 
 class Request(DefaultScript):
     """
@@ -49,6 +45,7 @@ class Request(DefaultScript):
         self.db.date_archived = None
         self.db.status = "Open"
         self.db.category = "General"
+        self.db.last_viewed_by = {}  # Dict mapping account -> timestamp
         
         # Make sure this script never repeats or times out
         self.interval = -1
@@ -82,16 +79,18 @@ class Request(DefaultScript):
         Raises:
             ValueError: If status is not valid
         """
-        if new_status not in VALID_STATUSES:
+        # Case-insensitive status matching
+        status_match = next((valid for valid in VALID_STATUSES if valid.lower() == new_status.lower()), None)
+        if not status_match:
             raise ValueError(f"Status must be one of: {', '.join(VALID_STATUSES)}")
             
         old_status = self.status
-        self.db.status = new_status
+        self.db.status = status_match  # Use the correctly-cased status
         self.db.date_modified = datetime.now()
-        if new_status == "Closed":
+        if status_match == "Closed":
             self.db.date_closed = datetime.now()
             
-        self.notify_all(f"Status changed from {old_status} to {new_status}")
+        self.notify_all(f"Status changed from {old_status} to {status_match}")
         
     def set_category(self, new_category):
         """Change the request category.
@@ -168,22 +167,6 @@ class Request(DefaultScript):
         self.db.date_archived = None
         self.db.date_modified = datetime.now()
         self.notify_all("This request has been unarchived.")
-        
-    def should_auto_archive(self):
-        """Check if this request should be automatically archived."""
-        if not self.is_closed or not self.db.date_closed:
-            return False
-            
-        archive_after = timedelta(days=AUTO_ARCHIVE_DAYS)
-        return datetime.now() - self.db.date_closed > archive_after
-        
-    def should_be_deleted(self):
-        """Check if this archived request should be deleted."""
-        if not self.is_archived or not self.db.date_archived:
-            return False
-            
-        delete_after = timedelta(days=AUTO_DELETE_DAYS)
-        return datetime.now() - self.db.date_archived > delete_after
         
     def notify_all(self, message, exclude_account=None):
         """
@@ -336,3 +319,39 @@ class Request(DefaultScript):
             participants.append((self.db.assigned_to, self.db.assigned_to.is_connected))
             
         return participants 
+
+    def has_new_activity(self, account):
+        """Check if there has been new activity since last viewed.
+        
+        Args:
+            account (AccountDB): The account to check for
+            
+        Returns:
+            bool: True if there has been new activity, False otherwise
+        """
+        if not account:
+            return False
+            
+        # Get the last_viewed_by dict, creating an empty one if it doesn't exist
+        last_viewed_by = self.attributes.get('last_viewed_by', default={})
+        
+        # Use account.id as the key
+        last_viewed = last_viewed_by.get(str(account.id))
+        if not last_viewed:
+            return True
+            
+        return self.db.date_modified > last_viewed
+
+    def mark_viewed(self, account):
+        """Mark the request as viewed by an account.
+        
+        Args:
+            account (AccountDB): The account that viewed the request
+        """
+        if account:
+            # Get current dict or create new one
+            last_viewed_by = self.attributes.get('last_viewed_by', default={})
+            # Update the timestamp
+            last_viewed_by[str(account.id)] = datetime.now()
+            # Save back to attributes
+            self.attributes.add('last_viewed_by', last_viewed_by) 

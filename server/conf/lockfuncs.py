@@ -28,3 +28,29 @@ lock functions from evennia.locks.lockfuncs.
 #    """
 #    print "%s tried to access %s. Access denied." % (accessing_obj, accessed_obj)
 #    return False
+
+def orgmember(accessing_obj, accessed_obj, *args, **kwargs):
+    """
+    Check if accessing_obj is a member of the specified organization and optionally has minimum rank.
+    
+    Usage:
+        orgmember(Empire) - returns True if accessing_obj is a member of Empire (rank 10+)
+        orgmember(Empire, 5) - returns True if accessing_obj has rank 5+ in Empire
+    """
+    if not args:
+        return False
+        
+    org_name = args[0]
+    min_rank = int(args[1]) if len(args) > 1 else 10
+    
+    # Get the character if an account is accessing
+    character = accessing_obj
+    if hasattr(accessing_obj, 'character'):
+        character = accessing_obj.character
+        
+    # Find the organization and check rank
+    for org in character.organisations:
+        if org.key.lower() == org_name.lower():
+            return org.get_member_rank(character) >= min_rank
+            
+    return False

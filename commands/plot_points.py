@@ -81,13 +81,6 @@ class CmdPlotPoints(CharacterLookupMixin, MuxCommand):
                 self.caller.msg(f"{char.name} does not have any plot points.")
                 return
                 
-            # Debug output for trait inspection
-            self.caller.msg(f"DEBUG: Raw trait: {pp_trait}")
-            self.caller.msg(f"DEBUG: Trait value: {pp_trait.value}")
-            self.caller.msg(f"DEBUG: Trait base: {pp_trait.base}")
-            self.caller.msg(f"DEBUG: Trait type: {type(pp_trait)}")
-            
-            # Get the value and convert to int
             current = int(float(pp_trait.value))
             self.caller.msg(f"{char.name} has {current} plot point{'s' if current != 1 else ''}.")
             
@@ -190,22 +183,9 @@ class CmdPlotPoints(CharacterLookupMixin, MuxCommand):
                 self.caller.msg(f"{char.name} does not have a plot points trait.")
                 return
                 
-            # Debug output before setting
-            self.caller.msg(f"DEBUG: Before setting - Raw trait: {pp_trait}")
-            self.caller.msg(f"DEBUG: Before setting - Trait value: {pp_trait.value}")
-            self.caller.msg(f"DEBUG: Before setting - Trait base: {pp_trait.base}")
-            
-            # First remove the trait to ensure clean state
+            # Remove and re-add with new value
             char.traits.remove("plot_points")
-            
-            # Re-add with new value and base
             char.traits.add("plot_points", value=amount, base=amount, min=0)
-            
-            # Debug output after setting
-            pp_trait = char.traits.get("plot_points")  # Get fresh instance
-            self.caller.msg(f"DEBUG: After setting - Raw trait: {pp_trait}")
-            self.caller.msg(f"DEBUG: After setting - Trait value: {pp_trait.value}")
-            self.caller.msg(f"DEBUG: After setting - Trait base: {pp_trait.base}")
             
             self.caller.msg(f"Set {char.name}'s plot points to {amount}.")
             if char != self.caller:

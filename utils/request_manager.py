@@ -149,17 +149,22 @@ class RequestManager:
         Raises:
             ValueError: If status is invalid
         """
-        if new_status not in VALID_STATUSES:
+        # Case-insensitive status matching
+        status_match = next((valid for valid in VALID_STATUSES if valid.lower() == new_status.lower()), None)
+        if not status_match:
             raise ValueError(f"Status must be one of: {', '.join(VALID_STATUSES)}")
             
         old_status = request.status
-        request.db.status = new_status
+        request.db.status = status_match  # Use the correctly-cased status
         request.db.date_modified = datetime.now()
         
-        if new_status == "Closed":
+        if status_match == "Closed":
             request.db.date_closed = datetime.now()
-            
-        cls.notify_update(request, f"Status changed from {old_status} to {new_status}")
+            # Automatically archive closed requests
+            request.db.date_archived = datetime.now()
+            cls.notify_update(request, f"Status changed from {old_status} to {status_match} and request has been archived")
+        else:
+            cls.notify_update(request, f"Status changed from {old_status} to {status_match}")
         
     @classmethod
     def set_category(cls, request, new_category):

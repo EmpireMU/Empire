@@ -29,6 +29,7 @@ class Character(ObjectParent, DefaultCharacter):
     Additional Sets:
     - Resources (organizational dice pools)
     - Signature Assets (remarkable items or NPC companions)
+    - Temporary Assets (short-term advantages or items)
     """
 
     @lazy_property
@@ -75,6 +76,14 @@ class Character(ObjectParent, DefaultCharacter):
         Each trait represents a die pool (d4-d12).
         """
         return TraitHandler(self, db_attribute_key="char_resources")
+
+    @lazy_property
+    def temporary_assets(self):
+        """
+        Temporary assets that can be added or removed at will.
+        These represent short-term advantages or items.
+        """
+        return TraitHandler(self, db_attribute_key="char_temp_assets")
 
     @lazy_property
     def organisations(self):

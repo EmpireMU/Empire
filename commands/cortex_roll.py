@@ -38,9 +38,10 @@ def format_colored_roll(value, die, trait_info, extra_value=None):
             'character_attributes': 'Attribute',
             'skills': 'Skill',
             'char_resources': 'Resource',
-            'signature_assets': 'Signature Asset'
+            'signature_assets': 'Signature Asset',
+            'temporary_assets': 'Temporary Asset'
         }
-        category_name = display_names.get(trait_info.category, trait_info.category.title().rstrip('s')) if trait_info.category else "Raw"
+        category_name = display_names.get(trait_info.category, trait_info.category.title().replace('_', ' ').rstrip('s')) if trait_info.category else "Raw"
         
         # Build modifier suffix
         modifiers = []
@@ -79,12 +80,17 @@ class CmdCortexRoll(Command):
     Usage:
         roll <trait1> [<trait2>...] [vs <difficulty>]
         
+    For multi-word traits, either:
+    - Use quotes: roll "High Ground" prowess fighting
+    - Use underscores: roll high_ground prowess fighting
+        
     Examples:
         roll strength fighting - Roll Strength + Fighting dice
         roll strength d8 - Roll Strength + a d8
         roll strength(U) fighting - Roll Strength stepped up + Fighting
         roll strength fighting(D) - Roll Strength + Fighting stepped down
-        roll strength fighting signature_sword vs 12 - Roll against difficulty 12
+        roll "High Ground" fighting vs hard - Roll High Ground + Fighting vs hard difficulty
+        roll high_ground fighting vs hard - Same as above using underscore
         
     Dice Mechanics:
     - Each trait adds its die to the pool (e.g., d6, d8, d10, d12)
@@ -130,12 +136,12 @@ class CmdCortexRoll(Command):
             self.dice = None
             return
             
-        # Split and clean args, removing empty strings
+        # Split and clean args, handling quoted strings and underscores
         args = []
         current_arg = []
         in_quotes = False
         
-        # Parse args, handling quoted strings
+        # First pass: handle quoted strings
         for word in self.args.split():
             if word.startswith('"'):
                 in_quotes = True
@@ -148,7 +154,11 @@ class CmdCortexRoll(Command):
             elif in_quotes:
                 current_arg.append(word)
             else:
-                args.append(word)
+                # Handle underscores by replacing them with spaces
+                if '_' in word:
+                    args.append(word.replace('_', ' '))
+                else:
+                    args.append(word)
                 
         if current_arg:  # Handle any remaining words
             args.append(' '.join(current_arg))
@@ -164,22 +174,28 @@ class CmdCortexRoll(Command):
         # Check for difficulty
         self.difficulty = None
         try:
-            vs_index = args.index("vs")
-            if vs_index < len(args) - 1:  # Make sure there's a value after "vs"
-                # Get all words after "vs" as the difficulty value
-                diff_val = ' '.join(args[vs_index + 1:])
-                # Remove difficulty and "vs" from dice list
-                args = args[:vs_index]
+            # Find the "vs" marker
+            vs_index = -1
+            for i, arg in enumerate(args):
+                if arg == "vs":
+                    vs_index = i
+                    break
+                    
+            if vs_index >= 0:
+                # Get everything after "vs" as the difficulty
+                if vs_index + 1 >= len(args):
+                    self.msg("Missing difficulty value after 'vs'.")
+                    self.dice = None
+                    return
+                    
+                # Join all remaining words as they might be part of difficulty name
+                diff_val = " ".join(args[vs_index + 1:]).lower()
+                args = args[:vs_index]  # Remove difficulty from args
                 
-                # Parse difficulty - either a number or named difficulty
-                if diff_val.isdigit():
+                # Try to parse as number first
+                try:
                     self.difficulty = int(diff_val)
-                    # Validate reasonable difficulty range
-                    if not (1 <= self.difficulty <= 30):
-                        self.msg(f"Difficulty must be between 1 and 30, not {self.difficulty}.")
-                        self.dice = None
-                        return
-                else:
+                except ValueError:
                     # Try to match named difficulty exactly first
                     exact_match = None
                     partial_matches = []

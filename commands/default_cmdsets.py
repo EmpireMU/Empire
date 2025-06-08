@@ -21,6 +21,7 @@ from commands.charsheet_admin import CharSheetAdminCmdSet
 from commands.plot_points import PlotPointCmdSet
 from commands.cortex_roll import CortexCmdSet
 from commands.organisations import OrgCmdSet
+from commands.temporary_assets import TemporaryAssetCmdSet
 from commands.requests import CmdRequest
 
 
@@ -47,6 +48,7 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(PlotPointCmdSet)
         self.add(CortexCmdSet)
         self.add(OrgCmdSet)
+        self.add(TemporaryAssetCmdSet)
 
 
 class AccountCmdSet(default_cmds.AccountCmdSet):

@@ -229,7 +229,7 @@ class CmdSheet(CharacterLookupMixin, Command):
         has_resources = hasattr(char, 'char_resources')
         
         # Add Additional Sets header if any optional sets exist
-        if has_signature_assets or has_resources:
+        if has_signature_assets or has_resources or hasattr(char, 'temporary_assets'):
             sheet += "\n|yAdditional Sets|n\n"
             
             # Add signature assets section if they exist
@@ -241,6 +241,15 @@ class CmdSheet(CharacterLookupMixin, Command):
                         if hasattr(trait, 'desc') and trait.desc:
                             sheet += f" ({trait.desc})"
                         sheet += "\n"
+            
+            # Add temporary assets section if they exist
+            if hasattr(char, 'temporary_assets'):
+                temp_assets = [char.temporary_assets.get(key) for key in char.temporary_assets.all()]
+                if temp_assets:
+                    sheet += "\n|wTemporary Assets:|n\n"
+                    for trait in temp_assets:
+                        if trait:
+                            sheet += f"  {trait.name}: d{int(trait.value)}\n"
             
             # Add resources section if they exist
             if has_resources:

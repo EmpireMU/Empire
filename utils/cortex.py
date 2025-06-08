@@ -80,10 +80,12 @@ def get_trait_die(character, trait_spec: str) -> Optional[Tuple[str, str, str, b
         ('skills', character.skills),
         ('distinctions', character.distinctions),
         ('char_resources', character.char_resources),
-        ('signature_assets', character.signature_assets)
+        ('signature_assets', character.signature_assets),
+        ('temporary_assets', character.temporary_assets)
     ]
     
-    trait_key = trait_key.lower()
+    # Convert spaces to underscores for key lookup
+    trait_key = trait_key.lower().replace(' ', '_')
     
     for category_name, handler in categories:
         # For distinctions, check both key and name
@@ -94,7 +96,7 @@ def get_trait_die(character, trait_spec: str) -> Optional[Tuple[str, str, str, b
                 # If not found by key, try to find by name
                 for key in handler.all():
                     trait = handler.get(key)
-                    if hasattr(trait, 'name') and trait.name.lower() == trait_key.lower():
+                    if hasattr(trait, 'name') and trait.name.lower() == trait_key.replace('_', ' '):
                         trait_key = key  # Use the actual key for the trait
                         break
                 else:
@@ -103,7 +105,7 @@ def get_trait_die(character, trait_spec: str) -> Optional[Tuple[str, str, str, b
             # For other categories, try case-insensitive key lookup
             trait = None
             for key in handler.all():
-                if key.lower() == trait_key.lower():
+                if key.lower() == trait_key:
                     trait = handler.get(key)
                     trait_key = key  # Use the actual key for the trait
                     break
