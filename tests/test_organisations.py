@@ -87,30 +87,63 @@ class TestOrganisation(EvenniaTest):
         self.assertEqual(len(org.db.members), 0)  # Should start with no members
         
     def test_member_management(self):
-        """Test adding, updating, and removing members."""
-        # Test adding a member
-        self.cmd.switches = ["member"]
-        self.cmd.args = f"Test House={self.char1.name},5"  # Add as rank 5
-        self.cmd.func()
+        """Test adding and removing members."""
+        # Add member
+        self.org.add_member(self.char1, rank=3)
         
         # Verify member was added
         self.assertIn(self.char1.id, self.org.db.members)
-        self.assertEqual(self.org.get_member_rank(self.char1), 5)
-        
-        # Test updating member's rank
-        self.cmd.args = f"Test House={self.char1.name},3"  # Promote to rank 3
-        self.cmd.func()
-        
-        # Verify rank was updated
         self.assertEqual(self.org.get_member_rank(self.char1), 3)
+        self.assertEqual(self.org.get_member_rank_name(self.char1), "Noble Family")
         
-        # Test removing a member
-        self.cmd.switches = ["remove"]
-        self.cmd.args = f"Test House={self.char1.name}"
-        self.cmd.func()
+        # Verify character's organisations were updated
+        self.assertIn(self.org.id, self.char1.organisations)
+        self.assertEqual(self.char1.organisations[self.org.id], 3)
+        
+        # Remove member
+        self.org.remove_member(self.char1)
         
         # Verify member was removed
         self.assertNotIn(self.char1.id, self.org.db.members)
+        self.assertNotIn(self.org.id, self.char1.organisations)
+        self.assertIsNone(self.org.get_member_rank(self.char1))
+        self.assertIsNone(self.org.get_member_rank_name(self.char1))
+        
+    def test_rank_management(self):
+        """Test managing member ranks."""
+        # Add member with initial rank
+        self.org.add_member(self.char1, rank=5)
+        self.assertEqual(self.org.get_member_rank(self.char1), 5)
+        self.assertEqual(self.char1.organisations[self.org.id], 5)
+        
+        # Change rank
+        self.org.set_rank(self.char1, 3)
+        self.assertEqual(self.org.get_member_rank(self.char1), 3)
+        self.assertEqual(self.char1.organisations[self.org.id], 3)
+        
+        # Try invalid rank
+        self.assertFalse(self.org.set_rank(self.char1, 11))
+        self.assertEqual(self.org.get_member_rank(self.char1), 3)  # Should not change
+        self.assertEqual(self.char1.organisations[self.org.id], 3)  # Should not change
+        
+        # Try setting rank of non-member
+        self.assertFalse(self.org.set_rank(self.char2, 5))
+        
+    def test_member_listing(self):
+        """Test listing members."""
+        # Add two members with different ranks
+        self.org.add_member(self.char1, rank=3)
+        self.org.add_member(self.char2, rank=5)
+        
+        # Get member list
+        members = self.org.get_members()
+        
+        # Should be sorted by rank (highest/lowest number first)
+        self.assertEqual(len(members), 2)
+        self.assertEqual(members[0][0], self.char1)  # Rank 3 should be first
+        self.assertEqual(members[0][1], 3)
+        self.assertEqual(members[1][0], self.char2)  # Rank 5 should be second
+        self.assertEqual(members[1][1], 5)
         
     def test_rank_names(self):
         """Test setting and getting rank names."""

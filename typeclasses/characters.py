@@ -159,6 +159,9 @@ class Character(ObjectParent, DefaultCharacter):
         # Initialize resources handler (will be initialized on first access)
         _ = self.char_resources
 
+        # Initialize empty list for offline board notifications
+        self.db.offline_board_notifications = []
+
     def at_init(self):
         """
         Called when object is first created and after it is loaded from cache.
@@ -180,6 +183,7 @@ class Character(ObjectParent, DefaultCharacter):
         """
         Called just after puppeting has completed.
         Ensures trait handlers and command set are available.
+        Shows any stored notifications.
         """
         # Call parent to handle account-character connection
         super().at_post_puppet()
@@ -192,6 +196,34 @@ class Character(ObjectParent, DefaultCharacter):
         _ = self.signature_assets
         _ = self.organisations
         _ = self.char_resources
+        
+        # Show any stored board notifications
+        notifications = self.db.offline_board_notifications
+        if notifications:
+            self.msg("\n|yStored Board Notifications:|n")
+            for msg, options in notifications:
+                self.msg(text=msg, options=options)
+            self.msg("\n")  # Add a blank line after notifications
+            
+            # Clear the notifications
+            self.db.offline_board_notifications = []
+
+    def at_msg_receive(self, text=None, from_obj=None, **kwargs):
+        """
+        Called when this character receives a message.
+        
+        Args:
+            text (str or tuple): The message text. If a tuple, it contains
+                               (message, message_options)
+            from_obj (Object): The sender of the message
+            **kwargs: Additional keyword arguments
+        """
+        # Handle board messages specially
+        if isinstance(text, tuple) and text[1].get("type") == "board_post":
+            return True
+            
+        # Let the parent handle other messages
+        return super().at_msg_receive(text, from_obj, **kwargs)
 
     def add_resource(self, name, die_size):
         """

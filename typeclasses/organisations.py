@@ -1,7 +1,7 @@
 """
-Organizations
+Organisations
 
-Organizations represent groups like noble houses, guilds, or factions.
+Organisations represent groups like noble houses, guilds, or factions.
 They can have members with different ranks and provide resources to their members.
 """
 
@@ -11,25 +11,33 @@ from evennia.utils.search import search_object
 from .objects import ObjectParent
 from evennia.contrib.rpg.traits import TraitHandler
 from utils.resource_utils import get_unique_resource_name, validate_die_size
+from evennia.objects.models import ObjectDB
 
 
 class Organisation(ObjectParent, DefaultObject):
     """
-    An organization that characters can join.
-    Organizations can have different ranks and provide resources to members.
-    Organizations are abstract concepts and do not have a physical location.
+    An organisation that characters can join.
+    Organisations can have different ranks and provide resources to members.
+    Organisations are abstract concepts and do not have a physical location.
     """
     
     MAX_RANKS = 10
     
     @lazy_property
     def org_resources(self):
-        """TraitHandler that manages organization resources."""
+        """TraitHandler that manages organisation resources."""
         return TraitHandler(self, db_attribute_key="org_resources")
         
     def at_object_creation(self):
         """Called when object is first created."""
         super().at_object_creation()
+        
+        # Set default locks
+        self.locks.add(
+            "examine:all();"  # Anyone can examine organizations
+            "edit:perm(Admin);"  # Only Admin can edit org settings
+            "members:perm(Admin)"  # Only Admin can manage members
+        )
         
         # Initialize description
         self.db.description = "No description set."
@@ -83,7 +91,7 @@ class Organisation(ObjectParent, DefaultObject):
         pass
         
     def add_org_resource(self, name, die_size):
-        """Add a resource to the organization.
+        """Add a resource to the organisation.
         
         Args:
             name (str): Name of the resource
@@ -109,7 +117,7 @@ class Organisation(ObjectParent, DefaultObject):
         return True
         
     def remove_org_resource(self, name):
-        """Remove a resource from the organization.
+        """Remove a resource from the organisation.
         
         Args:
             name (str): Name of the resource to remove
@@ -123,7 +131,7 @@ class Organisation(ObjectParent, DefaultObject):
         return False
         
     def transfer_resource(self, resource_name, target):
-        """Transfer a resource to another organization or character.
+        """Transfer a resource to another organisation or character.
         
         Args:
             resource_name (str): Name of the resource to transfer
@@ -141,7 +149,7 @@ class Organisation(ObjectParent, DefaultObject):
             
         from typeclasses.characters import Character
         if not (isinstance(target, type(self)) or isinstance(target, Character)):
-            raise ValueError("Can only transfer resources to organizations or characters")
+            raise ValueError("Can only transfer resources to organisations or characters")
             
         # Get the die size before removing
         die_size = trait.value
@@ -183,6 +191,10 @@ class Organisation(ObjectParent, DefaultObject):
             return False
             
         self.db.members[character.id] = rank
+        # Update character's organisations attribute
+        orgs = character.organisations
+        orgs[self.id] = rank  # Store using org ID for consistency
+        character.attributes.add('organisations', orgs, category='organisations')
         return True
         
     def remove_member(self, character):
@@ -196,6 +208,11 @@ class Organisation(ObjectParent, DefaultObject):
         """
         if character.id in self.db.members:
             del self.db.members[character.id]
+            # Update character's organisations attribute
+            orgs = character.organisations
+            if self.id in orgs:  # Check org ID for consistency
+                del orgs[self.id]
+                character.attributes.add('organisations', orgs, category='organisations')
             return True
         return False
         
@@ -216,6 +233,10 @@ class Organisation(ObjectParent, DefaultObject):
             return False
             
         self.db.members[character.id] = rank
+        # Update character's organisations attribute
+        orgs = character.organisations
+        orgs[self.id] = rank  # Store using org ID for consistency
+        character.attributes.add('organisations', orgs, category='organisations')
         return True
         
     def get_member_rank(self, character):
@@ -266,8 +287,6 @@ class Organisation(ObjectParent, DefaultObject):
             list: List of (character, rank_number, rank_name) tuples,
                   sorted by rank (highest first) then name
         """
-        from evennia.objects.models import ObjectDB
-        
         members = []
         for char_id, rank in self.db.members.items():
             char = ObjectDB.objects.get(id=char_id)
@@ -285,9 +304,8 @@ class Organisation(ObjectParent, DefaultObject):
         """
         # Remove all members
         for char_id in list(self.db.members.keys()):
-            chars = search_object(f"#{char_id}")
-            if chars:
-                self.remove_member(chars[0])
+            char = ObjectDB.objects.get(id=char_id)
+            self.remove_member(char)
         
         # Delete the organisation
         super().delete() 

@@ -23,6 +23,7 @@ from commands.cortex_roll import CortexCmdSet
 from commands.organisations import OrgCmdSet
 from commands.temporary_assets import TemporaryAssetCmdSet
 from commands.requests import CmdRequest
+from commands.board import CmdBoard
 
 
 class CharacterCmdSet(default_cmds.CharacterCmdSet):
@@ -49,6 +50,7 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CortexCmdSet)
         self.add(OrgCmdSet)
         self.add(TemporaryAssetCmdSet)
+        self.add(CmdBoard())
 
 
 class AccountCmdSet(default_cmds.AccountCmdSet):

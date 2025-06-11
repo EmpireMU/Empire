@@ -34,8 +34,8 @@ def orgmember(accessing_obj, accessed_obj, *args, **kwargs):
     Check if accessing_obj is a member of the specified organization and optionally has minimum rank.
     
     Usage:
-        orgmember(Empire) - returns True if accessing_obj is a member of Empire (rank 10+)
-        orgmember(Empire, 5) - returns True if accessing_obj has rank 5+ in Empire
+        orgmember(House Otrese) - returns True if accessing_obj is a member of House Otrese (rank 10 or better)
+        orgmember(House Otrese, 5) - returns True if accessing_obj has rank 5 or better (lower number)
     """
     if not args:
         return False
@@ -47,10 +47,18 @@ def orgmember(accessing_obj, accessed_obj, *args, **kwargs):
     character = accessing_obj
     if hasattr(accessing_obj, 'character'):
         character = accessing_obj.character
-        
-    # Find the organization and check rank
-    for org in character.organisations:
-        if org.key.lower() == org_name.lower():
-            return org.get_member_rank(character) >= min_rank
-            
+    
+    # Find the organization by name
+    from evennia.utils.search import search_object
+    orgs = search_object(org_name, typeclass='typeclasses.organisations.Organisation')
+    if not orgs:
+        return False
+    org = orgs[0]
+    
+    # Get the character's organisations and check membership by org ID
+    char_orgs = character.organisations
+    if org.id in char_orgs:
+        rank = char_orgs[org.id]
+        return rank <= min_rank
+    
     return False

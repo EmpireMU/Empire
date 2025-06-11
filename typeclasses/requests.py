@@ -354,4 +354,32 @@ class Request(DefaultScript):
             # Update the timestamp
             last_viewed_by[str(account.id)] = datetime.now()
             # Save back to attributes
-            self.attributes.add('last_viewed_by', last_viewed_by) 
+            self.attributes.add('last_viewed_by', last_viewed_by)
+
+    @classmethod
+    def cleanup_old_requests(cls, days=30):
+        """Delete archived requests older than specified days.
+        
+        Args:
+            days (int): Number of days after which to delete archived requests
+            
+        Returns:
+            int: Number of requests deleted
+        """
+        cutoff_date = datetime.now() - timedelta(days=days)
+        count = 0
+        
+        # Search for all requests
+        for request in search_script("typeclasses.requests.Request"):
+            # Only delete if:
+            # 1. Request is archived
+            # 2. Archive date is older than cutoff
+            # 3. Request is closed (safety check)
+            if (request.is_archived and 
+                request.db.date_archived and 
+                request.db.date_archived < cutoff_date and
+                request.is_closed):
+                request.delete()
+                count += 1
+                
+        return count 

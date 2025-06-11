@@ -1,5 +1,5 @@
 """
-Organization commands for managing organizations and their members.
+Organization commands for managing organisations and their members.
 """
 
 from evennia.commands.default.muxcommand import MuxCommand
@@ -16,7 +16,7 @@ from utils.org_utils import (
 
 class CmdOrg(CharacterLookupMixin, MuxCommand):
     """
-    Manage organizations.
+    Manage organisations.
     
     Usage:
         org                     - List organisations you're a member of
@@ -36,7 +36,7 @@ class CmdOrg(CharacterLookupMixin, MuxCommand):
         org/rankname House Otrese = 5,Knight - Set rank 5 name to Knight
         org/delete House Otrese            - Delete the organization
         
-    Organizations represent formal groups like guilds, companies,
+    Organisations represent formal groups like guilds, companies,
     or military units. Each has a hierarchy of numbered ranks (1-10).    """
     key = "org"
     locks = (
@@ -53,12 +53,12 @@ class CmdOrg(CharacterLookupMixin, MuxCommand):
     def _check_admin(self, operation):
         """Helper method to check for Admin permission."""
         if not self.caller.permissions.check("Admin"):
-            self.msg(f"You don't have permission to {operation} organizations.")
+            self.msg(f"You don't have permission to {operation} organisations.")
             return False
         return True
 
     def _get_org(self, org_name):
-        """Helper method to find and validate an organization."""
+        """Helper method to find and validate an organisation."""
         return get_org(org_name, self.caller)
         
     def _get_character(self, char_name):
@@ -66,12 +66,16 @@ class CmdOrg(CharacterLookupMixin, MuxCommand):
         return get_char(char_name, self.caller)
         
     def _get_org_and_char(self, org_name, char_name):
-        """Helper method to find both an organization and a character."""
+        """Helper method to find both an organisation and a character."""
         return get_org_and_char(org_name, char_name, self.caller)
         
     def _parse_equals(self, usage_msg):
         """Helper method to parse = separated arguments."""
-        return parse_equals(self.args, usage_msg, self.caller)
+        parts = parse_equals(self.args)
+        if not parts:
+            self.msg(f"Usage: {usage_msg}")
+            return None
+        return parts
         
     def _parse_comma(self, text, expected_parts=2, usage_msg=None):
         """Helper method to parse comma-separated arguments."""
@@ -134,13 +138,13 @@ class CmdOrg(CharacterLookupMixin, MuxCommand):
                 del self.caller.db.delete_org_confirming
         
     def create_org(self):
-        """Create a new organization."""
+        """Create a new organisation."""
         if not self.args:
             self.msg("Usage: org/create <name>")
             return
             
         if not self.access(self.caller, "create"):
-            self.msg("You don't have permission to create organizations.")
+            self.msg("You don't have permission to create organisations.")
             return
             
         # Create the organization
@@ -150,16 +154,16 @@ class CmdOrg(CharacterLookupMixin, MuxCommand):
                 key=self.args
             )
             if org:
-                self.msg(f"Created organization: {org.name}")
+                self.msg(f"Created organisation: {org.name}")
             else:
-                self.msg("Failed to create organization.")
+                self.msg("Failed to create organisation.")
         except Exception as e:
-            self.msg(f"Error creating organization: {e}")
+            self.msg(f"Error creating organisation: {e}")
             
     def delete_org(self):
-        """Delete an organization."""
+        """Delete an organisation."""
         if not self.access(self.caller, "delete"):
-            self.msg("You don't have permission to delete organizations.")
+            self.msg("You don't have permission to delete organisations.")
             return
             
         # Find the organization
@@ -173,11 +177,11 @@ class CmdOrg(CharacterLookupMixin, MuxCommand):
             # Delete the organization
             name = org.name
             org.delete()
-            self.msg(f"Deleted organization: {name}")
+            self.msg(f"Deleted organisation: {name}")
             del self.caller.db.delete_org_confirming
             return
         # First time through - ask for confirmation
-        self.msg(f"|yWARNING: This will delete the organization '{org.name}' and remove all member references.|n")
+        self.msg(f"|yWARNING: This will delete the organisation '{org.name}' and remove all member references.|n")
         self.msg("|yThis action cannot be undone. Type 'org/delete' again to confirm.|n")
         self.caller.db.delete_org_confirming = True
         
@@ -188,7 +192,7 @@ class CmdOrg(CharacterLookupMixin, MuxCommand):
             return
             
         # Parse arguments
-        parts = self._parse_equals("org/member <organization>,<character>,<rank>")
+        parts = self._parse_equals("org/member <organisation>,<character>,<rank>")
         if not parts:
             return
         org_name, rest = parts
@@ -216,13 +220,13 @@ class CmdOrg(CharacterLookupMixin, MuxCommand):
             self._add_new_member(org, char, rank)
             
     def remove_member(self):
-        """Remove a member from an organization."""
+        """Remove a member from an organisation."""
         if not self.access(self.caller, "remove"):
             self.msg("You don't have permission to remove members.")
             return
             
         # Parse arguments
-        parts = self._parse_equals("org/remove <organization>,<character>")
+        parts = self._parse_equals("org/remove <organisation>,<character>")
         if not parts:
             return
         org_name, char_name = parts
@@ -250,13 +254,13 @@ class CmdOrg(CharacterLookupMixin, MuxCommand):
             return
             
         # Parse arguments
-        parts = self._parse_equals("org/rankname <organization>,<rank>=<name>")
+        parts = self._parse_equals("org/rankname <organisation>,<rank>=<name>")
         if not parts:
             return
         org_name, rest = parts
         
         # Parse rank and name
-        rank_parts = self._parse_comma(rest, 2, "org/rankname <organization>,<rank>=<name>")
+        rank_parts = self._parse_comma(rest, 2, "org/rankname <organisation>,<rank>=<name>")
         if not rank_parts:
             return
             
@@ -264,7 +268,7 @@ class CmdOrg(CharacterLookupMixin, MuxCommand):
         if rank is None:
             return
             
-        # Get the organization
+        # Get the organisation
         org = self._get_org(org_name)
         if not org:
             return
@@ -274,8 +278,8 @@ class CmdOrg(CharacterLookupMixin, MuxCommand):
         self.msg(f"Set rank {rank} name to '{rank_parts[1]}'.")
         
     def show_org_info(self):
-        """Show organization information."""
-        # Find the organization
+        """Show organisation information."""
+        # Find the organisation
         org = self._get_org(self.args)
         if not org:
             return
@@ -327,7 +331,7 @@ class CmdOrg(CharacterLookupMixin, MuxCommand):
 
 class CmdResource(CharacterLookupMixin, MuxCommand):
     """
-    Manage organization resources.
+    Manage organisation resources.
     
     Usage:
         resource                    - List all resources you can access
@@ -344,7 +348,7 @@ class CmdResource(CharacterLookupMixin, MuxCommand):
         
     Valid die sizes: 4, 6, 8, 10, 12
     
-    Resources represent assets that can be owned by organizations
+    Resources represent assets that can be owned by organisations
     or characters and transferred between them.    """
     
     key = "resource"
@@ -359,7 +363,7 @@ class CmdResource(CharacterLookupMixin, MuxCommand):
     help_category = "Resources"
     
     def _get_org(self, org_name):
-        """Helper method to find and validate an organization."""
+        """Helper method to find and validate an organisation."""
         return get_org(org_name, self.caller)
         
     def _get_char(self, char_name):
@@ -383,7 +387,7 @@ class CmdResource(CharacterLookupMixin, MuxCommand):
         
         if switch == "org":
             if not self.access(self.caller, "org"):
-                self.msg("You don't have permission to create organization resources.")
+                self.msg("You don't have permission to create organisation resources.")
                 return
             self.create_org_resource()
         elif switch == "char":
@@ -481,7 +485,7 @@ class CmdResource(CharacterLookupMixin, MuxCommand):
             return
             
         if not self.access(self.caller, "org"):
-            self.msg("You don't have permission to create organization resources.")
+            self.msg("You don't have permission to create organisation resources.")
             return
             
         org_name, rest = self.args.split(",", 1)
@@ -505,7 +509,7 @@ class CmdResource(CharacterLookupMixin, MuxCommand):
         # Add resource to organization
         try:
             if not hasattr(org, 'org_resources'):
-                self.msg("That organization cannot have resources.")
+                self.msg("That organisation cannot have resources.")
                 return
                 
             org.add_org_resource(name, value)
@@ -549,7 +553,7 @@ class CmdResource(CharacterLookupMixin, MuxCommand):
             self.msg(str(e))
             
     def transfer_resource(self):
-        """Transfer a resource to another character or organization."""
+        """Transfer a resource to another character or organisation."""
         if not self.args or "=" not in self.args:
             self.msg("Usage: resource/transfer <source>:<resource> = <target>")
             return
@@ -643,7 +647,7 @@ class CmdResource(CharacterLookupMixin, MuxCommand):
             self.msg(str(e))
             
     def delete_resource(self):
-        """Delete a resource from any character or organization."""
+        """Delete a resource from any character or organisation."""
         if not self.args or "," not in self.args:
             self.msg("Usage: resource/delete <owner>,<name>")
             return
@@ -688,7 +692,7 @@ class CmdResource(CharacterLookupMixin, MuxCommand):
 
 class OrgCmdSet(CmdSet):
     """
-    Command set for organization management.
+    Command set for organisation management.
     """
     
     def at_cmdset_creation(self):
