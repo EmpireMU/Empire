@@ -24,6 +24,7 @@ from commands.organisations import OrgCmdSet
 from commands.temporary_assets import TemporaryAssetCmdSet
 from commands.requests import CmdRequest
 from commands.board import CmdBoard
+from commands.room_management import CmdRoomManagement
 
 
 class CharacterCmdSet(default_cmds.CharacterCmdSet):
@@ -51,6 +52,7 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(OrgCmdSet)
         self.add(TemporaryAssetCmdSet)
         self.add(CmdBoard())
+        self.add(CmdRoomManagement())
 
 
 class AccountCmdSet(default_cmds.AccountCmdSet):

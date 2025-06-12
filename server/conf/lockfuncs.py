@@ -62,3 +62,33 @@ def orgmember(accessing_obj, accessed_obj, *args, **kwargs):
         return rank <= min_rank
     
     return False
+
+def roomaccess(accessing_obj, accessed_obj, *args, **kwargs):
+    """
+    Check if accessing_obj has access to either room connected by this exit.
+    This means they are either an owner or key holder of either room.
+    
+    Usage:
+        roomaccess() - returns True if accessing_obj has access to either connected room
+    """
+    # Get the character if an account is accessing
+    character = accessing_obj
+    if hasattr(accessing_obj, 'character'):
+        character = accessing_obj.character
+        
+    # Get both connected rooms
+    exit = accessed_obj
+    if not exit or not hasattr(exit, 'destination'):
+        return False
+        
+    source_room = exit.location
+    dest_room = exit.destination
+    
+    # Check access to either room
+    if source_room and source_room.has_access(character):
+        return True
+        
+    if dest_room and dest_room.has_access(character):
+        return True
+        
+    return False
