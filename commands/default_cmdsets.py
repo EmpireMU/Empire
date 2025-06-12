@@ -26,6 +26,7 @@ from commands.requests import CmdRequest
 from commands.board import CmdBoard
 from commands.room_management import CmdRoomManagement
 from commands import home
+from commands.page import CmdPage
 
 
 class CharacterCmdSet(default_cmds.CharacterCmdSet):
@@ -77,6 +78,8 @@ class AccountCmdSet(default_cmds.AccountCmdSet):
         #
         # Add request commands - this is an OOC system
         self.add(CmdRequest())
+        # Add our custom page command
+        self.add(CmdPage())
 
 
 class UnloggedinCmdSet(default_cmds.UnloggedinCmdSet):
