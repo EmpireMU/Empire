@@ -162,6 +162,9 @@ class Character(ObjectParent, DefaultCharacter):
         # Initialize empty list for offline board notifications
         self.db.offline_board_notifications = []
 
+        # Initialize home location
+        self.db.home_location = None
+
     def at_init(self):
         """
         Called when object is first created and after it is loaded from cache.
@@ -315,3 +318,25 @@ class Character(ObjectParent, DefaultCharacter):
             trait = self.char_resources.get(key)
             resources.append((key, trait.value))
         return sorted(resources)
+
+    @property
+    def home_location(self):
+        """Get character's home location."""
+        return self.db.home_location
+
+    @home_location.setter
+    def home_location(self, value):
+        """Set character's home location."""
+        self.db.home_location = value
+
+    def can_set_home(self, room):
+        """
+        Check if character can set this room as their home.
+        
+        Args:
+            room: The room to check
+            
+        Returns:
+            bool: True if character can set this as home
+        """
+        return room.has_access(self)
