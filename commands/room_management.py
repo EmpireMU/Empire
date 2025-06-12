@@ -60,6 +60,22 @@ class CmdRoomManagement(CharacterLookupMixin, MuxCommand):
             self.msg("Owner type must be 'org' or 'char'")
             return None, None
 
+    def _has_org_management_permission(self, org):
+        """
+        Helper method to check if a character has sufficient rank (1 or 2) 
+        in an organization to manage rooms.
+        
+        Args:
+            org (Organisation): The organization to check
+            
+        Returns:
+            bool: True if character has sufficient rank
+        """
+        if org.id in self.caller.organisations:
+            # organisations dict contains {org_id: rank_number}
+            return self.caller.organisations[org.id] <= 2
+        return False
+
     def func(self):
         """Execute the command."""
         if not self.switches:
@@ -132,6 +148,22 @@ class CmdRoomManagement(CharacterLookupMixin, MuxCommand):
                 return
                 
             room = self.caller.location
+            
+            # Check if caller is an owner or has sufficient rank in an owning organization
+            has_permission = False
+            if self.caller.id in room.character_owners:
+                has_permission = True
+            else:
+                # Check if caller has sufficient rank in any owning organization
+                for org_id in room.org_owners.keys():
+                    if org_id in self.caller.organisations and self.caller.organisations[org_id] <= 2:
+                        has_permission = True
+                        break
+
+            if not has_permission:
+                self.msg("You must be an owner or have rank 1 or 2 in an owning organization to manage keys.")
+                return
+                
             key_holders = room.attributes.get("key_holders", default={})
                 
             if switch == "givekey":
@@ -166,11 +198,23 @@ class CmdRoomManagement(CharacterLookupMixin, MuxCommand):
             source_room = self.caller.location
             dest_room = exit.destination
             
-            has_source_access = source_room.has_access(self.caller)
-            has_dest_access = dest_room.has_access(self.caller)
-            
-            if not (has_source_access or has_dest_access):
-                self.msg("You don't have access to either connected room.")
+            # Check if caller is an owner or has sufficient rank in an owning organisation
+            has_permission = False
+            if self.caller.id in source_room.character_owners or self.caller.id in dest_room.character_owners:
+                has_permission = True
+            else:
+                # Check if caller has sufficient rank in any owning organisation
+                for room in (source_room, dest_room):
+                    for org_id, org_name in room.org_owners.items():
+                        org = search_object(org_name, typeclass='typeclasses.organisations.Organisation')[0]
+                        if self._has_org_management_permission(org):
+                            has_permission = True
+                            break
+                    if has_permission:
+                        break
+
+            if not has_permission:
+                self.msg("You must be an owner or have rank 1 or 2 in an owning organisation to manage exits.")
                 return
 
             # Find the return exit in the destination room
@@ -180,18 +224,38 @@ class CmdRoomManagement(CharacterLookupMixin, MuxCommand):
             if switch == "lock":
                 # Modify the traverse lock
                 exit.locks.add("traverse:roomaccess()")
-                self.msg(f"Locked the {exit.name}.")
+                self.msg(f"Locked the {exit.name} exit.")
+                # Echo to the room
+                self.caller.location.msg_contents(
+                    f"{self.caller.name} locks the {exit.name} exit.",
+                    exclude=[self.caller]
+                )
                 
                 # Also lock the return exit if it exists
                 if return_exit:
                     return_exit.locks.add("traverse:roomaccess()")
-                    self.msg(f"Also locked the {return_exit.name} leading back.")
+                    #self.msg(f"Also locked the {return_exit.name} exit leading back.")
+                    # Echo to the destination room
+                    dest_room.msg_contents(
+                        f"{self.caller.name} locks the {return_exit.name} exit from the other side.",
+                        exclude=[self.caller]
+                    )
             else:  # unlock
                 # Modify the traverse lock
                 exit.locks.add("traverse:all()")
-                self.msg(f"Unlocked the {exit.name}.")
+                self.msg(f"Unlocked the {exit.name} exit.")
+                # Echo to the room
+                self.caller.location.msg_contents(
+                    f"{self.caller.name} unlocks the {exit.name} exit.",
+                    exclude=[self.caller]
+                )
                 
                 # Also unlock the return exit if it exists
                 if return_exit:
                     return_exit.locks.add("traverse:all()")
-                    self.msg(f"Also unlocked the {return_exit.name} leading back.") 
+                    #self.msg(f"Also unlocked the {return_exit.name} exit leading back.")
+                    # Echo to the destination room
+                    dest_room.msg_contents(
+                        f"{self.caller.name} unlocks the {return_exit.name} exit from the other side.",
+                        exclude=[self.caller]
+                    ) 
