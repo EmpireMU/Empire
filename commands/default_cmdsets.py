@@ -28,6 +28,7 @@ from commands.room_management import CmdRoomManagement
 from commands import home
 from commands.page import CmdPage
 from commands.mail import CmdMailCharacter
+from commands import where
 
 
 class CharacterCmdSet(default_cmds.CharacterCmdSet):
@@ -57,6 +58,7 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdBoard())
         self.add(CmdRoomManagement())
         self.add(home.CmdHome())
+        self.add(where.CmdWhere())
         # Add mail system with OOC support
         self.add(CmdMailCharacter())
 
