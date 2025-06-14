@@ -27,6 +27,7 @@ from commands.board import CmdBoard
 from commands.room_management import CmdRoomManagement
 from commands import home
 from commands.page import CmdPage
+from commands.mail import CmdMailCharacter
 
 
 class CharacterCmdSet(default_cmds.CharacterCmdSet):
@@ -56,6 +57,8 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdBoard())
         self.add(CmdRoomManagement())
         self.add(home.CmdHome())
+        # Add mail system with OOC support
+        self.add(CmdMailCharacter())
 
 
 class AccountCmdSet(default_cmds.AccountCmdSet):
@@ -80,6 +83,7 @@ class AccountCmdSet(default_cmds.AccountCmdSet):
         self.add(CmdRequest())
         # Add our custom page command
         self.add(CmdPage())
+
 
 
 class UnloggedinCmdSet(default_cmds.UnloggedinCmdSet):
