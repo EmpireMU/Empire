@@ -2,10 +2,9 @@
 Custom mail commands for the game.
 """
 
-from evennia.contrib.game_systems.mail.mail import CmdMailCharacter
-from evennia.utils import crop, list_to_string
+from evennia.contrib.game_systems.mail import CmdMailCharacter
 
-class CmdMailCharacter(CmdMailCharacter):
+class CmdMailCharacterOOC(CmdMailCharacter):
     """
     Send mail to other characters in the game.
 
@@ -26,39 +25,26 @@ class CmdMailCharacter(CmdMailCharacter):
     communication.
     """
 
+    key = "mail"
+
+    def parse(self):
+        """
+        Initialize the command
+        """
+        # Call parent parse first to initialize switches, args, etc.
+        super().parse()
+
     def func(self):
-        """Implement function"""
+        """
+        Implement the OOC switch
+        """
         if "ooc" in self.switches:
-            if not self.args or not self.rhs:
-                self.caller.msg("Usage: mail/ooc <character> = <title>/<message>")
-                return
-                
-            if "/" not in self.rhs:
-                self.caller.msg("Usage: mail/ooc <character> = <title>/<message>")
-                return
-                
-            recipient = self.lhs.strip()
-            title, message = self.rhs.split("/", 1)
-            
-            # Add OOC marker and color to title
-            title = f"|y(OOC)|n {title.strip()}"
-            
-            # Try to send the message
-            r = self.get_recipient(recipient)
-            if not r:
-                self.caller.msg(f"Could not find '{recipient}'.")
-                return
-                
-            if not r.access(self.caller, "mail"):
-                self.caller.msg(f"You are not allowed to send mail to '{r}'.")
-                return
-                
-            # Create and send the message
-            super().create_message(self.caller, r, message.strip(), title=title)
-            self.caller.msg(f"Mail sent to {r}: {title} - {message}")
-            if hasattr(r, "msg") and r.has_account:
-                r.msg(f"New mail from {self.caller}: {title}")
-            return
-            
-        # For all other cases, use parent class behavior
-        super().func() 
+            # Remove ooc from switches so parent class doesn't see it
+            self.switches.remove("ooc")
+            # If sending a message, modify the header
+            if self.args and not self.switches and self.rhs and "/" in self.rhs:
+                header, message = self.rhs.split("/", 1)
+                self.rhs = f"|y(OOC)|n {header}/{message}"
+
+        # Let parent class handle everything else and return its result
+        return super().func()

@@ -55,8 +55,8 @@ class CmdInitTraits(CharacterLookupMixin, MuxCommand):
     
     4. Distinction Slots (all d8)
        - Character Concept: Core character concept
-       - Cultural Background: Character's cultural origin
-       - Reputation: How others perceive the character
+       - Culture: Character's cultural origin
+       - Vocation: Professional role or calling
     
     Important Notes:
     - This command ONLY adds missing traits with default values

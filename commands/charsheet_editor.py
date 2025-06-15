@@ -45,10 +45,6 @@ class CmdSetTrait(CharacterLookupMixin, MuxCommand):
 
     Notes:
     - Setting a trait that already exists will overwrite it
-    - Descriptions help justify the die rating and provide roleplay hooks
-    - Attributes affect all related skill rolls
-    - Skills can't normally exceed d12
-    - Each die size represents a significant increase in capability
     """
     key = "settrait"
     help_category = "Character"
@@ -215,7 +211,7 @@ class CmdSetDistinction(CharacterLookupMixin, MuxCommand):
             return
             
         # Validate slot
-        valid_slots = ["concept", "culture", "reputation"]
+        valid_slots = ["concept", "culture", "vocation"]
         if slot not in valid_slots:
             self.msg(f"Invalid slot. Must be one of: {', '.join(valid_slots)}")
             return
@@ -237,8 +233,16 @@ class CmdBiography(CharacterLookupMixin, MuxCommand):
         
     Shows:
         - Description (set with 'desc' command)
+        - Age (set with 'setage' command)
+        - Birthday (set with 'setbirthday' command)
+        - Gender (set with 'setgender' command)
         - Background (set with 'background' command)
         - Personality (set with 'personality' command)
+        - Distinctions (set with 'setdist' command):
+          * Character Concept
+          * Culture
+          * Vocation
+        - Notable Traits (set with 'setnotable' command)
     """
     
     key = "biography"
@@ -265,6 +269,41 @@ class CmdBiography(CharacterLookupMixin, MuxCommand):
         
         # Build the biography message
         msg = f"\n|w{char.name}'s Biography|n"
+        
+        # Add full name if it exists
+        if char.db.full_name:
+            msg += f"\n|wFull Name:|n {char.db.full_name}"
+        
+        # Add character concept first if it exists
+        if hasattr(char, 'distinctions'):
+            concept = char.distinctions.get("concept")
+            if concept:
+                msg += f"\n|wConcept:|n {concept.name}"
+                if concept.desc:
+                    msg += f" - {concept.desc}"
+            else:
+                msg += "\n|wConcept:|n Not set"
+        
+        # Add demographic information on one line
+        msg += "\n"
+        demographics = []
+        if char.db.gender:
+            demographics.append(f"|wGender:|n {char.db.gender}")
+        if char.db.age:
+            demographics.append(f"|wAge:|n {char.db.age}")
+        if char.db.birthday:
+            demographics.append(f"|wBirthday:|n {char.db.birthday}")
+        msg += " | ".join(demographics) if demographics else "|wNo demographics set|n"
+        
+        # Add culture and vocation on one line if they exist
+        if hasattr(char, 'distinctions'):
+            culture = char.distinctions.get("culture")
+            vocation = char.distinctions.get("vocation")
+            culture_text = f"|wCulture:|n {culture.name}" if culture else "|wCulture:|n Not set"
+            vocation_text = f"|wVocation:|n {vocation.name}" if vocation else "|wVocation:|n Not set"
+            msg += f"\n{culture_text} | {vocation_text}"
+        
+        # Add main character information
         msg += f"\n\n|wDescription:|n\n{desc}"
         msg += f"\n\n|wBackground:|n\n{char.db.background}"
         msg += f"\n\n|wPersonality:|n\n{char.db.personality}"
@@ -290,6 +329,10 @@ class CmdBiography(CharacterLookupMixin, MuxCommand):
                     table.add_row(org.name, rank_name)
             
             msg += f"\n{str(table)}"
+        
+        # Add notable traits if they exist
+        if char.db.notable_traits:
+            msg += f"\n\n|wNotable Traits:|n\n{char.db.notable_traits}"
         
         self.msg(msg)
 
@@ -423,6 +466,200 @@ class CmdPersonality(CharacterLookupMixin, MuxCommand):
             
         self.msg(f"\n|w{char.name}'s Personality:|n\n{personality}")
 
+class CmdSetAge(CharacterLookupMixin, MuxCommand):
+    """
+    Set a character's age.
+    
+    Usage:
+        setage <character> = <age>
+        
+    Examples:
+        setage = 25                  - Set your own age
+        setage Ada = 30             - Set Ada's age
+        
+    Note: Use 'biography' to see all character information at once.
+    """
+    
+    key = "setage"
+    locks = "cmd:perm(Builder)"  # Only builders can use this command
+    help_category = "Character"
+    
+    def func(self):
+        """Execute the command."""
+        if not self.args or "=" not in self.args:
+            self.msg("Usage: setage <character> = <age>")
+            return
+            
+        # Parse edit command
+        try:
+            char_name, age = self.args.split("=", 1)
+            char = self.find_character(char_name.strip())
+            if not char:
+                return
+                
+            # Update the age
+            char.db.age = age.strip()
+            self.msg(f"Updated {char.name}'s age.")
+            char.msg(f"{self.caller.name} updated your age.")
+        except Exception as e:
+            self.msg(f"Error updating age: {e}")
+
+class CmdSetBirthday(CharacterLookupMixin, MuxCommand):
+    """
+    Set a character's birthday.
+    
+    Usage:
+        setbirthday <character> = <birthday>
+        
+    Examples:
+        setbirthday = January 1st    - Set your own birthday
+        setbirthday Ada = Dec 25     - Set Ada's birthday
+        
+    Note: Use 'biography' to see all character information at once.
+    """
+    
+    key = "setbirthday"
+    locks = "cmd:perm(Builder)"  # Only builders can use this command
+    help_category = "Character"
+    
+    def func(self):
+        """Execute the command."""
+        if not self.args or "=" not in self.args:
+            self.msg("Usage: setbirthday <character> = <birthday>")
+            return
+            
+        # Parse edit command
+        try:
+            char_name, birthday = self.args.split("=", 1)
+            char = self.find_character(char_name.strip())
+            if not char:
+                return
+                
+            # Update the birthday
+            char.db.birthday = birthday.strip()
+            self.msg(f"Updated {char.name}'s birthday.")
+            char.msg(f"{self.caller.name} updated your birthday.")
+        except Exception as e:
+            self.msg(f"Error updating birthday: {e}")
+
+class CmdSetGender(CharacterLookupMixin, MuxCommand):
+    """
+    Set a character's gender.
+    
+    Usage:
+        setgender <character> = <gender>
+        
+    Examples:
+        setgender = Female           - Set your own gender
+        setgender Ada = Female       - Set Ada's gender
+        
+    Note: Use 'biography' to see all character information at once.
+    """
+    
+    key = "setgender"
+    locks = "cmd:perm(Builder)"  # Only builders can use this command
+    help_category = "Character"
+    
+    def func(self):
+        """Execute the command."""
+        if not self.args or "=" not in self.args:
+            self.msg("Usage: setgender <character> = <gender>")
+            return
+            
+        # Parse edit command
+        try:
+            char_name, gender = self.args.split("=", 1)
+            char = self.find_character(char_name.strip())
+            if not char:
+                return
+                
+            # Update the gender
+            char.db.gender = gender.strip()
+            self.msg(f"Updated {char.name}'s gender.")
+            char.msg(f"{self.caller.name} updated your gender.")
+        except Exception as e:
+            self.msg(f"Error updating gender: {e}")
+
+class CmdSetFullName(CharacterLookupMixin, MuxCommand):
+    """
+    Set a character's full name.
+    
+    Usage:
+        setfullname <character> = <full name>
+        
+    Examples:
+        setfullname = Lord Marcus Blackwood III    - Set your own full name
+        setfullname Ada = Empress Ada Lovelace     - Set Ada's full name
+        
+    This sets a character's formal or complete name, while preserving their
+    regular name for everyday use. For example, a character known as "Marcus"
+    might have the full name "Lord Marcus Blackwood III".
+        
+    Note: Use 'biography' to see all character information at once.
+    """
+    
+    key = "setfullname"
+    locks = "cmd:perm(Builder)"  # Only builders can use this command
+    help_category = "Character"
+    
+    def func(self):
+        """Execute the command."""
+        if not self.args or "=" not in self.args:
+            self.msg("Usage: setfullname <character> = <full name>")
+            return
+            
+        # Parse edit command
+        try:
+            char_name, full_name = self.args.split("=", 1)
+            char = self.find_character(char_name.strip())
+            if not char:
+                return
+                
+            # Update the full name
+            char.db.full_name = full_name.strip()
+            self.msg(f"Updated {char.name}'s full name.")
+            char.msg(f"{self.caller.name} updated your full name.")
+        except Exception as e:
+            self.msg(f"Error updating full name: {e}")
+
+class CmdSetNotable(CharacterLookupMixin, MuxCommand):
+    """
+    Set a character's notable traits.
+    
+    Usage:
+        setnotable <character> = <text>
+        
+    Examples:
+        setnotable = Expert swordsman, known for mercy
+        setnotable Ada = Master of disguise, speaks 5 languages
+        
+    Note: Use 'biography' to see all character information at once.
+    """
+    
+    key = "setnotable"
+    locks = "cmd:perm(Builder)"  # Only builders can use this command
+    help_category = "Character"
+    
+    def func(self):
+        """Execute the command."""
+        if not self.args or "=" not in self.args:
+            self.msg("Usage: setnotable <character> = <text>")
+            return
+            
+        # Parse edit command
+        try:
+            char_name, text = self.args.split("=", 1)
+            char = self.find_character(char_name.strip())
+            if not char:
+                return
+                
+            # Update the notable traits
+            char.db.notable_traits = text.strip()
+            self.msg(f"Updated {char.name}'s notable traits.")
+            char.msg(f"{self.caller.name} updated your notable traits.")
+        except Exception as e:
+            self.msg(f"Error updating notable traits: {e}")
+
 class CharSheetEditorCmdSet(CmdSet):
     """
     Command set for editing character sheets.
@@ -438,3 +675,8 @@ class CharSheetEditorCmdSet(CmdSet):
         self.add(CmdBiography())
         self.add(CmdBackground())
         self.add(CmdPersonality())
+        self.add(CmdSetAge())
+        self.add(CmdSetBirthday())
+        self.add(CmdSetGender())
+        self.add(CmdSetFullName())
+        self.add(CmdSetNotable())

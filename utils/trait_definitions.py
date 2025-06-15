@@ -48,6 +48,6 @@ SKILLS: List[TraitDefinition] = [
 # Distinction definitions (all start at d8)
 DISTINCTIONS: List[TraitDefinition] = [
     TraitDefinition("concept", "Character Concept", "Core character concept (e.g. Bold Adventurer)", 8),
-    TraitDefinition("culture", "Cultural Background", "Character's cultural origin", 8),
-    TraitDefinition("reputation", "Reputation", "How others perceive the character", 8)
+    TraitDefinition("culture", "Culture", "Character's cultural origin", 8),
+    TraitDefinition("vocation", "Vocation", "Character's profession or calling", 8)
 ] 

@@ -9,11 +9,12 @@ creation commands.
 """
 
 from evennia.objects.objects import DefaultCharacter
-from evennia.utils import lazy_property
+from evennia.utils import lazy_property, search
 from evennia.contrib.rpg.traits import TraitHandler
 from .objects import ObjectParent
 from utils.trait_definitions import ATTRIBUTES, SKILLS, DISTINCTIONS
 from utils.resource_utils import get_unique_resource_name, validate_die_size
+from evennia.comms.models import Msg
 
 
 class Character(ObjectParent, DefaultCharacter):
@@ -43,7 +44,7 @@ class Character(ObjectParent, DefaultCharacter):
         Distinctions are always d8 and can be used as d4 for a plot point.
         Every character has three:
         1. Character concept (e.g. "Bold Adventurer")
-        2. Cultural background
+        2. Culture
         3. How they are perceived by others
         """
         return TraitHandler(self, db_attribute_key="char_distinctions")
@@ -107,6 +108,7 @@ class Character(ObjectParent, DefaultCharacter):
         # Initialize character background and personality
         self.db.background = "No background has been set."
         self.db.personality = "No personality has been set."
+        self.db.notable_traits = "No notable traits have been set."
 
         # Initialize organization memberships
         self.attributes.add('organisations', {}, category='organisations')
@@ -200,16 +202,16 @@ class Character(ObjectParent, DefaultCharacter):
         _ = self.organisations
         _ = self.char_resources
         
-        # Show any stored board notifications
-        notifications = self.db.offline_board_notifications
+        # Check for unread mail
+        unread_mail = Msg.objects.get_by_tag(category="mail").filter(db_receivers_objects=self).filter(db_tags__db_key="new")
+        if unread_mail:
+            self.msg("|wYou have %d unread mail message%s waiting.|n" % (unread_mail.count(), "s" if unread_mail.count() != 1 else ""))
+        
+        # Show any stored notifications
+        notifications = self.attributes.get("_stored_notifications", [])
         if notifications:
-            self.msg("\n|yStored Board Notifications:|n")
-            for msg, options in notifications:
-                self.msg(text=msg, options=options)
-            self.msg("\n")  # Add a blank line after notifications
-            
-            # Clear the notifications
-            self.db.offline_board_notifications = []
+            self.msg("\n".join(notifications))
+            self.attributes.remove("_stored_notifications")
 
     def at_msg_receive(self, text=None, from_obj=None, **kwargs):
         """

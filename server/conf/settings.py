@@ -32,7 +32,13 @@ from evennia.settings_default import *
 ######################################################################
 
 # This is the name of your game. Make it catchy!
-SERVERNAME = "empire"
+SERVERNAME = "Empire"
+
+# Account creation settings
+GUEST_ENABLED = True  # Allow guest accounts
+CREATE_ACCOUNT_ON_CONNECT = False  # Disable automatic account creation
+RESTRICTED_CREATION = True  # Restrict account creation to staff only
+AUTO_PUPPET_ON_LOGIN = True  # Auto-puppet the last character on login
 
 
 ######################################################################

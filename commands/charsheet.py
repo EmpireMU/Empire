@@ -145,8 +145,8 @@ class CmdSheet(CharacterLookupMixin, Command):
     
     2. Distinctions (d8 or d4)
        - Character Concept: Core identity
-       - Cultural Background: Heritage and upbringing
-       - Reputation: How others see you
+       - Culture: Heritage and upbringing
+       - Vocation: Professional role or calling
        Note: Using d4 instead of d8 earns a Plot Point
     
     3. Prime Sets (Core dice pools)
@@ -182,17 +182,20 @@ class CmdSheet(CharacterLookupMixin, Command):
         if not self.args:
             char = self.caller
         else:
-            # Try to find the character
-            found_obj = self.caller.search(self.args)
-            if not found_obj:
+            # Check view_other permission
+            if not self.caller.locks.check_lockstring(self.caller, "view_other:perm(Builder)"):
+                self.msg("You don't have permission to view other characters' sheets.")
+                return
+                
+            # Try to find the character using the mixin's method
+            char = self.find_character(self.args)
+            if not char:
                 return
             
             # Check if it's actually a character with trait support
-            if not hasattr(found_obj, 'character_attributes'):
-                self.msg(f"{found_obj.name} has no character sheet.")
+            if not hasattr(char, 'character_attributes'):
+                self.msg(f"{char.name} has no character sheet.")
                 return
-                
-            char = found_obj
             
         # Build the character sheet
         sheet = f"\n|w{char.name}'s Character Sheet|n\n"

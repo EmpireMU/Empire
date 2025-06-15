@@ -20,7 +20,8 @@ class CharacterLookupMixin(MuxCommand):
         Returns:
             Character object or None if not found/invalid
         """
-        char = self.caller.search(char_name)
+        # Use global search to find both online and offline characters
+        char = self.caller.search(char_name, global_search=True)
         if not char:
             return None
             

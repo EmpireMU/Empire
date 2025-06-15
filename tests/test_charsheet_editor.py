@@ -11,7 +11,10 @@ from commands.charsheet_editor import (
     CmdSetDistinction,
     CmdBiography,
     CmdBackground,
-    CmdPersonality
+    CmdPersonality,
+    CmdSetAge,
+    CmdSetBirthday,
+    CmdSetGender
 )
 from evennia.contrib.rpg.traits import TraitHandler
 
@@ -45,6 +48,21 @@ class TestCharSheetEditor(EvenniaTest):
         self.cmd_bio.caller = self.char1
         self.cmd_bio.obj = self.char1
         self.cmd_bio.msg = MagicMock()
+
+        self.cmd_age = CmdSetAge()
+        self.cmd_age.caller = self.char1
+        self.cmd_age.obj = self.char1
+        self.cmd_age.msg = MagicMock()
+
+        self.cmd_birthday = CmdSetBirthday()
+        self.cmd_birthday.caller = self.char1
+        self.cmd_birthday.obj = self.char1
+        self.cmd_birthday.msg = MagicMock()
+
+        self.cmd_gender = CmdSetGender()
+        self.cmd_gender.caller = self.char1
+        self.cmd_gender.obj = self.char1
+        self.cmd_gender.msg = MagicMock()
         
         # Initialize trait handlers
         if not hasattr(self.char1, 'character_attributes'):
@@ -74,6 +92,9 @@ class TestCharSheetEditor(EvenniaTest):
         # Set up biography data
         self.char1.db.background = "Test background"
         self.char1.db.personality = "Test personality"
+        self.char1.db.age = "25"
+        self.char1.db.birthday = "January 1st"
+        self.char1.db.gender = "Female"
         self.char1.get_display_desc = MagicMock(return_value="Test description")
     
     def test_set_trait(self):
@@ -142,19 +163,62 @@ class TestCharSheetEditor(EvenniaTest):
         self.assertIn("Invalid category", self.cmd_deltrait.msg.mock_calls[-1][1][0])
     def test_biography(self):
         """Test biography command."""
+        # Set up test distinctions
+        self.char1.distinctions.add("concept", "Bold Explorer", trait_type="static", base=8, desc="Always seeking adventure")
+        self.char1.distinctions.add("culture", "Islander", trait_type="static", base=8, desc="Born on the seas")
+        self.char1.distinctions.add("vocation", "Merchant", trait_type="static", base=8, desc="Trading across the realms")
+        
         # Test viewing own biography
         self.cmd_bio.args = ""
         self.cmd_bio.func()
-        self.assertIn("Test background", self.cmd_bio.msg.mock_calls[-1][1][0])
-        self.assertIn("Test personality", self.cmd_bio.msg.mock_calls[-1][1][0])
-        self.assertIn("Test description", self.cmd_bio.msg.mock_calls[-1][1][0])
+        output = self.cmd_bio.msg.mock_calls[-1][1][0]
+        # Check concept
+        self.assertIn("Concept: Bold Explorer", output)
+        self.assertIn("Always seeking adventure", output)
+        # Check demographics line
+        self.assertIn("Gender: Female | Age: 25 | Birthday: January 1st", output)
+        # Check culture and vocation line
+        self.assertIn("Culture: Islander | Vocation: Merchant", output)
+        # Verify descriptions are not shown for culture and vocation
+        self.assertNotIn("Born on the seas", output)
+        self.assertNotIn("Trading across the realms", output)
+        # Check main sections
+        self.assertIn("Description:", output)
+        self.assertIn("Test description", output)
+        self.assertIn("Background:", output)
+        self.assertIn("Test background", output)
+        self.assertIn("Personality:", output)
+        self.assertIn("Test personality", output)
         
         # Test viewing other's biography
         self.cmd_bio.args = "self"
         self.cmd_bio.func()
-        self.assertIn("Test background", self.cmd_bio.msg.mock_calls[-1][1][0])
-        self.assertIn("Test personality", self.cmd_bio.msg.mock_calls[-1][1][0])
-        self.assertIn("Test description", self.cmd_bio.msg.mock_calls[-1][1][0])
+        output = self.cmd_bio.msg.mock_calls[-1][1][0]
+        # Check concept
+        self.assertIn("Concept: Bold Explorer", output)
+        self.assertIn("Always seeking adventure", output)
+        # Check demographics line
+        self.assertIn("Gender: Female | Age: 25 | Birthday: January 1st", output)
+        # Check culture and vocation line
+        self.assertIn("Culture: Islander | Vocation: Merchant", output)
+        # Verify descriptions are not shown for culture and vocation
+        self.assertNotIn("Born on the seas", output)
+        self.assertNotIn("Trading across the realms", output)
+        # Check main sections
+        self.assertIn("Description:", output)
+        self.assertIn("Test description", output)
+        self.assertIn("Background:", output)
+        self.assertIn("Test background", output)
+        self.assertIn("Personality:", output)
+        self.assertIn("Test personality", output)
+        
+        # Test with no demographics set
+        self.char1.db.gender = None
+        self.char1.db.age = None
+        self.char1.db.birthday = None
+        self.cmd_bio.func()
+        output = self.cmd_bio.msg.mock_calls[-1][1][0]
+        self.assertIn("No demographics set", output)
     def test_background(self):
         """Test background command."""
         # Test viewing background
@@ -226,6 +290,57 @@ class TestCharSheetEditor(EvenniaTest):
         self.cmd_setdist.args = "self = invalid : Test : Description"
         self.cmd_setdist.func()
         self.cmd_setdist.msg.assert_called_with("Invalid slot. Must be one of: concept, culture, reputation")
+
+    def test_set_age(self):
+        """Test age command."""
+        # Test setting age with permission
+        self.cmd_age.args = "self = 30"
+        self.cmd_age.func()
+        self.assertEqual(self.char1.db.age, "30")
+        
+        # Test invalid command format
+        self.cmd_age.args = "self"  # Missing =
+        self.cmd_age.func()
+        self.assertIn("Usage: setage", self.cmd_age.msg.mock_calls[-1][1][0])
+        
+        # Test empty command
+        self.cmd_age.args = ""
+        self.cmd_age.func()
+        self.assertIn("Usage: setage", self.cmd_age.msg.mock_calls[-1][1][0])
+
+    def test_set_birthday(self):
+        """Test birthday command."""
+        # Test setting birthday with permission
+        self.cmd_birthday.args = "self = December 25th"
+        self.cmd_birthday.func()
+        self.assertEqual(self.char1.db.birthday, "December 25th")
+        
+        # Test invalid command format
+        self.cmd_birthday.args = "self"  # Missing =
+        self.cmd_birthday.func()
+        self.assertIn("Usage: setbirthday", self.cmd_birthday.msg.mock_calls[-1][1][0])
+        
+        # Test empty command
+        self.cmd_birthday.args = ""
+        self.cmd_birthday.func()
+        self.assertIn("Usage: setbirthday", self.cmd_birthday.msg.mock_calls[-1][1][0])
+
+    def test_set_gender(self):
+        """Test gender command."""
+        # Test setting gender with permission
+        self.cmd_gender.args = "self = Female"
+        self.cmd_gender.func()
+        self.assertEqual(self.char1.db.gender, "Female")
+        
+        # Test invalid command format
+        self.cmd_gender.args = "self"  # Missing =
+        self.cmd_gender.func()
+        self.assertIn("Usage: setgender", self.cmd_gender.msg.mock_calls[-1][1][0])
+        
+        # Test empty command
+        self.cmd_gender.args = ""
+        self.cmd_gender.func()
+        self.assertIn("Usage: setgender", self.cmd_gender.msg.mock_calls[-1][1][0])
 
 if __name__ == '__main__':
     unittest.main() 
