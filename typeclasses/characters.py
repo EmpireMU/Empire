@@ -16,6 +16,10 @@ from utils.trait_definitions import ATTRIBUTES, SKILLS, DISTINCTIONS
 from utils.resource_utils import get_unique_resource_name, validate_die_size
 from evennia.comms.models import Msg
 
+# Character status constants
+STATUS_AVAILABLE = "available"
+STATUS_ACTIVE = "active"
+STATUS_GONE = "gone"
 
 class Character(ObjectParent, DefaultCharacter):
     """
@@ -109,6 +113,9 @@ class Character(ObjectParent, DefaultCharacter):
         self.db.background = "No background has been set."
         self.db.personality = "No personality has been set."
         self.db.notable_traits = "No notable traits have been set."
+
+        # Initialize character status (for roster system)
+        self.db.status = STATUS_AVAILABLE
 
         # Initialize organization memberships
         self.attributes.add('organisations', {}, category='organisations')

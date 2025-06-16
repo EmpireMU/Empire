@@ -7,6 +7,9 @@ from evennia.accounts.accounts import AccountDB
 from evennia import create_account, create_object
 from evennia.utils import create
 from django.conf import settings
+from evennia.utils.utils import make_iter
+from evennia.utils.evtable import EvTable
+from evennia.utils.search import search_object
 
 class CmdCreatePlayerAccount(MuxCommand):
     """
@@ -51,20 +54,22 @@ class CmdCreatePlayerAccount(MuxCommand):
             
         # Create the account
         try:
-            account = create.create_account(
-                name, 
-                email="", 
+            account = create_account(
+                name,
+                email="",
                 password=password,
                 permissions=["Player"],
-                typeclass=settings.BASE_ACCOUNT_TYPECLASS
+                typeclass=settings.BASE_ACCOUNT_TYPECLASS,
             )
             
-            # Create the character with the same name
-            char = create.create_object(
+            # Create the character
+            char = create_object(
                 settings.BASE_CHARACTER_TYPECLASS,
                 key=name,
-                location=caller.location,
-                home=caller.location
+                location=settings.START_LOCATION,
+                home=settings.START_LOCATION,
+                permissions=["Player"],
+                account=account,
             )
             
             # Link character to account

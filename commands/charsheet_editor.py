@@ -222,41 +222,98 @@ class CmdSetDistinction(CharacterLookupMixin, MuxCommand):
 
 class CmdBiography(CharacterLookupMixin, MuxCommand):
     """
-    View a character's complete biography.
+    View or edit a character's biography information.
     
     Usage:
-        biography [<character>]
+        biography [<character>]                    - View full biography
+        biography/background <char> = <text>       - Set background
+        biography/personality <char> = <text>      - Set personality
+        biography/age <char> = <age>              - Set age
+        biography/birthday <char> = <date>        - Set birthday
+        biography/gender <char> = <gender>        - Set gender
+        biography/name <char> = <full name>       - Set full name
+        biography/notable <char> = <text>         - Set notable traits
         
     Examples:
         biography                    - View your own biography
         biography Ada               - View Ada's biography
+        biography/background Ada = Born in the mountains...
+        biography/personality Ada = Friendly and outgoing...
+        biography/age Ada = 30
+        biography/birthday Ada = December 25th
+        biography/gender Ada = Female
+        biography/name Ada = Empress Ada Lovelace
+        biography/notable Ada = Master of disguise, speaks 5 languages
         
     Shows:
         - Description (set with 'desc' command)
-        - Age (set with 'setage' command)
-        - Birthday (set with 'setbirthday' command)
-        - Gender (set with 'setgender' command)
-        - Background (set with 'background' command)
-        - Personality (set with 'personality' command)
+        - Age (set with biography/age)
+        - Birthday (set with biography/birthday)
+        - Gender (set with biography/gender)
+        - Background (set with biography/background)
+        - Personality (set with biography/personality)
         - Distinctions (set with 'setdist' command):
           * Character Concept
           * Culture
           * Vocation
-        - Notable Traits (set with 'setnotable' command)
+        - Notable Traits (set with biography/notable)
     """
     
     key = "biography"
-    locks = "cmd:all()"  # Everyone can view
+    locks = "cmd:all();edit:perm(Builder)"  # Everyone can view, builders can edit
     help_category = "Character"
     
     def func(self):
         """Execute the command."""
-        # If no arguments, show caller's biography
+        # Handle switches
+        if self.switches:
+            if not self.access(self.caller, "edit"):
+                self.msg("You don't have permission to edit biographies.")
+                return
+                
+            if not self.args or "=" not in self.args:
+                self.msg(f"Usage: biography/{self.switches[0]} <character> = <value>")
+                return
+                
+            try:
+                char_name, value = self.args.split("=", 1)
+                char = self.find_character(char_name.strip())
+                if not char:
+                    return
+                    
+                value = value.strip()
+                switch = self.switches[0].lower()
+                
+                # Map switches to attributes
+                switch_map = {
+                    "background": "background",
+                    "personality": "personality",
+                    "age": "age",
+                    "birthday": "birthday",
+                    "gender": "gender",
+                    "name": "full_name",
+                    "notable": "notable_traits"
+                }
+                
+                if switch not in switch_map:
+                    self.msg(f"Invalid switch. Use one of: {', '.join(switch_map.keys())}")
+                    return
+                
+                # Update the appropriate attribute
+                setattr(char.db, switch_map[switch], value)
+                self.msg(f"Updated {char.name}'s {switch}.")
+                char.msg(f"{self.caller.name} updated your {switch}.")
+                
+            except Exception as e:
+                self.msg(f"Error updating {switch}: {e}")
+            return
+            
+        # If no switches, show biography
         if not self.args:
             self.show_biography(self.caller)
             return
             
-        # View command using inherited method
+        # View command
         char = self.find_character(self.args)
         if not char:
             return
@@ -336,330 +393,6 @@ class CmdBiography(CharacterLookupMixin, MuxCommand):
         
         self.msg(msg)
 
-class CmdBackground(CharacterLookupMixin, MuxCommand):
-    """
-    View or edit a character's background.
-    
-    Usage:
-        background [<character>]
-        background <character> = <text>
-        
-    Examples:
-        background                    - View your own background
-        background Ada               - View Ada's background
-        background Ada = Born in the mountains...
-        
-    Note: Use 'biography' to see all character information at once.
-    """
-    
-    key = "background"
-    # Everyone can view, but editing requires Builder permission
-    locks = "cmd:all();edit:perm(Builder)"
-    help_category = "Character"
-    
-    def func(self):
-        """Execute the command."""
-        # If no arguments, show caller's background
-        if not self.args:
-            self.show_background(self.caller)
-            return
-            
-        # Check if this is a view or edit command
-        if "=" not in self.args:
-            # View command using inherited method
-            char = self.find_character(self.args)
-            if not char:
-                return
-            self.show_background(char)
-            return
-            
-        # Edit command - check permissions
-        if not self.access(self.caller, "edit"):
-            self.msg("You don't have permission to edit backgrounds.")
-            return
-            
-        # Parse edit command
-        try:
-            char_name, text = self.args.split("=", 1)
-            char = self.find_character(char_name.strip())
-            if not char:
-                return
-                
-            # Update the background
-            char.db.background = text.strip()
-            self.msg(f"Updated {char.name}'s background.")
-            char.msg(f"{self.caller.name} updated your background.")
-        except Exception as e:
-            self.msg(f"Error updating background: {e}")
-    
-    def show_background(self, char):
-        """Show a character's background."""
-        background = char.db.background
-        if not background:
-            self.msg(f"{char.name} has no background set.")
-            return
-            
-        self.msg(f"\n|w{char.name}'s Background:|n\n{background}")
-
-class CmdPersonality(CharacterLookupMixin, MuxCommand):
-    """
-    View or edit a character's personality.
-    
-    Usage:
-        personality [<character>]
-        personality <character> = <text>
-        
-    Examples:
-        personality                    - View your own personality
-        personality Ada               - View Ada's personality
-        personality Ada = Friendly and outgoing...
-        
-    Note: Use 'biography' to see all character information at once.
-    """
-    
-    key = "personality"
-    # Everyone can view, but editing requires Builder permission
-    locks = "cmd:all();edit:perm(Builder)"
-    help_category = "Character"
-    
-    def func(self):
-        """Execute the command."""
-        # If no arguments, show caller's personality 
-        if not self.args:
-            self.show_personality(self.caller)
-            return
-            
-        # Check if this is a view or edit command
-        if "=" not in self.args:
-            # View command using inherited method
-            char = self.find_character(self.args)
-            if not char:
-                return
-            self.show_personality(char)
-            return
-            
-        # Edit command - check permissions
-        if not self.access(self.caller, "edit"):
-            self.msg("You don't have permission to edit personalities.")
-            return
-            
-        # Parse edit command
-        try:
-            char_name, text = self.args.split("=", 1)
-            char = self.find_character(char_name.strip())
-            if not char:
-                return
-                
-            # Update the personality
-            char.db.personality = text.strip()
-            self.msg(f"Updated {char.name}'s personality.")
-            char.msg(f"{self.caller.name} updated your personality.")
-        except Exception as e:
-            self.msg(f"Error updating personality: {e}")
-    
-    def show_personality(self, char):
-        """Show a character's personality."""
-        personality = char.db.personality
-        if not personality:
-            self.msg(f"{char.name} has no personality set.")
-            return
-            
-        self.msg(f"\n|w{char.name}'s Personality:|n\n{personality}")
-
-class CmdSetAge(CharacterLookupMixin, MuxCommand):
-    """
-    Set a character's age.
-    
-    Usage:
-        setage <character> = <age>
-        
-    Examples:
-        setage = 25                  - Set your own age
-        setage Ada = 30             - Set Ada's age
-        
-    Note: Use 'biography' to see all character information at once.
-    """
-    
-    key = "setage"
-    locks = "cmd:perm(Builder)"  # Only builders can use this command
-    help_category = "Character"
-    
-    def func(self):
-        """Execute the command."""
-        if not self.args or "=" not in self.args:
-            self.msg("Usage: setage <character> = <age>")
-            return
-            
-        # Parse edit command
-        try:
-            char_name, age = self.args.split("=", 1)
-            char = self.find_character(char_name.strip())
-            if not char:
-                return
-                
-            # Update the age
-            char.db.age = age.strip()
-            self.msg(f"Updated {char.name}'s age.")
-            char.msg(f"{self.caller.name} updated your age.")
-        except Exception as e:
-            self.msg(f"Error updating age: {e}")
-
-class CmdSetBirthday(CharacterLookupMixin, MuxCommand):
-    """
-    Set a character's birthday.
-    
-    Usage:
-        setbirthday <character> = <birthday>
-        
-    Examples:
-        setbirthday = January 1st    - Set your own birthday
-        setbirthday Ada = Dec 25     - Set Ada's birthday
-        
-    Note: Use 'biography' to see all character information at once.
-    """
-    
-    key = "setbirthday"
-    locks = "cmd:perm(Builder)"  # Only builders can use this command
-    help_category = "Character"
-    
-    def func(self):
-        """Execute the command."""
-        if not self.args or "=" not in self.args:
-            self.msg("Usage: setbirthday <character> = <birthday>")
-            return
-            
-        # Parse edit command
-        try:
-            char_name, birthday = self.args.split("=", 1)
-            char = self.find_character(char_name.strip())
-            if not char:
-                return
-                
-            # Update the birthday
-            char.db.birthday = birthday.strip()
-            self.msg(f"Updated {char.name}'s birthday.")
-            char.msg(f"{self.caller.name} updated your birthday.")
-        except Exception as e:
-            self.msg(f"Error updating birthday: {e}")
-
-class CmdSetGender(CharacterLookupMixin, MuxCommand):
-    """
-    Set a character's gender.
-    
-    Usage:
-        setgender <character> = <gender>
-        
-    Examples:
-        setgender = Female           - Set your own gender
-        setgender Ada = Female       - Set Ada's gender
-        
-    Note: Use 'biography' to see all character information at once.
-    """
-    
-    key = "setgender"
-    locks = "cmd:perm(Builder)"  # Only builders can use this command
-    help_category = "Character"
-    
-    def func(self):
-        """Execute the command."""
-        if not self.args or "=" not in self.args:
-            self.msg("Usage: setgender <character> = <gender>")
-            return
-            
-        # Parse edit command
-        try:
-            char_name, gender = self.args.split("=", 1)
-            char = self.find_character(char_name.strip())
-            if not char:
-                return
-                
-            # Update the gender
-            char.db.gender = gender.strip()
-            self.msg(f"Updated {char.name}'s gender.")
-            char.msg(f"{self.caller.name} updated your gender.")
-        except Exception as e:
-            self.msg(f"Error updating gender: {e}")
-
-class CmdSetFullName(CharacterLookupMixin, MuxCommand):
-    """
-    Set a character's full name.
-    
-    Usage:
-        setfullname <character> = <full name>
-        
-    Examples:
-        setfullname = Lord Marcus Blackwood III    - Set your own full name
-        setfullname Ada = Empress Ada Lovelace     - Set Ada's full name
-        
-    This sets a character's formal or complete name, while preserving their
-    regular name for everyday use. For example, a character known as "Marcus"
-    might have the full name "Lord Marcus Blackwood III".
-        
-    Note: Use 'biography' to see all character information at once.
-    """
-    
-    key = "setfullname"
-    locks = "cmd:perm(Builder)"  # Only builders can use this command
-    help_category = "Character"
-    
-    def func(self):
-        """Execute the command."""
-        if not self.args or "=" not in self.args:
-            self.msg("Usage: setfullname <character> = <full name>")
-            return
-            
-        # Parse edit command
-        try:
-            char_name, full_name = self.args.split("=", 1)
-            char = self.find_character(char_name.strip())
-            if not char:
-                return
-                
-            # Update the full name
-            char.db.full_name = full_name.strip()
-            self.msg(f"Updated {char.name}'s full name.")
-            char.msg(f"{self.caller.name} updated your full name.")
-        except Exception as e:
-            self.msg(f"Error updating full name: {e}")
-
-class CmdSetNotable(CharacterLookupMixin, MuxCommand):
-    """
-    Set a character's notable traits.
-    
-    Usage:
-        setnotable <character> = <text>
-        
-    Examples:
-        setnotable = Expert swordsman, known for mercy
-        setnotable Ada = Master of disguise, speaks 5 languages
-        
-    Note: Use 'biography' to see all character information at once.
-    """
-    
-    key = "setnotable"
-    locks = "cmd:perm(Builder)"  # Only builders can use this command
-    help_category = "Character"
-    
-    def func(self):
-        """Execute the command."""
-        if not self.args or "=" not in self.args:
-            self.msg("Usage: setnotable <character> = <text>")
-            return
-            
-        # Parse edit command
-        try:
-            char_name, text = self.args.split("=", 1)
-            char = self.find_character(char_name.strip())
-            if not char:
-                return
-                
-            # Update the notable traits
-            char.db.notable_traits = text.strip()
-            self.msg(f"Updated {char.name}'s notable traits.")
-            char.msg(f"{self.caller.name} updated your notable traits.")
-        except Exception as e:
-            self.msg(f"Error updating notable traits: {e}")
-
 class CharSheetEditorCmdSet(CmdSet):
     """
     Command set for editing character sheets.
@@ -673,10 +406,3 @@ class CharSheetEditorCmdSet(CmdSet):
         self.add(CmdDeleteTrait())
         self.add(CmdSetDistinction())
         self.add(CmdBiography())
-        self.add(CmdBackground())
-        self.add(CmdPersonality())
-        self.add(CmdSetAge())
-        self.add(CmdSetBirthday())
-        self.add(CmdSetGender())
-        self.add(CmdSetFullName())
-        self.add(CmdSetNotable())

@@ -30,6 +30,7 @@ from commands.page import CmdPage
 from commands.mail import CmdMailCharacterOOC
 from commands import where
 from commands.account_admin import CmdCreatePlayerAccount
+from commands.roster import CmdRoster, CmdApplication
 
 
 class CharacterCmdSet(default_cmds.CharacterCmdSet):
@@ -87,7 +88,9 @@ class AccountCmdSet(default_cmds.AccountCmdSet):
         self.add(CmdPage())
         # Add staff account management command
         self.add(CmdCreatePlayerAccount())
-
+        # Add roster commands
+        self.add(CmdRoster())
+        self.add(CmdApplication())
 
 
 class UnloggedinCmdSet(default_cmds.UnloggedinCmdSet):
@@ -106,6 +109,8 @@ class UnloggedinCmdSet(default_cmds.UnloggedinCmdSet):
         #
         # any commands you add below will overload the default ones.
         #
+        # Add roster command for guests
+        self.add(CmdRoster())
 
 
 class SessionCmdSet(default_cmds.SessionCmdSet):
