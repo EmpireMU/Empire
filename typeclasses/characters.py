@@ -113,6 +113,7 @@ class Character(ObjectParent, DefaultCharacter):
         self.db.background = "No background has been set."
         self.db.personality = "No personality has been set."
         self.db.notable_traits = "No notable traits have been set."
+        self.db.realm = "No realm has been set."
 
         # Initialize character status (for roster system)
         self.db.status = STATUS_AVAILABLE

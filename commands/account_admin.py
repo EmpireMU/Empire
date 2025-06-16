@@ -69,11 +69,10 @@ class CmdCreatePlayerAccount(MuxCommand):
                 location=settings.START_LOCATION,
                 home=settings.START_LOCATION,
                 permissions=["Player"],
-                account=account,
             )
             
             # Link character to account
-            account.db._playable_characters.append(char)
+            account.db._playable_characters = [char]  # Set as the only character
             char.db.account = account
             
             # Set this as the default puppet for the account

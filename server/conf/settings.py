@@ -40,6 +40,10 @@ CREATE_ACCOUNT_ON_CONNECT = False  # Disable automatic account creation
 RESTRICTED_CREATION = True  # Restrict account creation to staff only
 AUTO_PUPPET_ON_LOGIN = True  # Auto-puppet the last character on login
 
+# Add our custom apps
+INSTALLED_APPS += (
+    'web.roster',
+)
 
 ######################################################################
 # Settings given in secret_settings.py override those in this file.

@@ -233,6 +233,7 @@ class CmdBiography(CharacterLookupMixin, MuxCommand):
         biography/gender <char> = <gender>        - Set gender
         biography/name <char> = <full name>       - Set full name
         biography/notable <char> = <text>         - Set notable traits
+        biography/realm <char> = <realm>          - Set realm
         
     Examples:
         biography                    - View your own biography
@@ -244,12 +245,14 @@ class CmdBiography(CharacterLookupMixin, MuxCommand):
         biography/gender Ada = Female
         biography/name Ada = Empress Ada Lovelace
         biography/notable Ada = Master of disguise, speaks 5 languages
+        biography/realm Ada = Imperial Territories
         
     Shows:
         - Description (set with 'desc' command)
         - Age (set with biography/age)
         - Birthday (set with biography/birthday)
         - Gender (set with biography/gender)
+        - Realm (set with biography/realm)
         - Background (set with biography/background)
         - Personality (set with biography/personality)
         - Distinctions (set with 'setdist' command):
@@ -292,7 +295,8 @@ class CmdBiography(CharacterLookupMixin, MuxCommand):
                     "birthday": "birthday",
                     "gender": "gender",
                     "name": "full_name",
-                    "notable": "notable_traits"
+                    "notable": "notable_traits",
+                    "realm": "realm"
                 }
                 
                 if switch not in switch_map:
@@ -350,6 +354,8 @@ class CmdBiography(CharacterLookupMixin, MuxCommand):
             demographics.append(f"|wAge:|n {char.db.age}")
         if char.db.birthday:
             demographics.append(f"|wBirthday:|n {char.db.birthday}")
+        if char.db.realm:
+            demographics.append(f"|wRealm:|n {char.db.realm}")
         msg += " | ".join(demographics) if demographics else "|wNo demographics set|n"
         
         # Add culture and vocation on one line if they exist

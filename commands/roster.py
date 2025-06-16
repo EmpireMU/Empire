@@ -174,13 +174,14 @@ class CmdRoster(MuxCommand):
         Args:
             char (Character): The character to format
         Returns:
-            tuple: (name, concept, gender, age)
+            tuple: (name, concept, gender, age, realm)
         """
         name = char.db.full_name or char.key
         concept = char.db.concept or "No concept set"
         gender = char.db.gender or "Not set"
         age = char.db.age or "Not set"
-        return (name, concept, gender, str(age))
+        realm = char.db.realm or "Not set"
+        return (name, concept, gender, str(age), realm)
         
     def _filter_chars(self, chars, name=None, gender=None):
         """
@@ -353,6 +354,7 @@ class CmdRoster(MuxCommand):
             "|wConcept|n",
             "|wGender|n",
             "|wAge|n",
+            "|wRealm|n",
             border="header"
         )
         

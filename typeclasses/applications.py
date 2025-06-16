@@ -1,40 +1,61 @@
 """
-Applications for character roster system.
+Application script for handling character applications.
 """
-
-from evennia.scripts.scripts import DefaultScript
-from evennia.utils import create
-from evennia.utils.utils import make_iter
-from django.conf import settings
+from evennia import DefaultScript
 
 class Application(DefaultScript):
     """
-    An application to play a character.
-    
-    Important attributes:
-        email (str): The email address of the applicant
-        char_name (str): The name of the character being applied for
-        app_text (str): The application text
-        ip_address (str): The IP address of the applicant
+    This script handles character applications.
+    It stores the application data and provides methods for staff to review.
     """
     
     def at_script_creation(self):
         """
-        Called when the script is first created.
+        Setup the script
         """
+        self.key = "application_unnamed"
+        self.desc = "Character application"
+        self.interval = None  # Not a repeating script
+        self.persistent = True
+        
+        # Initialize storage attributes
         self.db.email = ""
         self.db.char_name = ""
         self.db.app_text = ""
         self.db.ip_address = ""
+        self.db.status = "pending"  # pending, approved, rejected
+        self.db.reviewer = None
+        self.db.review_notes = ""
+        self.db.review_date = None
         
-        # Only staff should be able to see/edit applications
-        self.locks.add(
-            "examine:perm(Admin);edit:perm(Admin);delete:perm(Admin);control:perm(Admin)"
-        )
+    def approve(self, reviewer, notes=""):
+        """
+        Approve the application
         
-        # Set up persistent mode
-        self.persistent = True
+        Args:
+            reviewer (Account): The staff member approving
+            notes (str, optional): Any notes about the approval
+        """
+        from django.utils import timezone
+        self.db.status = "approved"
+        self.db.reviewer = reviewer
+        self.db.review_notes = notes
+        self.db.review_date = timezone.now()
         
+    def reject(self, reviewer, notes=""):
+        """
+        Reject the application
+        
+        Args:
+            reviewer (Account): The staff member rejecting
+            notes (str, optional): Reason for rejection
+        """
+        from django.utils import timezone
+        self.db.status = "rejected"
+        self.db.reviewer = reviewer
+        self.db.review_notes = notes
+        self.db.review_date = timezone.now()
+
     def get_display_name(self, looker=None, **kwargs):
         """
         Returns the display name of the application - used in listings.
