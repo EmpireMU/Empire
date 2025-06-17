@@ -100,9 +100,8 @@ def character_detail_view(request, char_name, char_id):
     character = get_object_or_404(ObjectDB, id=char_id, db_key__iexact=char_name)
     
     # Check if user can see traits (staff or character owner)
-    can_see_traits = request.user.is_staff
-    if hasattr(character, 'account') and character.account:
-        can_see_traits = can_see_traits or (character.account.id == request.user.id)
+    # Since account names match character names, check username against character name
+    can_see_traits = request.user.is_staff or (request.user.username.lower() == character.name.lower())
     
     # Get character's basic info
     basic_info = {

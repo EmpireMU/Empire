@@ -530,6 +530,7 @@ const cancelDistinctionEdit = function(slot, field) {
             </div>
 
             <!-- Special Effects -->
+            {% if can_see_traits %}
             <div class="card mb-4">
                 <div class="card-header">
                     <h2 class="h5 mb-0">Special Effects</h2>
@@ -550,6 +551,7 @@ const cancelDistinctionEdit = function(slot, field) {
                     </div>
                 </div>
             </div>
+            {% endif %}
 
             {% if can_see_traits %}
             <!-- Distinctions -->
