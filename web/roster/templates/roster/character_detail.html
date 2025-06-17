@@ -86,7 +86,7 @@ const saveField = function(fieldName, charName, charId) {
             editor.style.display = 'none';
             
             // Update content based on field type
-            if (fieldName === 'desc' || fieldName === 'background' || fieldName === 'personality' || fieldName === 'notable_traits') {
+            if (fieldName === 'desc' || fieldName === 'background' || fieldName === 'personality' || fieldName === 'notable_traits' || fieldName === 'special_effects') {
                 display.innerHTML = value.replace(/\n/g, '<br>');
             } else {
                 display.textContent = value;
@@ -523,6 +523,28 @@ const cancelDistinctionEdit = function(slot, field) {
                                 <textarea class="form-control form-control-sm w-100" rows="5"></textarea>
                                 <button onclick="saveField('notable_traits', '{{ character.name }}', {{ character.id }})" class="btn btn-sm btn-primary mt-2">Save</button>
                                 <button onclick="cancelEdit('notable_traits')" class="btn btn-sm btn-secondary mt-2">Cancel</button>
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Special Effects -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="h5 mb-0">Special Effects</h2>
+                </div>
+                <div class="card-body">
+                    <div id="special_effects-container">
+                        <p class="card-text" id="special_effects-display">{{ basic_info.special_effects|default:'No special effects recorded.'|linebreaks }}</p>
+                        {% if request.user.is_staff %}
+                            <button onclick="editField('special_effects', '{{ basic_info.special_effects|default:''|escapejs }}')" class="btn btn-sm btn-link">
+                                Edit
+                            </button>
+                            <span id="special_effects-editor" style="display: none;">
+                                <textarea class="form-control form-control-sm w-100" rows="5"></textarea>
+                                <button onclick="saveField('special_effects', '{{ character.name }}', {{ character.id }})" class="btn btn-sm btn-primary mt-2">Save</button>
+                                <button onclick="cancelEdit('special_effects')" class="btn btn-sm btn-secondary mt-2">Cancel</button>
                             </span>
                         {% endif %}
                     </div>

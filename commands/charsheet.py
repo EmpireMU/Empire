@@ -282,6 +282,10 @@ class CmdSheet(CharacterLookupMixin, Command):
             if plot_points:
                 sheet += f"\n|wPlot Points:|n {int(plot_points.value)}\n"
         
+0        # Add special effects section if it exists
+        if hasattr(char, 'db') and char.db.special_effects:
+            sheet += f"\n|ySpecial Effects|n\n{char.db.special_effects}\n"
+        
         # Send the sheet to the caller
         self.msg(sheet)
 

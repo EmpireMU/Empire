@@ -14,7 +14,8 @@ from commands.charsheet_editor import (
     CmdPersonality,
     CmdSetAge,
     CmdSetBirthday,
-    CmdSetGender
+    CmdSetGender,
+    CmdSetSpecialEffects
 )
 from evennia.contrib.rpg.traits import TraitHandler
 
@@ -344,6 +345,33 @@ class TestCharSheetEditor(EvenniaTest):
         self.cmd_gender.args = ""
         self.cmd_gender.func()
         self.assertIn("Usage: setgender", self.cmd_gender.msg.mock_calls[-1][1][0])
+
+    def test_special_effects_command(self):
+        """Test the setsfx command."""
+        # Set up the command
+        cmd = CmdSetSpecialEffects()
+        cmd.caller = self.char1
+        cmd.obj = self.char1
+        cmd.msg = MagicMock()
+        
+        # Test setting special effects
+        cmd.args = "self = Has a magical aura that glows softly in darkness"
+        cmd.func()
+        self.assertEqual(self.char1.db.special_effects, "Has a magical aura that glows softly in darkness")
+        cmd.msg.assert_called_with("Set special effects for Char:\nHas a magical aura that glows softly in darkness")
+        
+        # Test clearing special effects
+        cmd.msg.reset_mock()
+        cmd.args = "self = "
+        cmd.func()
+        self.assertEqual(self.char1.db.special_effects, "")
+        cmd.msg.assert_called_with("Cleared special effects for Char.")
+        
+        # Test invalid syntax
+        cmd.msg.reset_mock()
+        cmd.args = "invalid syntax"
+        cmd.func()
+        cmd.msg.assert_called_with("Usage: setsfx <character> = <special effects text>")
 
 if __name__ == '__main__':
     unittest.main() 

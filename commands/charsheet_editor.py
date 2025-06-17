@@ -425,6 +425,59 @@ class CmdBiography(CharacterLookupMixin, MuxCommand):
         
         self.msg(msg)
 
+class CmdSetSpecialEffects(CharacterLookupMixin, MuxCommand):
+    """
+    Set special effects for a character.
+    
+    Usage:
+        setsfx <character> = <special effects text>
+        setsfx <character> =    (clears special effects)
+        
+    Sets the special effects text for a character. This is a pure text
+    field with no dice associated. Only staff can use this command.
+    
+    Examples:
+        setsfx Alice = Has a magical aura that glows softly in darkness
+        setsfx Bob = Leaves frost footprints when walking
+        setsfx Charlie =    (clears Alice's special effects)
+        
+    The special effects will appear at the bottom of the character sheet
+    and in the web view.
+    """
+    
+    key = "setsfx"
+    aliases = ["specialeffects"]
+    locks = "cmd:perm(Builder)"
+    help_category = "Character"
+    
+    def func(self):
+        """Execute the command."""
+        if not self.args or "=" not in self.args:
+            self.msg("Usage: setsfx <character> = <special effects text>")
+            return
+            
+        # Split into character and effects parts
+        char_name, effects_text = [part.strip() for part in self.args.split("=", 1)]
+        
+        # Find the character using inherited method
+        char = self.find_character(char_name)
+        if not char:
+            return
+            
+        # Set the special effects (empty string if no text provided)
+        char.db.special_effects = effects_text
+        
+        if effects_text:
+            self.msg(f"Set special effects for {char.name}:\n{effects_text}")
+            # Notify the character if they're online
+            if char.has_account:
+                char.msg(f"{self.caller.name} set your special effects: {effects_text}")
+        else:
+            self.msg(f"Cleared special effects for {char.name}.")
+            # Notify the character if they're online
+            if char.has_account:
+                char.msg(f"{self.caller.name} cleared your special effects.")
+
 class CharSheetEditorCmdSet(CmdSet):
     """
     Command set for editing character sheets.
@@ -438,3 +491,4 @@ class CharSheetEditorCmdSet(CmdSet):
         self.add(CmdDeleteTrait())
         self.add(CmdSetDistinction())
         self.add(CmdBiography())
+        self.add(CmdSetSpecialEffects())

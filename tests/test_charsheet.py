@@ -171,5 +171,32 @@ class TestCharSheet(EvenniaTest):
         self.cmd.func()
         self.assertIn("has no character sheet", self.caller.msg.mock_calls[1][1][0])
 
+    def test_special_effects_display(self):
+        """Test that special effects are displayed on character sheet when set."""
+        # Set special effects
+        self.char1.db.special_effects = "Has a magical aura that glows softly in darkness"
+        
+        # Call command with no args (view own sheet)
+        self.cmd.args = ""
+        self.cmd.func()
+        
+        # Check output contains special effects
+        output = self.caller.msg.mock_calls[0][1][0]
+        self.assertIn("Special Effects", output)
+        self.assertIn("Has a magical aura that glows softly in darkness", output)
+        
+    def test_no_special_effects_display(self):
+        """Test that special effects section is not shown when empty."""
+        # Ensure special effects is empty
+        self.char1.db.special_effects = ""
+        
+        # Call command with no args (view own sheet)
+        self.cmd.args = ""
+        self.cmd.func()
+        
+        # Check output does not contain special effects section
+        output = self.caller.msg.mock_calls[0][1][0]
+        self.assertNotIn("Special Effects", output)
+
 if __name__ == '__main__':
     unittest.main()

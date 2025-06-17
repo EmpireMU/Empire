@@ -118,6 +118,7 @@ def character_detail_view(request, char_name, char_id):
         'description': character.db.desc,
         'background': character.db.background,
         'personality': character.db.personality,
+        'special_effects': character.db.special_effects,
     }
     
     # Get character's organizations
@@ -307,7 +308,8 @@ def update_character_field(request, char_name, char_id):
             'desc',
             'background',
             'personality',
-            'notable_traits'
+            'notable_traits',
+            'special_effects'
         ]
         
         if field not in allowed_fields:

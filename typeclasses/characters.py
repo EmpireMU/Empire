@@ -189,6 +189,9 @@ class Character(ObjectParent, DefaultCharacter):
         # Initialize home location
         self.db.home_location = None
 
+        # Initialize special effects (staff-only text field)
+        self.db.special_effects = ""
+
     def at_init(self):
         """
         Called when object is first created and after it is loaded from cache.
