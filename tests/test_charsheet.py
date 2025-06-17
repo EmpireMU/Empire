@@ -34,6 +34,8 @@ class TestCharSheet(EvenniaTest):
             self.char1.char_resources = TraitHandler(self.char1, db_attribute_key="char_resources")
         if not hasattr(self.char1, 'signature_assets'):
             self.char1.signature_assets = TraitHandler(self.char1, db_attribute_key="char_signature_assets")
+        if not hasattr(self.char1, 'powers'):
+            self.char1.powers = TraitHandler(self.char1, db_attribute_key="powers")
         
         # Add test traits
         self.char1.character_attributes.add("prowess", "Prowess", trait_type="static", base=8, desc="Physical power")
@@ -51,6 +53,9 @@ class TestCharSheet(EvenniaTest):
         
         # Add resources
         self.char1.char_resources.add("gold", "Gold", trait_type="static", base=6, desc="Wealth")
+
+        # Add powers
+        self.char1.powers.add("test_power", "Test Power", trait_type="static", base=8, desc="A test power")
     
     def test_get_trait_display(self):
         """Test trait display formatting."""

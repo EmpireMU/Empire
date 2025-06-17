@@ -73,11 +73,14 @@ class TestCharSheetEditor(EvenniaTest):
             self.char1.distinctions = TraitHandler(self.char1, db_attribute_key="char_distinctions")
         if not hasattr(self.char1, 'signature_assets'):
             self.char1.signature_assets = TraitHandler(self.char1, db_attribute_key="char_signature_assets")
+        if not hasattr(self.char1, 'powers'):
+            self.char1.powers = TraitHandler(self.char1, db_attribute_key="powers")
         
         # Add test traits
         self.char1.character_attributes.add("strength", "Strength", trait_type="static", base=8, desc="Strong and tough")
         self.char1.skills.add("fighting", "Fighting", trait_type="static", base=6, desc="Combat training")
         self.char1.signature_assets.add("sword", "Sword", trait_type="static", base=8, desc="Magic blade")
+        self.char1.powers.add("test_power", "Test Power", trait_type="static", base=8, desc="A test power")
         
         # Set up test commands
         self.cmd_deltrait = CmdDeleteTrait()

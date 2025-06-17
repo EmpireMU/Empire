@@ -81,6 +81,7 @@ def get_trait_die(character, trait_spec: str) -> Optional[Tuple[str, str, str, b
         ('distinctions', character.distinctions),
         ('char_resources', character.char_resources),
         ('signature_assets', character.signature_assets),
+        ('powers', character.powers),
         ('temporary_assets', character.temporary_assets)
     ]
     
@@ -288,7 +289,10 @@ def format_roll_result(value: int, die: str, trait: TraitDie) -> str:
 def get_all_traits(character):
     """Get all traits for a character."""
     return [
-        ('attributes', character.attributes),
+        ('character_attributes', character.character_attributes),
         ('skills', character.skills),
-        ('signature_assets', character.signature_assets)
+        ('distinctions', character.distinctions),
+        ('signature_assets', character.signature_assets),
+        ('powers', character.powers),
+        ('char_resources', character.char_resources)
     ] 

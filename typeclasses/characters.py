@@ -75,6 +75,14 @@ class Character(ObjectParent, DefaultCharacter):
         return TraitHandler(self, db_attribute_key="char_signature_assets")
 
     @lazy_property
+    def powers(self):
+        """
+        Powers (d4-d12)
+        Represent supernatural or extraordinary abilities
+        """
+        return TraitHandler(self, db_attribute_key="powers")
+
+    @lazy_property
     def char_resources(self):
         """
         TraitHandler that manages character resources.
@@ -169,6 +177,12 @@ class Character(ObjectParent, DefaultCharacter):
         # Initialize resources handler (will be initialized on first access)
         _ = self.char_resources
 
+        # Initialize powers handler (will be initialized empty)
+        _ = self.powers
+
+        # Initialize signature assets handler (will be initialized empty)
+        _ = self.signature_assets
+
         # Initialize empty list for offline board notifications
         self.db.offline_board_notifications = []
 
@@ -189,6 +203,7 @@ class Character(ObjectParent, DefaultCharacter):
         _ = self.character_attributes
         _ = self.skills
         _ = self.signature_assets
+        _ = self.powers
         _ = self.organisations
         _ = self.char_resources
 
@@ -207,6 +222,7 @@ class Character(ObjectParent, DefaultCharacter):
         _ = self.character_attributes
         _ = self.skills
         _ = self.signature_assets
+        _ = self.powers
         _ = self.organisations
         _ = self.char_resources
         

@@ -14,7 +14,8 @@ class TraitValidator:
         'skills': 'skills', 
         'signature_assets': 'signature_assets',
         'distinctions': 'distinctions',
-        'resources': 'char_resources'
+        'resources': 'char_resources',
+        'powers': 'powers'
     }
     
     @classmethod

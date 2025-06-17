@@ -113,7 +113,7 @@ def character_detail_view(request, char_name, char_id):
         'birthday': character.db.birthday,
         'realm': character.db.realm,
         'culture': character.distinctions.get('culture').name if character.distinctions.get('culture') else None,
-        'vocation': character.db.vocation,
+        'vocation': character.distinctions.get('vocation').name if character.distinctions.get('vocation') else None,
         'notable_traits': character.db.notable_traits,
         'description': character.db.desc,
         'background': character.db.background,
@@ -147,8 +147,9 @@ def character_detail_view(request, char_name, char_id):
         for key in character.distinctions.all():
             trait = character.distinctions.get(key)
             distinctions[trait.name or key] = {
+                'key': key,
                 'description': trait.desc or "No description",
-                'value': f"d{trait.value}"
+                'value': f"d{int(trait.value)}"
             }
         
         # Get character's attributes
@@ -156,8 +157,9 @@ def character_detail_view(request, char_name, char_id):
         for key in character.character_attributes.all():
             trait = character.character_attributes.get(key)
             attributes[trait.name or key] = {
+                'key': key,
                 'description': trait.desc or "No description",
-                'value': f"d{trait.value}"
+                'value': f"d{int(trait.value)}"
             }
         
         # Get character's skills
@@ -165,8 +167,9 @@ def character_detail_view(request, char_name, char_id):
         for key in character.skills.all():
             trait = character.skills.get(key)
             skills[trait.name or key] = {
+                'key': key,
                 'description': trait.desc or "No description",
-                'value': f"d{trait.value}"
+                'value': f"d{int(trait.value)}"
             }
         
         # Get character's signature assets
@@ -174,8 +177,9 @@ def character_detail_view(request, char_name, char_id):
         for key in character.signature_assets.all():
             trait = character.signature_assets.get(key)
             signature_assets[key] = {
+                'key': key,
                 'description': trait.desc or "No description",
-                'value': f"d{trait.value}"
+                'value': f"d{int(trait.value)}"
             }
         
         # Add traits to context
@@ -206,14 +210,100 @@ def update_character_field(request, char_name, char_id):
         if not field:
             return JsonResponse({'error': 'Missing field'}, status=400)
         
-        # List of allowed fields for editing
+        # Handle distinction updates (special case for freeform text)
+        if field.startswith('distinction_'):
+            # Format: distinction_<slot>_<field> where field is 'name' or 'description'
+            try:
+                _, slot, field_type = field.split('_', 2)
+                
+                # Validate slot
+                valid_slots = ['concept', 'culture', 'vocation']
+                if slot not in valid_slots:
+                    return JsonResponse({'error': f'Invalid distinction slot: {slot}'}, status=400)
+                
+                # Validate field type
+                if field_type not in ['name', 'description']:
+                    return JsonResponse({'error': f'Invalid distinction field: {field_type}'}, status=400)
+                
+                # Get the current distinction if it exists
+                distinction = character.distinctions.get(slot)
+                
+                if field_type == 'name':
+                    # Update the name - need to preserve existing description
+                    current_desc = distinction.desc if distinction else "No description"
+                    # Use the same method as setdist command
+                    character.distinctions.add(slot, value or "Unnamed", trait_type="static", base=8, desc=current_desc)
+                elif field_type == 'description':
+                    # Update the description - need to preserve existing name
+                    current_name = distinction.name if distinction else "Unnamed"
+                    # Use the same method as setdist command
+                    character.distinctions.add(slot, current_name, trait_type="static", base=8, desc=value or "No description")
+                
+                logger.info(f"Updated {char_name}'s {slot} distinction {field_type} to: {value}")
+                
+                return JsonResponse({
+                    'success': True,
+                    'value': value,
+                    'message': f'Successfully updated {slot} {field_type}'
+                })
+                
+            except ValueError:
+                return JsonResponse({'error': 'Invalid distinction field format'}, status=400)
+        
+        # Handle trait updates
+        if field.startswith('trait_'):
+            # Format: trait_<category>_<trait_key>
+            try:
+                _, category, trait_key = field.split('_', 2)
+                
+                # Validate die size
+                if not value.startswith('d') or not value[1:].isdigit():
+                    return JsonResponse({'error': 'Die size must be in format dN (e.g., d4, d6, d8, d10, d12)'}, status=400)
+                
+                die_size = int(value[1:])
+                if die_size not in [4, 6, 8, 10, 12]:
+                    return JsonResponse({'error': 'Die size must be one of: d4, d6, d8, d10, d12'}, status=400)
+                
+                # Get the appropriate trait handler
+                if category == 'attributes':
+                    handler = character.character_attributes
+                elif category == 'skills':
+                    handler = character.skills
+                elif category == 'distinctions':
+                    handler = character.distinctions
+                elif category == 'signature_assets':
+                    handler = character.signature_assets
+                elif category == 'powers':
+                    handler = character.powers
+                else:
+                    return JsonResponse({'error': f'Invalid trait category: {category}'}, status=400)
+                
+                # Get the trait and update its value
+                trait = handler.get(trait_key)
+                if not trait:
+                    return JsonResponse({'error': f'Trait not found: {trait_key}'}, status=400)
+                
+                # Update the trait value
+                trait.base = die_size
+                
+                logger.info(f"Updated {char_name}'s {category} {trait_key} to d{die_size}")
+                
+                return JsonResponse({
+                    'success': True,
+                    'value': f'd{die_size}',
+                    'message': f'Successfully updated {trait.name or trait_key} to d{die_size}'
+                })
+                
+            except ValueError:
+                return JsonResponse({'error': 'Invalid trait field format'}, status=400)
+        
+        # List of allowed regular fields for editing
         allowed_fields = [
             'full_name',
             'gender',
             'age',
             'birthday',
             'realm',
-            'vocation',
             'desc',
             'background',
             'personality',

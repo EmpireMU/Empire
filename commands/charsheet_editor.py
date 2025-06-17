@@ -16,7 +16,7 @@ class CmdSetTrait(CharacterLookupMixin, MuxCommand):
     Set a trait on a character sheet.
 
     Usage:
-      settrait <character> = <category> <n> d<size> [description]
+      settrait <character> = <category> "<trait name>" d<size> [description]
 
     Categories:
       attributes   - Core attributes (d4-d12, default d6)
@@ -25,6 +25,8 @@ class CmdSetTrait(CharacterLookupMixin, MuxCommand):
         Represent learned abilities and training
       signature_assets - Signature assets (d4-d12)
         Represent important items or companions
+      powers      - Powers (d4-d12)
+        Represent supernatural or extraordinary abilities
 
     Die Sizes:
       d4  - Untrained/Weak
@@ -38,13 +40,16 @@ class CmdSetTrait(CharacterLookupMixin, MuxCommand):
         Sets Tom's Strength attribute to d8
       settrait Tom = skills fighting d6 "Expert in hand-to-hand combat"
         Sets Tom's Fighting skill to d6 with description
-      settrait Tom = signature_assets sword d8 "Family heirloom blade"
-        Creates a d8 Signature Asset representing Tom's sword
+      settrait Tom = signature_assets "Magic Sword" d8 "Family heirloom blade"
+        Creates a d8 Signature Asset representing Tom's magic sword
+      settrait Tom = powers "Divine Blessing" d10 "Blessed by the gods"
+        Creates a d10 Power representing divine power
       settrait Jane = attributes agility d10 "Years of acrobatic training"
         Sets Jane's Agility to d10 with explanation of high rating
 
     Notes:
     - Setting a trait that already exists will overwrite it
+    - For signature_assets and powers, enclose multi-word names in quotes
     """
     key = "settrait"
     help_category = "Character"
@@ -53,7 +58,7 @@ class CmdSetTrait(CharacterLookupMixin, MuxCommand):
     def func(self):
         """Execute the command."""
         if not self.args or "=" not in self.args:
-            self.msg("Usage: settrait <character> = <category> <n> d<size> [description]")
+            self.msg("Usage: settrait <character> = <category> \"<trait name>\" d<size> [description]")
             return
 
         # Split into character and trait parts
@@ -64,15 +69,21 @@ class CmdSetTrait(CharacterLookupMixin, MuxCommand):
         if not char:
             return
 
-        # Parse trait information
-        parts = trait_part.strip().split()
+        # Parse trait information - handle quoted trait names
+        import shlex
+        try:
+            parts = shlex.split(trait_part)
+        except ValueError as e:
+            self.msg("Error parsing command. Make sure to close all quotes.")
+            return
+
         if len(parts) < 3:
-            self.msg("Usage: settrait <character> = <category> <n> d<size> [description]")
+            self.msg("Usage: settrait <character> = <category> \"<trait name>\" d<size> [description]")
             return
 
         category = parts[0].lower()
-        if category not in ['attributes', 'skills', 'signature_assets']:
-            self.msg("Invalid category. Must be one of: attributes, skills, signature_assets")
+        if category not in ['attributes', 'skills', 'signature_assets', 'powers']:
+            self.msg("Invalid category. Must be one of: attributes, skills, signature_assets, powers")
             return
 
         name = parts[1]
@@ -89,13 +100,18 @@ class CmdSetTrait(CharacterLookupMixin, MuxCommand):
             self.msg("Die size must be one of: d4, d6, d8, d10, d12")
             return
 
+        # Convert spaces to underscores for the key
+        key = name.lower().replace(' ', '_')
+
         # Set the trait
         if category == 'attributes':
-            char.character_attributes.add(name, name.title(), trait_type="static", base=die_size, desc=description)
+            char.character_attributes.add(key, name, trait_type="static", base=die_size, desc=description)
         elif category == 'skills':
-            char.skills.add(name, name.title(), trait_type="static", base=die_size, desc=description)
+            char.skills.add(key, name, trait_type="static", base=die_size, desc=description)
         elif category == 'signature_assets':
-            char.signature_assets.add(name, name.title(), trait_type="static", base=die_size, desc=description)
+            char.signature_assets.add(key, name, trait_type="static", base=die_size, desc=description)
+        elif category == 'powers':
+            char.powers.add(key, name, trait_type="static", base=die_size, desc=description)
 
         self.msg(f"Set {name} to d{die_size} for {char.name}")
 
@@ -103,17 +119,22 @@ class CmdDeleteTrait(CharacterLookupMixin, MuxCommand):
     """Delete a trait from a character.
     
     Usage:
-        deletetrait <character> = <category> <trait>
+        deletetrait <character> = <category> "<trait name>"
         
     Categories:
         attributes - Core attributes
         skills - Learned abilities
         signature_assets - Important items/companions
+        powers - Supernatural or extraordinary abilities
         
     Examples:
         deletetrait Bob = attributes strength
         deletetrait Jane = skills fighting
-        deletetrait Tom = signature_assets sword
+        deletetrait Tom = signature_assets "Magic Sword"
+        deletetrait Jane = powers "Divine Blessing"
+        
+    Notes:
+    - For signature_assets and powers, enclose multi-word names in quotes
     """
     key = "deletetrait"
     locks = "cmd:perm(Admin)"
@@ -122,7 +143,7 @@ class CmdDeleteTrait(CharacterLookupMixin, MuxCommand):
     def func(self):
         """Execute the command."""
         if not self.args or "=" not in self.args:
-            self.msg("Usage: deletetrait <character> = <category> <trait>")
+            self.msg("Usage: deletetrait <character> = <category> \"<trait name>\"")
             return
 
         char_name, rest = [part.strip() for part in self.args.split("=", 1)]
@@ -132,43 +153,48 @@ class CmdDeleteTrait(CharacterLookupMixin, MuxCommand):
         if not char:
             return
 
-        # Parse category and trait name
+        # Parse category and trait name - handle quoted trait names
+        import shlex
         try:
-            category, trait_name = rest.strip().split(None, 1)
-        except ValueError:
+            parts = shlex.split(rest)
+        except ValueError as e:
+            self.msg("Error parsing command. Make sure to close all quotes.")
+            return
+            
+        if len(parts) < 2:
             self.msg("You must specify both a category and a trait name.")
             return
             
-        category = category.lower()
-        trait_name = trait_name.strip().lower()
-          # Get the appropriate trait handler
+        category = parts[0].lower()
+        trait_name = parts[1].lower().replace(' ', '_')  # Convert spaces to underscores for lookup
+          
+        # Get the appropriate trait handler
         if category == 'attributes':
             handler = char.character_attributes
         elif category == 'skills':
             handler = char.skills
         elif category == 'signature_assets':
             handler = char.signature_assets
+        elif category == 'powers':
+            handler = char.powers
         else:
-            self.msg("Invalid category. Must be one of: attributes, skills, signature_assets")
+            self.msg("Invalid category. Must be one of: attributes, skills, signature_assets, powers")
             return
-            
-        # Try to delete the trait - use case-insensitive lookup
-        actual_key = None
-        for key in handler.all():
-            if key.lower() == trait_name.lower():
-                actual_key = key
-                break
-        
-        if actual_key:
-            # Check if trait is undeletable
-            if category in UNDELETABLE_TRAITS and trait_name in handler.all():
-                self.msg(f"Cannot delete {category} trait '{actual_key}' - it is a required trait.")
-                return
-            
-            handler.remove(actual_key)
-            self.msg(f"Deleted {category} trait '{actual_key}' from {char.name}.")
-        else:
-            self.msg(f"No {category} trait found named '{trait_name}' on {char.name}.")
+
+        # Check if trait exists
+        trait = handler.get(trait_name)
+        if not trait:
+            self.msg(f"Trait '{parts[1]}' not found in category '{category}'.")
+            return
+
+        # Check if trait can be deleted
+        if category in UNDELETABLE_TRAITS:
+            self.msg(f"Cannot delete traits from the {category} category.")
+            return
+
+        # Delete the trait
+        handler.remove(trait_name)
+        self.msg(f"Deleted trait '{parts[1]}' from {char.name}'s {category}.")
 
 class CmdSetDistinction(CharacterLookupMixin, MuxCommand):
     """

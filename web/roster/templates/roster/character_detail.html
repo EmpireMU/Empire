@@ -9,26 +9,70 @@ const editField = function(fieldName, currentValue) {
     const display = document.getElementById(`${fieldName}-display`);
     const editor = document.getElementById(`${fieldName}-editor`);
     
+    if (!container || !display || !editor) {
+        return;
+    }
+    
+    const input = editor.querySelector('textarea, input');
+    if (!input) {
+        return;
+    }
+    
+    // Hide display and show editor
     display.style.display = 'none';
     editor.style.display = 'block';
-    editor.querySelector('textarea, input').value = currentValue || '';
-    editor.querySelector('textarea, input').focus();
+    
+    // Decode any escaped characters and preserve line breaks
+    let decodedValue = currentValue || '';
+    try {
+        // First unescape any Django-escaped characters
+        decodedValue = decodedValue
+            .replace(/\\x([0-9A-Fa-f]{2})/g, function(match, p1) {
+                return String.fromCharCode(parseInt(p1, 16));
+            })
+            .replace(/\\u([0-9A-Fa-f]{4})/g, function(match, p1) {
+                return String.fromCharCode(parseInt(p1, 16));
+            });
+        
+        // Then handle normal escapes
+        decodedValue = decodedValue
+            .replace(/\\n/g, '\n')
+            .replace(/\\'/g, "'")
+            .replace(/\\"/g, '"')
+            .replace(/\\\\/g, '\\');
+    } catch (decodeError) {
+        decodedValue = currentValue || '';
+    }
+    
+    // Set the value and focus
+    input.value = decodedValue;
+    input.focus();
 };
 
 const saveField = function(fieldName, charName, charId) {
+    const container = document.getElementById(`${fieldName}-container`);
+    const display = document.getElementById(`${fieldName}-display`);
     const editor = document.getElementById(`${fieldName}-editor`);
-    const input = editor.querySelector('textarea, input');
-    const value = input.value;
     
+    if (!container || !display || !editor) {
+        return;
+    }
+    
+    const input = editor.querySelector('textarea, input');
+    if (!input) {
+        return;
+    }
+    
+    const value = input.value;
     const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
     
     fetch("{% url 'roster:update_character_field' character.name character.id %}", {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
-            'X-CSRFToken': csrftoken,
+            'X-CSRFToken': csrftoken
         },
-        body: `field=${fieldName}&value=${encodeURIComponent(value)}`,
+        body: `field=${fieldName}&value=${encodeURIComponent(value)}`
     })
     .then(function(response) {
         if (!response.ok) {
@@ -38,16 +82,23 @@ const saveField = function(fieldName, charName, charId) {
     })
     .then(function(data) {
         if (data.success) {
-            const display = document.getElementById(`${fieldName}-display`);
-            display.textContent = value;
-            display.style.display = 'inline';
+            // Hide editor first to prevent visual glitches
             editor.style.display = 'none';
+            
+            // Update content based on field type
+            if (fieldName === 'desc' || fieldName === 'background' || fieldName === 'personality' || fieldName === 'notable_traits') {
+                display.innerHTML = value.replace(/\n/g, '<br>');
+            } else {
+                display.textContent = value;
+            }
+            
+            // Show display
+            display.style.display = 'block';
         } else {
             alert('Error saving field: ' + (data.error || 'Unknown error'));
         }
     })
     .catch(function(error) {
-        console.error('Error:', error);
         alert('Error saving field: ' + error);
     });
 };
@@ -56,7 +107,213 @@ const cancelEdit = function(fieldName) {
     const display = document.getElementById(`${fieldName}-display`);
     const editor = document.getElementById(`${fieldName}-editor`);
     
-    display.style.display = 'inline';
+    if (!display || !editor) {
+        return;
+    }
+    
+    // Show display and hide editor
+    display.style.display = 'block';
+    editor.style.display = 'none';
+};
+
+const editTrait = function(category, traitKey, currentValue) {
+    const badgeId = `${category}_${traitKey}_badge`;
+    const badge = document.getElementById(badgeId);
+    
+    if (!badge) {
+        console.error('Badge not found:', badgeId);
+        return;
+    }
+    
+    // Create a select dropdown for die sizes
+    const select = document.createElement('select');
+    select.className = 'form-select form-select-sm d-inline-block';
+    select.style.width = 'auto';
+    
+    const dieSizes = ['d4', 'd6', 'd8', 'd10', 'd12'];
+    dieSizes.forEach(size => {
+        const option = document.createElement('option');
+        option.value = size;
+        option.textContent = size;
+        if (size === currentValue) {
+            option.selected = true;
+        }
+        select.appendChild(option);
+    });
+    
+    // Replace badge with select
+    badge.style.display = 'none';
+    badge.parentNode.insertBefore(select, badge.nextSibling);
+    
+    // Handle selection
+    select.onchange = function() {
+        saveTrait(category, traitKey, select.value, badgeId);
+        select.remove();
+        badge.style.display = 'inline';
+    };
+    
+    // Handle clicking away
+    select.onblur = function() {
+        select.remove();
+        badge.style.display = 'inline';
+    };
+    
+    select.focus();
+};
+
+const saveTrait = function(category, traitKey, newValue, badgeId) {
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    fetch("{% url 'roster:update_character_field' character.name character.id %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrftoken
+        },
+        body: `field=trait_${category}_${traitKey}&value=${encodeURIComponent(newValue)}`
+    })
+    .then(function(response) {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(function(data) {
+        if (data.success) {
+            const badge = document.getElementById(badgeId);
+            if (badge) {
+                badge.textContent = newValue;
+            }
+        } else {
+            alert('Error saving trait: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(function(error) {
+        alert('Error saving trait: ' + error);
+    });
+};
+
+const editDistinction = function(slot, field, currentValue) {
+    const containerId = `distinction_${slot}_${field}_container`;
+    const displayId = `distinction_${slot}_${field}_display`;
+    const editorId = `distinction_${slot}_${field}_editor`;
+    
+    const container = document.getElementById(containerId);
+    const display = document.getElementById(displayId);
+    const editor = document.getElementById(editorId);
+    
+    if (!container || !display || !editor) {
+        console.error('Missing elements for distinction editing:', {
+            container: !!container,
+            display: !!display,
+            editor: !!editor
+        });
+        return;
+    }
+    
+    const input = editor.querySelector('textarea, input');
+    if (!input) {
+        console.error('Could not find input element in editor');
+        return;
+    }
+    
+    // Hide display and show editor
+    display.style.display = 'none';
+    editor.style.display = 'block';
+    
+    // Decode any escaped characters and preserve line breaks
+    let decodedValue = currentValue || '';
+    try {
+        decodedValue = decodedValue
+            .replace(/\\x([0-9A-Fa-f]{2})/g, function(match, p1) {
+                return String.fromCharCode(parseInt(p1, 16));
+            })
+            .replace(/\\u([0-9A-Fa-f]{4})/g, function(match, p1) {
+                return String.fromCharCode(parseInt(p1, 16));
+            })
+            .replace(/\\n/g, '\n')
+            .replace(/\\'/g, "'")
+            .replace(/\\"/g, '"')
+            .replace(/\\\\/g, '\\');
+    } catch (decodeError) {
+        decodedValue = currentValue || '';
+    }
+    
+    input.value = decodedValue;
+    input.focus();
+};
+
+const saveDistinction = function(slot, field, charName, charId) {
+    const containerId = `distinction_${slot}_${field}_container`;
+    const displayId = `distinction_${slot}_${field}_display`;
+    const editorId = `distinction_${slot}_${field}_editor`;
+    
+    const container = document.getElementById(containerId);
+    const display = document.getElementById(displayId);
+    const editor = document.getElementById(editorId);
+    
+    if (!container || !display || !editor) {
+        return;
+    }
+    
+    const input = editor.querySelector('textarea, input');
+    if (!input) {
+        return;
+    }
+    
+    const value = input.value;
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    fetch("{% url 'roster:update_character_field' character.name character.id %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrftoken
+        },
+        body: `field=distinction_${slot}_${field}&value=${encodeURIComponent(value)}`
+    })
+    .then(function(response) {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(function(data) {
+        if (data.success) {
+            // Hide editor first
+            editor.style.display = 'none';
+            
+            // Update content based on field type
+            if (field === 'description') {
+                display.innerHTML = value.replace(/\n/g, '<br>');
+            } else {
+                display.textContent = value;
+            }
+            
+            // Show display
+            display.style.display = 'block';
+        } else {
+            alert('Error saving distinction: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(function(error) {
+        alert('Error saving distinction: ' + error);
+    });
+};
+
+const cancelDistinctionEdit = function(slot, field) {
+    const displayId = `distinction_${slot}_${field}_display`;
+    const editorId = `distinction_${slot}_${field}_editor`;
+    
+    const display = document.getElementById(displayId);
+    const editor = document.getElementById(editorId);
+    
+    if (!display || !editor) {
+        return;
+    }
+    
+    // Show display and hide editor
+    display.style.display = 'block';
     editor.style.display = 'none';
 };
 </script>
@@ -157,22 +414,9 @@ const cancelEdit = function(fieldName) {
                             <p><strong>Culture:</strong> {{ basic_info.culture }}</p>
                         {% endif %}
 
-                        <p id="vocation-container">
-                            <strong>Vocation:</strong> 
-                            <span id="vocation-display">{{ basic_info.vocation|default:'' }}</span>
-                            {% if request.user.is_staff %}
-                                <button onclick="editField('vocation', '{{ basic_info.vocation|default:'' }}')" class="btn btn-sm btn-link">
-                                    Edit
-                                </button>
-                                <span id="vocation-editor" style="display: none;">
-                                    <input type="text" class="form-control form-control-sm d-inline-block w-auto">
-                                    <button onclick="saveField('vocation', '{{ character.name }}', {{ character.id }})" class="btn btn-sm btn-primary">Save</button>
-                                    <button onclick="cancelEdit('vocation')" class="btn btn-sm btn-secondary">Cancel</button>
-                                </span>
-                            {% endif %}
-                        </p>
-
-                        <p><strong>Distinctions:</strong> {{ basic_info.distinctions|default:'' }}</p>
+                        {% if basic_info.vocation %}
+                            <p><strong>Vocation:</strong> {{ basic_info.vocation }}</p>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -206,7 +450,7 @@ const cancelEdit = function(fieldName) {
                     <div id="desc-container">
                         <p class="card-text" id="desc-display">{{ basic_info.description|default:''|linebreaks }}</p>
                         {% if request.user.is_staff %}
-                            <button onclick="editField('desc', '{{ basic_info.description|default:'' }}')" class="btn btn-sm btn-link">
+                            <button onclick="editField('desc', '{{ basic_info.description|default:''|escapejs }}')" class="btn btn-sm btn-link">
                                 Edit
                             </button>
                             <span id="desc-editor" style="display: none;">
@@ -228,7 +472,7 @@ const cancelEdit = function(fieldName) {
                     <div id="background-container">
                         <p class="card-text" id="background-display">{{ basic_info.background|default:''|linebreaks }}</p>
                         {% if request.user.is_staff %}
-                            <button onclick="editField('background', '{{ basic_info.background|default:'' }}')" class="btn btn-sm btn-link">
+                            <button onclick="editField('background', '{{ basic_info.background|default:''|escapejs }}')" class="btn btn-sm btn-link">
                                 Edit
                             </button>
                             <span id="background-editor" style="display: none;">
@@ -250,7 +494,7 @@ const cancelEdit = function(fieldName) {
                     <div id="personality-container">
                         <p class="card-text" id="personality-display">{{ basic_info.personality|default:''|linebreaks }}</p>
                         {% if request.user.is_staff %}
-                            <button onclick="editField('personality', '{{ basic_info.personality|default:'' }}')" class="btn btn-sm btn-link">
+                            <button onclick="editField('personality', '{{ basic_info.personality|default:''|escapejs }}')" class="btn btn-sm btn-link">
                                 Edit
                             </button>
                             <span id="personality-editor" style="display: none;">
@@ -272,7 +516,7 @@ const cancelEdit = function(fieldName) {
                     <div id="notable_traits-container">
                         <p class="card-text" id="notable_traits-display">{{ basic_info.notable_traits|default:''|linebreaks }}</p>
                         {% if request.user.is_staff %}
-                            <button onclick="editField('notable_traits', '{{ basic_info.notable_traits|default:'' }}')" class="btn btn-sm btn-link">
+                            <button onclick="editField('notable_traits', '{{ basic_info.notable_traits|default:''|escapejs }}')" class="btn btn-sm btn-link">
                                 Edit
                             </button>
                             <span id="notable_traits-editor" style="display: none;">
@@ -294,9 +538,43 @@ const cancelEdit = function(fieldName) {
                 <div class="card-body">
                     {% if distinctions %}
                         {% for name, trait in distinctions.items %}
-                        <div class="mb-3">
-                            <h3 class="h6">{{ name }} <span class="badge bg-primary">{{ trait.value }}</span></h3>
-                            <p class="card-text text-muted">{{ trait.description }}</p>
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="d-flex align-items-center">
+                                    <strong class="me-2">{{ trait.key|title }}:</strong>
+                                    <span class="badge bg-info me-2">d8</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Name editing -->
+                            <div id="distinction_{{ trait.key }}_name_container" class="mb-2">
+                                <span id="distinction_{{ trait.key }}_name_display" class="fw-bold">{{ name }}</span>
+                                {% if request.user.is_staff %}
+                                    <button onclick="editDistinction('{{ trait.key }}', 'name', '{{ name|escapejs }}')" class="btn btn-sm btn-link">
+                                        Edit Name
+                                    </button>
+                                    <span id="distinction_{{ trait.key }}_name_editor" style="display: none;">
+                                        <input type="text" class="form-control form-control-sm d-inline-block w-50">
+                                        <button onclick="saveDistinction('{{ trait.key }}', 'name', '{{ character.name }}', {{ character.id }})" class="btn btn-sm btn-primary">Save</button>
+                                        <button onclick="cancelDistinctionEdit('{{ trait.key }}', 'name')" class="btn btn-sm btn-secondary">Cancel</button>
+                                    </span>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Description editing -->
+                            <div id="distinction_{{ trait.key }}_description_container">
+                                <div id="distinction_{{ trait.key }}_description_display" class="text-muted">{{ trait.description|default:'No description'|linebreaks }}</div>
+                                {% if request.user.is_staff %}
+                                    <button onclick="editDistinction('{{ trait.key }}', 'description', '{{ trait.description|default:''|escapejs }}')" class="btn btn-sm btn-link">
+                                        Edit Description
+                                    </button>
+                                    <span id="distinction_{{ trait.key }}_description_editor" style="display: none;">
+                                        <textarea class="form-control form-control-sm w-100 mt-1" rows="3"></textarea>
+                                        <button onclick="saveDistinction('{{ trait.key }}', 'description', '{{ character.name }}', {{ character.id }})" class="btn btn-sm btn-primary mt-2">Save</button>
+                                        <button onclick="cancelDistinctionEdit('{{ trait.key }}', 'description')" class="btn btn-sm btn-secondary mt-2">Cancel</button>
+                                    </span>
+                                {% endif %}
+                            </div>
                         </div>
                         {% endfor %}
                     {% else %}
@@ -312,12 +590,26 @@ const cancelEdit = function(fieldName) {
                 </div>
                 <div class="card-body">
                     {% if attributes %}
-                        {% for name, trait in attributes.items %}
-                        <div class="mb-3">
-                            <h3 class="h6">{{ name }} <span class="badge bg-primary">{{ trait.value }}</span></h3>
-                            <p class="card-text text-muted">{{ trait.description }}</p>
+                        <div class="row">
+                            {% for name, trait in attributes.items %}
+                            <div class="col-md-6 mb-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold">{{ name }}</span>
+                                    <div>
+                                        <span class="badge bg-primary me-1" id="attributes_{{ trait.key }}_badge">{{ trait.value }}</span>
+                                        {% if request.user.is_staff %}
+                                            <button onclick="editTrait('attributes', '{{ trait.key }}', '{{ trait.value }}')" class="btn btn-sm btn-link" title="{{ trait.description }}">
+                                                Edit
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% if trait.description and trait.description != "No description" %}
+                                    <small class="text-muted d-block">{{ trait.description }}</small>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
                         </div>
-                        {% endfor %}
                     {% else %}
                         <p class="card-text text-muted">No attributes recorded.</p>
                     {% endif %}
@@ -331,12 +623,26 @@ const cancelEdit = function(fieldName) {
                 </div>
                 <div class="card-body">
                     {% if skills %}
-                        {% for name, trait in skills.items %}
-                        <div class="mb-3">
-                            <h3 class="h6">{{ name }} <span class="badge bg-primary">{{ trait.value }}</span></h3>
-                            <p class="card-text text-muted">{{ trait.description }}</p>
+                        <div class="row">
+                            {% for name, trait in skills.items %}
+                            <div class="col-md-6 col-lg-4 mb-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold">{{ name }}</span>
+                                    <div>
+                                        <span class="badge bg-success me-1" id="skills_{{ trait.key }}_badge">{{ trait.value }}</span>
+                                        {% if request.user.is_staff %}
+                                            <button onclick="editTrait('skills', '{{ trait.key }}', '{{ trait.value }}')" class="btn btn-sm btn-link" title="{{ trait.description }}">
+                                                Edit
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% if trait.description and trait.description != "No description" %}
+                                    <small class="text-muted d-block">{{ trait.description }}</small>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
                         </div>
-                        {% endfor %}
                     {% else %}
                         <p class="card-text text-muted">No skills recorded.</p>
                     {% endif %}
@@ -350,12 +656,26 @@ const cancelEdit = function(fieldName) {
                 </div>
                 <div class="card-body">
                     {% if signature_assets %}
-                        {% for name, trait in signature_assets.items %}
-                        <div class="mb-3">
-                            <h3 class="h6">{{ name }} <span class="badge bg-primary">{{ trait.value }}</span></h3>
-                            <p class="card-text text-muted">{{ trait.description }}</p>
+                        <div class="row">
+                            {% for name, trait in signature_assets.items %}
+                            <div class="col-md-6 mb-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold">{{ name }}</span>
+                                    <div>
+                                        <span class="badge bg-warning me-1" id="signature_assets_{{ trait.key }}_badge">{{ trait.value }}</span>
+                                        {% if request.user.is_staff %}
+                                            <button onclick="editTrait('signature_assets', '{{ trait.key }}', '{{ trait.value }}')" class="btn btn-sm btn-link" title="{{ trait.description }}">
+                                                Edit
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% if trait.description and trait.description != "No description" %}
+                                    <small class="text-muted d-block">{{ trait.description }}</small>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
                         </div>
-                        {% endfor %}
                     {% else %}
                         <p class="card-text text-muted">No signature assets recorded.</p>
                     {% endif %}

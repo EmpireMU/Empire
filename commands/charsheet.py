@@ -163,6 +163,7 @@ class CmdSheet(CharacterLookupMixin, Command):
     4. Additional Sets
        - Resources: Organization-provided dice pools
        - Signature Assets: Personal items/companions
+       - Powers: Supernatural or extraordinary abilities
     
     Die Size Guide:
        d4: Untrained/Weak
@@ -230,15 +231,26 @@ class CmdSheet(CharacterLookupMixin, Command):
         # Get optional handlers
         has_signature_assets = hasattr(char, 'signature_assets')
         has_resources = hasattr(char, 'char_resources')
+        has_powers = hasattr(char, 'powers')
         
         # Add Additional Sets header if any optional sets exist
-        if has_signature_assets or has_resources or hasattr(char, 'temporary_assets'):
+        if has_signature_assets or has_resources or has_powers or hasattr(char, 'temporary_assets'):
             sheet += "\n|yAdditional Sets|n\n"
             
             # Add signature assets section if they exist
             if has_signature_assets:
                 sheet += "\n|wSignature Assets:|n\n"
                 for trait in [char.signature_assets.get(key) for key in char.signature_assets.all()]:
+                    if trait:
+                        sheet += f"  {trait.name}: d{int(trait.value)}"
+                        if hasattr(trait, 'desc') and trait.desc:
+                            sheet += f" ({trait.desc})"
+                        sheet += "\n"
+            
+            # Add powers section if they exist
+            if has_powers:
+                sheet += "\n|wPowers:|n\n"
+                for trait in [char.powers.get(key) for key in char.powers.all()]:
                     if trait:
                         sheet += f"  {trait.name}: d{int(trait.value)}"
                         if hasattr(trait, 'desc') and trait.desc:
