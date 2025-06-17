@@ -1,0 +1,376 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+{% if request.user.is_staff %}
+<script>
+const editField = function(fieldName, currentValue) {
+    const container = document.getElementById(`${fieldName}-container`);
+    const display = document.getElementById(`${fieldName}-display`);
+    const editor = document.getElementById(`${fieldName}-editor`);
+    
+    display.style.display = 'none';
+    editor.style.display = 'block';
+    editor.querySelector('textarea, input').value = currentValue || '';
+    editor.querySelector('textarea, input').focus();
+};
+
+const saveField = function(fieldName, charName, charId) {
+    const editor = document.getElementById(`${fieldName}-editor`);
+    const input = editor.querySelector('textarea, input');
+    const value = input.value;
+    
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    fetch("{% url 'roster:update_character_field' character.name character.id %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrftoken,
+        },
+        body: `field=${fieldName}&value=${encodeURIComponent(value)}`,
+    })
+    .then(function(response) {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(function(data) {
+        if (data.success) {
+            const display = document.getElementById(`${fieldName}-display`);
+            display.textContent = value;
+            display.style.display = 'inline';
+            editor.style.display = 'none';
+        } else {
+            alert('Error saving field: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(function(error) {
+        console.error('Error:', error);
+        alert('Error saving field: ' + error);
+    });
+};
+
+const cancelEdit = function(fieldName) {
+    const display = document.getElementById(`${fieldName}-display`);
+    const editor = document.getElementById(`${fieldName}-editor`);
+    
+    display.style.display = 'inline';
+    editor.style.display = 'none';
+};
+</script>
+{% endif %}
+
+<div class="container mt-4">
+    {% csrf_token %}
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    {% if character.db.image_url %}
+                        <img src="{{ character.db.image_url }}" alt="{{ basic_info.name }}" class="img-fluid rounded mb-3" style="max-height: 300px;">
+                    {% else %}
+                        <div class="bg-light rounded mb-3 p-5 text-muted">No image available</div>
+                    {% endif %}
+                    
+                    <h1 class="h3 mb-3" id="full_name-container">
+                        <span id="full_name-display">{{ basic_info.name|default:'' }}</span>
+                        {% if request.user.is_staff %}
+                            <button onclick="editField('full_name', '{{ basic_info.name|default:'' }}')" class="btn btn-sm btn-link">
+                                Edit
+                            </button>
+                            <span id="full_name-editor" style="display: none;">
+                                <input type="text" class="form-control form-control-sm d-inline-block w-auto">
+                                <button onclick="saveField('full_name', '{{ character.name }}', {{ character.id }})" class="btn btn-sm btn-primary">Save</button>
+                                <button onclick="cancelEdit('full_name')" class="btn btn-sm btn-secondary">Cancel</button>
+                            </span>
+                        {% endif %}
+                    </h1>
+
+                    <div class="text-muted">
+                        {% if basic_info.concept %}
+                            <p><strong>Concept:</strong> {{ basic_info.concept }}</p>
+                        {% endif %}
+
+                        <p id="gender-container">
+                            <strong>Gender:</strong> 
+                            <span id="gender-display">{{ basic_info.gender|default:'' }}</span>
+                            {% if request.user.is_staff %}
+                                <button onclick="editField('gender', '{{ basic_info.gender|default:'' }}')" class="btn btn-sm btn-link">
+                                    Edit
+                                </button>
+                                <span id="gender-editor" style="display: none;">
+                                    <input type="text" class="form-control form-control-sm d-inline-block w-auto">
+                                    <button onclick="saveField('gender', '{{ character.name }}', {{ character.id }})" class="btn btn-sm btn-primary">Save</button>
+                                    <button onclick="cancelEdit('gender')" class="btn btn-sm btn-secondary">Cancel</button>
+                                </span>
+                            {% endif %}
+                        </p>
+
+                        <p id="age-container">
+                            <strong>Age:</strong> 
+                            <span id="age-display">{{ basic_info.age|default:'' }}</span>
+                            {% if request.user.is_staff %}
+                                <button onclick="editField('age', '{{ basic_info.age|default:'' }}')" class="btn btn-sm btn-link">
+                                    Edit
+                                </button>
+                                <span id="age-editor" style="display: none;">
+                                    <input type="text" class="form-control form-control-sm d-inline-block w-auto">
+                                    <button onclick="saveField('age', '{{ character.name }}', {{ character.id }})" class="btn btn-sm btn-primary">Save</button>
+                                    <button onclick="cancelEdit('age')" class="btn btn-sm btn-secondary">Cancel</button>
+                                </span>
+                            {% endif %}
+                        </p>
+
+                        <p id="birthday-container">
+                            <strong>Birthday:</strong> 
+                            <span id="birthday-display">{{ basic_info.birthday|default:'' }}</span>
+                            {% if request.user.is_staff %}
+                                <button onclick="editField('birthday', '{{ basic_info.birthday|default:'' }}')" class="btn btn-sm btn-link">
+                                    Edit
+                                </button>
+                                <span id="birthday-editor" style="display: none;">
+                                    <input type="text" class="form-control form-control-sm d-inline-block w-auto">
+                                    <button onclick="saveField('birthday', '{{ character.name }}', {{ character.id }})" class="btn btn-sm btn-primary">Save</button>
+                                    <button onclick="cancelEdit('birthday')" class="btn btn-sm btn-secondary">Cancel</button>
+                                </span>
+                            {% endif %}
+                        </p>
+
+                        <p id="realm-container">
+                            <strong>Realm:</strong> 
+                            <span id="realm-display">{{ basic_info.realm|default:'' }}</span>
+                            {% if request.user.is_staff %}
+                                <button onclick="editField('realm', '{{ basic_info.realm|default:'' }}')" class="btn btn-sm btn-link">
+                                    Edit
+                                </button>
+                                <span id="realm-editor" style="display: none;">
+                                    <input type="text" class="form-control form-control-sm d-inline-block w-auto">
+                                    <button onclick="saveField('realm', '{{ character.name }}', {{ character.id }})" class="btn btn-sm btn-primary">Save</button>
+                                    <button onclick="cancelEdit('realm')" class="btn btn-sm btn-secondary">Cancel</button>
+                                </span>
+                            {% endif %}
+                        </p>
+
+                        {% if basic_info.culture %}
+                            <p><strong>Culture:</strong> {{ basic_info.culture }}</p>
+                        {% endif %}
+
+                        <p id="vocation-container">
+                            <strong>Vocation:</strong> 
+                            <span id="vocation-display">{{ basic_info.vocation|default:'' }}</span>
+                            {% if request.user.is_staff %}
+                                <button onclick="editField('vocation', '{{ basic_info.vocation|default:'' }}')" class="btn btn-sm btn-link">
+                                    Edit
+                                </button>
+                                <span id="vocation-editor" style="display: none;">
+                                    <input type="text" class="form-control form-control-sm d-inline-block w-auto">
+                                    <button onclick="saveField('vocation', '{{ character.name }}', {{ character.id }})" class="btn btn-sm btn-primary">Save</button>
+                                    <button onclick="cancelEdit('vocation')" class="btn btn-sm btn-secondary">Cancel</button>
+                                </span>
+                            {% endif %}
+                        </p>
+
+                        <p><strong>Distinctions:</strong> {{ basic_info.distinctions|default:'' }}</p>
+                    </div>
+                </div>
+            </div>
+
+            {% if organizations %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="h5 mb-0">Organizations</h2>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                    {% for org in organizations %}
+                        <li class="mb-2">
+                            <strong>{{ org.name }}</strong><br>
+                            <span class="text-muted">{{ org.rank }}</span>
+                        </li>
+                    {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-md-8">
+            <!-- Description -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="h5 mb-0">Description</h2>
+                </div>
+                <div class="card-body">
+                    <div id="desc-container">
+                        <p class="card-text" id="desc-display">{{ basic_info.description|default:''|linebreaks }}</p>
+                        {% if request.user.is_staff %}
+                            <button onclick="editField('desc', '{{ basic_info.description|default:'' }}')" class="btn btn-sm btn-link">
+                                Edit
+                            </button>
+                            <span id="desc-editor" style="display: none;">
+                                <textarea class="form-control form-control-sm w-100" rows="5"></textarea>
+                                <button onclick="saveField('desc', '{{ character.name }}', {{ character.id }})" class="btn btn-sm btn-primary mt-2">Save</button>
+                                <button onclick="cancelEdit('desc')" class="btn btn-sm btn-secondary mt-2">Cancel</button>
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Background -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="h5 mb-0">Background</h2>
+                </div>
+                <div class="card-body">
+                    <div id="background-container">
+                        <p class="card-text" id="background-display">{{ basic_info.background|default:''|linebreaks }}</p>
+                        {% if request.user.is_staff %}
+                            <button onclick="editField('background', '{{ basic_info.background|default:'' }}')" class="btn btn-sm btn-link">
+                                Edit
+                            </button>
+                            <span id="background-editor" style="display: none;">
+                                <textarea class="form-control form-control-sm w-100" rows="5"></textarea>
+                                <button onclick="saveField('background', '{{ character.name }}', {{ character.id }})" class="btn btn-sm btn-primary mt-2">Save</button>
+                                <button onclick="cancelEdit('background')" class="btn btn-sm btn-secondary mt-2">Cancel</button>
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Personality -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="h5 mb-0">Personality</h2>
+                </div>
+                <div class="card-body">
+                    <div id="personality-container">
+                        <p class="card-text" id="personality-display">{{ basic_info.personality|default:''|linebreaks }}</p>
+                        {% if request.user.is_staff %}
+                            <button onclick="editField('personality', '{{ basic_info.personality|default:'' }}')" class="btn btn-sm btn-link">
+                                Edit
+                            </button>
+                            <span id="personality-editor" style="display: none;">
+                                <textarea class="form-control form-control-sm w-100" rows="5"></textarea>
+                                <button onclick="saveField('personality', '{{ character.name }}', {{ character.id }})" class="btn btn-sm btn-primary mt-2">Save</button>
+                                <button onclick="cancelEdit('personality')" class="btn btn-sm btn-secondary mt-2">Cancel</button>
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notable Traits -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="h5 mb-0">Notable Traits</h2>
+                </div>
+                <div class="card-body">
+                    <div id="notable_traits-container">
+                        <p class="card-text" id="notable_traits-display">{{ basic_info.notable_traits|default:''|linebreaks }}</p>
+                        {% if request.user.is_staff %}
+                            <button onclick="editField('notable_traits', '{{ basic_info.notable_traits|default:'' }}')" class="btn btn-sm btn-link">
+                                Edit
+                            </button>
+                            <span id="notable_traits-editor" style="display: none;">
+                                <textarea class="form-control form-control-sm w-100" rows="5"></textarea>
+                                <button onclick="saveField('notable_traits', '{{ character.name }}', {{ character.id }})" class="btn btn-sm btn-primary mt-2">Save</button>
+                                <button onclick="cancelEdit('notable_traits')" class="btn btn-sm btn-secondary mt-2">Cancel</button>
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            {% if can_see_traits %}
+            <!-- Distinctions -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="h5 mb-0">Distinctions</h2>
+                </div>
+                <div class="card-body">
+                    {% if distinctions %}
+                        {% for name, trait in distinctions.items %}
+                        <div class="mb-3">
+                            <h3 class="h6">{{ name }} <span class="badge bg-primary">{{ trait.value }}</span></h3>
+                            <p class="card-text text-muted">{{ trait.description }}</p>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="card-text text-muted">No distinctions recorded.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Attributes -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="h5 mb-0">Attributes</h2>
+                </div>
+                <div class="card-body">
+                    {% if attributes %}
+                        {% for name, trait in attributes.items %}
+                        <div class="mb-3">
+                            <h3 class="h6">{{ name }} <span class="badge bg-primary">{{ trait.value }}</span></h3>
+                            <p class="card-text text-muted">{{ trait.description }}</p>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="card-text text-muted">No attributes recorded.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Skills -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="h5 mb-0">Skills</h2>
+                </div>
+                <div class="card-body">
+                    {% if skills %}
+                        {% for name, trait in skills.items %}
+                        <div class="mb-3">
+                            <h3 class="h6">{{ name }} <span class="badge bg-primary">{{ trait.value }}</span></h3>
+                            <p class="card-text text-muted">{{ trait.description }}</p>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="card-text text-muted">No skills recorded.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Signature Assets -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="h5 mb-0">Signature Assets</h2>
+                </div>
+                <div class="card-body">
+                    {% if signature_assets %}
+                        {% for name, trait in signature_assets.items %}
+                        <div class="mb-3">
+                            <h3 class="h6">{{ name }} <span class="badge bg-primary">{{ trait.value }}</span></h3>
+                            <p class="card-text text-muted">{{ trait.description }}</p>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="card-text text-muted">No signature assets recorded.</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.badge {
+    font-size: 1rem;
+    padding: 0.5rem 0.75rem;
+}
+</style>
+
+{% endblock %} 
