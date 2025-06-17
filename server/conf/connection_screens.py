@@ -26,15 +26,21 @@ from evennia import utils
 
 CONNECTION_SCREEN = """
 |b==============================================================|n
- Welcome to |g{}|n, version {}!
+ Welcome to |g{}|n! For more details about the game, visit the
+ wiki at https://www.worldanvil.com/w/empire-empiremux
+
+ You can connect to a guest account to apply for a character or
+ chat on channels by typing:
+      |wconnect guest|n
 
  If you have an existing account, connect to it by typing:
       |wconnect <username> <password>|n
- If you need to create an account, type (without the <>'s):
-      |wcreate <username> <password>|n
 
- If you have spaces in your username, enclose it in quotes.
- Enter |whelp|n for more info. |wlook|n will re-show this screen.
+ A list of characters can be found at:
+      |wTODO INSERT URL HERE|n
+
+ Enter |whelp|n for information on game commands.
+ |wlook|n will redisplay this screen.
 |b==============================================================|n""".format(
     settings.SERVERNAME, utils.get_evennia_version("short")
 )
