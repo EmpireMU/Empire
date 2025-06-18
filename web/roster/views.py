@@ -432,9 +432,14 @@ def upload_character_image(request, char_name, char_id):
         if ext not in valid_extensions:
             return JsonResponse({'error': 'Invalid file type. Allowed: JPG, PNG, GIF, WebP'}, status=400)
         
-        # Validate file size (max 5MB)
-        if image_file.size > 5 * 1024 * 1024:
-            return JsonResponse({'error': 'File too large. Maximum size is 5MB'}, status=400)
+        # Validate file size (max 1MB)
+        if image_file.size > 1 * 1024 * 1024:
+            return JsonResponse({'error': 'File too large. Maximum size is 1MB'}, status=400)
+        
+        # Check maximum images limit (20 per character)
+        current_gallery = character.attributes.get('image_gallery', default=[], category='gallery')
+        if len(current_gallery) >= 20:
+            return JsonResponse({'error': 'Maximum of 20 images per character allowed'}, status=400)
         
         # Save the image
         image_info = save_character_image(character, image_file, caption)
@@ -536,6 +541,104 @@ def set_main_character_image(request, char_name, char_id):
         
     except Exception as e:
         logger.error(f"Error setting main character image: {str(e)}")
+        return JsonResponse({
+            'error': str(e),
+            'message': 'Server error occurred'
+        }, status=500)
+
+@require_POST
+@csrf_protect
+def set_secondary_character_image(request, char_name, char_id):
+    """
+    API endpoint to set a gallery image as the secondary character image.
+    Only accessible by staff members or the character owner.
+    """
+    try:
+        character = get_object_or_404(ObjectDB, id=char_id, db_key__iexact=char_name)
+        
+        # Check permissions (staff or character owner)
+        can_edit = request.user.is_staff or (request.user.username.lower() == character.name.lower())
+        if not can_edit:
+            return JsonResponse({'error': 'Permission denied'}, status=403)
+        
+        image_id = request.POST.get('image_id')
+        if not image_id:
+            return JsonResponse({'error': 'No image ID provided'}, status=400)
+        
+        # Find the image in the gallery
+        gallery = character.attributes.get('image_gallery', default=[], category='gallery')
+        selected_image = None
+        
+        for img in gallery:
+            if img.get('id') == image_id:
+                selected_image = img
+                break
+        
+        if not selected_image:
+            return JsonResponse({'error': 'Image not found in gallery'}, status=404)
+        
+        # Set the image as the secondary character image
+        character.db.secondary_image_url = selected_image['url']
+        
+        logger.info(f"Set secondary image for {char_name} to: {selected_image['filename']}")
+        
+        return JsonResponse({
+            'success': True,
+            'image_url': selected_image['url'],
+            'message': 'Secondary image updated successfully'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error setting secondary character image: {str(e)}")
+        return JsonResponse({
+            'error': str(e),
+            'message': 'Server error occurred'
+        }, status=500)
+
+@require_POST
+@csrf_protect
+def set_tertiary_character_image(request, char_name, char_id):
+    """
+    API endpoint to set a gallery image as the tertiary character image.
+    Only accessible by staff members or the character owner.
+    """
+    try:
+        character = get_object_or_404(ObjectDB, id=char_id, db_key__iexact=char_name)
+        
+        # Check permissions (staff or character owner)
+        can_edit = request.user.is_staff or (request.user.username.lower() == character.name.lower())
+        if not can_edit:
+            return JsonResponse({'error': 'Permission denied'}, status=403)
+        
+        image_id = request.POST.get('image_id')
+        if not image_id:
+            return JsonResponse({'error': 'No image ID provided'}, status=400)
+        
+        # Find the image in the gallery
+        gallery = character.attributes.get('image_gallery', default=[], category='gallery')
+        selected_image = None
+        
+        for img in gallery:
+            if img.get('id') == image_id:
+                selected_image = img
+                break
+        
+        if not selected_image:
+            return JsonResponse({'error': 'Image not found in gallery'}, status=404)
+        
+        # Set the image as the tertiary character image
+        character.db.tertiary_image_url = selected_image['url']
+        
+        logger.info(f"Set tertiary image for {char_name} to: {selected_image['filename']}")
+        
+        return JsonResponse({
+            'success': True,
+            'image_url': selected_image['url'],
+            'message': 'Tertiary image updated successfully'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error setting tertiary character image: {str(e)}")
         return JsonResponse({
             'error': str(e),
             'message': 'Server error occurred'

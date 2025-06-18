@@ -443,6 +443,27 @@ const cancelDistinctionEdit = function(slot, field) {
                 </div>
             </div>
             {% endif %}
+            
+            <!-- Secondary and Tertiary Images -->
+            {% if character.db.secondary_image_url or character.db.tertiary_image_url %}
+            <div class="card mb-4" id="additional-images-card">
+                <div class="card-header">
+                    <h2 class="h5 mb-0">Additional Images</h2>
+                </div>
+                <div class="card-body text-center">
+                    {% if character.db.secondary_image_url %}
+                        <div class="mb-3" data-image-type="secondary">
+                            <img src="{{ character.db.secondary_image_url }}" alt="Secondary image" class="img-fluid rounded" style="max-height: 200px; cursor: pointer;" onclick="showImageModal('{{ character.db.secondary_image_url }}', 'Secondary Image', '')">
+                        </div>
+                    {% endif %}
+                    {% if character.db.tertiary_image_url %}
+                        <div class="mb-3" data-image-type="tertiary">
+                            <img src="{{ character.db.tertiary_image_url }}" alt="Tertiary image" class="img-fluid rounded" style="max-height: 200px; cursor: pointer;" onclick="showImageModal('{{ character.db.tertiary_image_url }}', 'Tertiary Image', '')">
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
         </div>
 
         <div class="col-md-8">
@@ -475,14 +496,20 @@ const cancelDistinctionEdit = function(slot, field) {
                                     {% endif %}
                                     {% if request.user.is_staff or request.user.username.lower == character.name.lower %}
                                     <div class="card-footer p-2">
-                                        <div class="d-flex justify-content-between">
+                                        <div class="btn-group w-100 mb-2" role="group">
                                             <button class="btn btn-primary btn-sm" onclick="setMainImage('{{ image.id }}', '{{ image.url }}')" title="Set as main character image">
-                                                🖼️ Set Main
+                                                🖼️ Main
                                             </button>
-                                            <button class="btn btn-danger btn-sm" onclick="deleteImage('{{ image.id }}')">
-                                                🗑️ Delete
+                                            <button class="btn btn-info btn-sm" onclick="setSecondaryImage('{{ image.id }}', '{{ image.url }}')" title="Set as secondary image">
+                                                🖼️ 2nd
+                                            </button>
+                                            <button class="btn btn-warning btn-sm" onclick="setTertiaryImage('{{ image.id }}', '{{ image.url }}')" title="Set as tertiary image">
+                                                🖼️ 3rd
                                             </button>
                                         </div>
+                                        <button class="btn btn-danger btn-sm w-100" onclick="deleteImage('{{ image.id }}')">
+                                            🗑️ Delete
+                                        </button>
                                     </div>
                                     {% endif %}
                                 </div>
@@ -791,7 +818,7 @@ const cancelDistinctionEdit = function(slot, field) {
                     <div class="mb-3">
                         <label for="image-file" class="form-label">Select Image</label>
                         <input type="file" class="form-control" id="image-file" name="image" accept="image/*" required>
-                        <div class="form-text">Allowed formats: JPG, PNG, GIF, WebP. Max size: 5MB</div>
+                        <div class="form-text">Allowed formats: JPG, PNG, GIF, WebP. Max size: 1MB. Max 20 images per character.</div>
                     </div>
                     <div class="mb-3">
                         <label for="image-caption" class="form-label">Caption (optional)</label>
@@ -1069,6 +1096,125 @@ function setMainImage(imageId, imageUrl) {
     .catch(error => {
         alert('Error setting main image: ' + error);
     });
+}
+
+function setSecondaryImage(imageId, imageUrl) {
+    if (!confirm('Set this image as the secondary character image?')) {
+        return;
+    }
+    
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    fetch("{% url 'roster:set_secondary_character_image' character.name character.id %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrftoken
+        },
+        body: `image_id=${encodeURIComponent(imageId)}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update or create the secondary image in the sidebar
+            updateSidebarImage('secondary', data.image_url, 'Secondary Image');
+            showSuccessAlert('Secondary image updated successfully!');
+        } else {
+            alert('Error setting secondary image: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        alert('Error setting secondary image: ' + error);
+    });
+}
+
+function setTertiaryImage(imageId, imageUrl) {
+    if (!confirm('Set this image as the tertiary character image?')) {
+        return;
+    }
+    
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    fetch("{% url 'roster:set_tertiary_character_image' character.name character.id %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrftoken
+        },
+        body: `image_id=${encodeURIComponent(imageId)}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update or create the tertiary image in the sidebar
+            updateSidebarImage('tertiary', data.image_url, 'Tertiary Image');
+            showSuccessAlert('Tertiary image updated successfully!');
+        } else {
+            alert('Error setting tertiary image: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        alert('Error setting tertiary image: ' + error);
+    });
+}
+
+function updateSidebarImage(type, imageUrl, altText) {
+    // Find or create the additional images card
+    let additionalImagesCard = document.getElementById('additional-images-card');
+    
+    if (!additionalImagesCard) {
+        // Create the card if it doesn't exist
+        const sidebar = document.querySelector('.col-md-4');
+        additionalImagesCard = document.createElement('div');
+        additionalImagesCard.className = 'card mb-4';
+        additionalImagesCard.id = 'additional-images-card';
+        additionalImagesCard.innerHTML = `
+            <div class="card-header">
+                <h2 class="h5 mb-0">Additional Images</h2>
+            </div>
+            <div class="card-body text-center">
+            </div>
+        `;
+        sidebar.appendChild(additionalImagesCard);
+    }
+    
+    const cardBody = additionalImagesCard.querySelector('.card-body');
+    
+    // Find or create the image container
+    let imageContainer = cardBody.querySelector(`[data-image-type="${type}"]`);
+    
+    if (!imageContainer) {
+        imageContainer = document.createElement('div');
+        imageContainer.className = 'mb-3';
+        imageContainer.setAttribute('data-image-type', type);
+        cardBody.appendChild(imageContainer);
+    }
+    
+    // Update the image
+    imageContainer.innerHTML = `
+        <img src="${imageUrl}" alt="${altText}" class="img-fluid rounded" style="max-height: 200px; cursor: pointer;" onclick="showImageModal('${imageUrl}', '${altText}', '')">
+    `;
+    
+    // Make sure the card is visible
+    additionalImagesCard.style.display = 'block';
+}
+
+function showSuccessAlert(message) {
+    const successAlert = document.createElement('div');
+    successAlert.className = 'alert alert-success alert-dismissible fade show position-fixed';
+    successAlert.style.cssText = 'top: 20px; right: 20px; z-index: 9999;';
+    successAlert.innerHTML = `
+        <span>${message}</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(successAlert);
+    
+    // Auto-dismiss after 3 seconds
+    setTimeout(() => {
+        if (successAlert.parentNode) {
+            successAlert.remove();
+        }
+    }, 3000);
 }
 
 // Add event listeners for modal close buttons when page loads
