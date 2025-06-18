@@ -2,12 +2,82 @@ from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_protect
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+from django.utils import timezone
+from django.conf import settings
+import os
+import uuid
 from evennia.objects.models import ObjectDB
 from typeclasses.characters import STATUS_AVAILABLE, STATUS_ACTIVE, STATUS_GONE
 from typeclasses.organisations import Organisation
 import logging
 
 logger = logging.getLogger('web')
+
+def get_character_images(character):
+    """
+    Get all images for a character from their image_gallery attribute.
+    Returns a list of dictionaries with image info.
+    """
+    gallery = character.attributes.get('image_gallery', default=[], category='gallery')
+    return gallery
+
+def save_character_image(character, image_file, caption=""):
+    """
+    Save an uploaded image to the character's gallery.
+    Returns the image info dictionary.
+    """
+    # Create character images directory if it doesn't exist
+    char_dir = f"character_images/{character.id}"
+    
+    # Generate unique filename
+    ext = os.path.splitext(image_file.name)[1]
+    filename = f"{uuid.uuid4()}{ext}"
+    file_path = f"{char_dir}/{filename}"
+    
+    # Save the file
+    saved_path = default_storage.save(file_path, ContentFile(image_file.read()))
+    
+    # Create image info
+    image_info = {
+        'id': str(uuid.uuid4()),
+        'filename': filename,
+        'path': saved_path,
+        'caption': caption,
+        'url': default_storage.url(saved_path) if hasattr(default_storage, 'url') else f"/media/{saved_path}",
+        'uploaded_at': str(timezone.now())
+    }
+    
+    # Add to character's gallery
+    gallery = character.attributes.get('image_gallery', default=[], category='gallery')
+    gallery.append(image_info)
+    character.attributes.add('image_gallery', gallery, category='gallery')
+    
+    return image_info
+
+def remove_character_image(character, image_id):
+    """
+    Delete an image from the character's gallery.
+    """
+    gallery = character.attributes.get('image_gallery', default=[], category='gallery')
+    
+    # Find and remove the image
+    for i, img in enumerate(gallery):
+        if img.get('id') == image_id:
+            # Delete the file
+            try:
+                if default_storage.exists(img['path']):
+                    default_storage.delete(img['path'])
+            except Exception as e:
+                logger.warning(f"Could not delete image file {img['path']}: {e}")
+            
+            # Remove from gallery
+            gallery.pop(i)
+            character.attributes.add('image_gallery', gallery, category='gallery')
+            return True
+    
+    return False
 
 def roster_view(request):
     """
@@ -133,11 +203,15 @@ def character_detail_view(request, char_name, char_id):
         except ObjectDB.DoesNotExist:
             continue
     
+    # Get character's image gallery
+    gallery_images = get_character_images(character)
+    
     context = {
         'character': character,
         'basic_info': basic_info,
         'organizations': organizations,
         'can_see_traits': can_see_traits,
+        'gallery_images': gallery_images,
     }
     
     # Only include traits if user has permission
@@ -326,6 +400,142 @@ def update_character_field(request, char_name, char_id):
         
     except Exception as e:
         logger.error(f"Error updating character field: {str(e)}")
+        return JsonResponse({
+            'error': str(e),
+            'message': 'Server error occurred'
+        }, status=500)
+
+@require_POST
+@csrf_protect
+def upload_character_image(request, char_name, char_id):
+    """
+    API endpoint to upload an image to a character's gallery.
+    Only accessible by staff members or the character owner.
+    """
+    try:
+        character = get_object_or_404(ObjectDB, id=char_id, db_key__iexact=char_name)
+        
+        # Check permissions (staff or character owner)
+        can_edit = request.user.is_staff or (request.user.username.lower() == character.name.lower())
+        if not can_edit:
+            return JsonResponse({'error': 'Permission denied'}, status=403)
+        
+        if 'image' not in request.FILES:
+            return JsonResponse({'error': 'No image file provided'}, status=400)
+        
+        image_file = request.FILES['image']
+        caption = request.POST.get('caption', '')
+        
+        # Validate file type
+        valid_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp']
+        ext = os.path.splitext(image_file.name)[1].lower()
+        if ext not in valid_extensions:
+            return JsonResponse({'error': 'Invalid file type. Allowed: JPG, PNG, GIF, WebP'}, status=400)
+        
+        # Validate file size (max 5MB)
+        if image_file.size > 5 * 1024 * 1024:
+            return JsonResponse({'error': 'File too large. Maximum size is 5MB'}, status=400)
+        
+        # Save the image
+        image_info = save_character_image(character, image_file, caption)
+        
+        logger.info(f"Uploaded image for {char_name}: {image_info['filename']}")
+        
+        return JsonResponse({
+            'success': True,
+            'image': image_info,
+            'message': 'Image uploaded successfully'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error uploading character image: {str(e)}")
+        return JsonResponse({
+            'error': str(e),
+            'message': 'Server error occurred'
+        }, status=500)
+
+@require_POST
+@csrf_protect
+def delete_character_image(request, char_name, char_id):
+    """
+    API endpoint to delete an image from a character's gallery.
+    Only accessible by staff members or the character owner.
+    """
+    try:
+        character = get_object_or_404(ObjectDB, id=char_id, db_key__iexact=char_name)
+        
+        # Check permissions (staff or character owner)
+        can_edit = request.user.is_staff or (request.user.username.lower() == character.name.lower())
+        if not can_edit:
+            return JsonResponse({'error': 'Permission denied'}, status=403)
+        
+        image_id = request.POST.get('image_id')
+        if not image_id:
+            return JsonResponse({'error': 'No image ID provided'}, status=400)
+        
+        # Delete the image
+        success = remove_character_image(character, image_id)
+        
+        if success:
+            logger.info(f"Deleted image {image_id} for {char_name}")
+            return JsonResponse({
+                'success': True,
+                'message': 'Image deleted successfully'
+            })
+        else:
+            return JsonResponse({'error': 'Image not found'}, status=404)
+        
+    except Exception as e:
+        logger.error(f"Error deleting character image: {str(e)}")
+        return JsonResponse({
+            'error': str(e),
+            'message': 'Server error occurred'
+        }, status=500)
+
+@require_POST
+@csrf_protect
+def set_main_character_image(request, char_name, char_id):
+    """
+    API endpoint to set a gallery image as the main character image.
+    Only accessible by staff members or the character owner.
+    """
+    try:
+        character = get_object_or_404(ObjectDB, id=char_id, db_key__iexact=char_name)
+        
+        # Check permissions (staff or character owner)
+        can_edit = request.user.is_staff or (request.user.username.lower() == character.name.lower())
+        if not can_edit:
+            return JsonResponse({'error': 'Permission denied'}, status=403)
+        
+        image_id = request.POST.get('image_id')
+        if not image_id:
+            return JsonResponse({'error': 'No image ID provided'}, status=400)
+        
+        # Find the image in the gallery
+        gallery = character.attributes.get('image_gallery', default=[], category='gallery')
+        selected_image = None
+        
+        for img in gallery:
+            if img.get('id') == image_id:
+                selected_image = img
+                break
+        
+        if not selected_image:
+            return JsonResponse({'error': 'Image not found in gallery'}, status=404)
+        
+        # Set the image as the main character image
+        character.db.image_url = selected_image['url']
+        
+        logger.info(f"Set main image for {char_name} to: {selected_image['filename']}")
+        
+        return JsonResponse({
+            'success': True,
+            'image_url': selected_image['url'],
+            'message': 'Main image updated successfully'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error setting main character image: {str(e)}")
         return JsonResponse({
             'error': str(e),
             'message': 'Server error occurred'
