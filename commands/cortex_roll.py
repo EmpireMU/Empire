@@ -248,10 +248,39 @@ class CmdCortexRoll(Command):
             self.dice = None
             return
         
-        # Process dice/traits
-        dice_pool = []
+        # Check for complications first and handle them
+        complications_found = []
+        filtered_args = []
         
         for arg in args:
+            # Check if this argument is a complication
+            if hasattr(self.caller, 'complications'):
+                trait_key = arg.lower().replace(' ', '_')
+                complication = self.caller.complications.get(trait_key)
+                if complication:
+                    complications_found.append(complication)
+                    continue  # Don't add to filtered_args
+            
+            # Not a complication, add to filtered args for normal processing
+            filtered_args.append(arg)
+        
+        # Handle complications
+        if complications_found:
+            if self.difficulty is not None:
+                # Add half the complication die size to difficulty
+                for comp in complications_found:
+                    self.difficulty += int(comp.value) // 2
+            else:
+                # No difficulty, show message and set empty dice
+                self.dice = None
+                self.trait_info = []
+                self.msg("Complications are applied in GM rolls or versus set difficulties; please remove the complication from your roll or set a difficulty.")
+                return
+        
+        # Process remaining dice/traits
+        dice_pool = []
+        
+        for arg in filtered_args:
             # Validate argument
             if not arg:  # Skip empty arguments
                 continue

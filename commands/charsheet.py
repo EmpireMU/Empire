@@ -128,6 +128,48 @@ def format_distinctions_full(distinctions):
     
     return section + str(table) + "\n"
 
+def format_traits_three_columns(title, traits):
+    """
+    Format traits in a three-column layout without table borders.
+    
+    Args:
+        title: The section title
+        traits: List of trait objects
+        
+    Returns:
+        Formatted string for the section with three columns
+    """
+    if not traits:
+        return ""
+    
+    # Create header
+    section = f"|w{title}:|n\n"
+    
+    # Sort traits by name
+    sorted_traits = sorted(traits, key=lambda x: str(x.key))
+    
+    # Calculate column width (roughly 26 characters per column for 78 total width)
+    col_width = 26
+    
+    # Group traits into rows of 3
+    for i in range(0, len(sorted_traits), 3):
+        row_parts = []
+        for j in range(3):
+            if i + j < len(sorted_traits):
+                trait = sorted_traits[i + j]
+                display_name, die_size, _ = get_trait_display(trait)
+                trait_text = f"{display_name}: {die_size}"
+                # Pad to column width
+                row_parts.append(trait_text.ljust(col_width))
+            else:
+                # Fill empty columns
+                row_parts.append("".ljust(col_width))
+        
+        # Join the three columns and add to section
+        section += "".join(row_parts).rstrip() + "\n"
+    
+    return section + "\n"
+
 class CmdSheet(CharacterLookupMixin, Command):
     """
     View a character sheet.
@@ -206,17 +248,17 @@ class CmdSheet(CharacterLookupMixin, Command):
         
         # Add attributes section if they exist
         if hasattr(char, 'character_attributes'):
-            sheet += "\n|wAttributes:|n\n"
-            for trait in [char.character_attributes.get(key) for key in char.character_attributes.all()]:
-                if trait:
-                    sheet += f"  {trait.name}: d{int(trait.value)}\n"
+            attributes = [char.character_attributes.get(key) for key in char.character_attributes.all()]
+            attributes = [trait for trait in attributes if trait]  # Filter out None values
+            if attributes:
+                sheet += format_traits_three_columns("Attributes", attributes)
         
         # Add skills section if they exist
         if hasattr(char, 'skills'):
-            sheet += "\n|wSkills:|n\n"
-            for trait in [char.skills.get(key) for key in char.skills.all()]:
-                if trait:
-                    sheet += f"  {trait.name}: d{int(trait.value)}\n"
+            skills = [char.skills.get(key) for key in char.skills.all()]
+            skills = [trait for trait in skills if trait]  # Filter out None values
+            if skills:
+                sheet += format_traits_three_columns("Skills", skills)
         
         # Add distinctions section if they exist
         if hasattr(char, 'distinctions'):

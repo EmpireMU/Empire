@@ -99,6 +99,16 @@ class Character(ObjectParent, DefaultCharacter):
         return TraitHandler(self, db_attribute_key="char_temp_assets")
 
     @lazy_property
+    def complications(self):
+        """
+        Complications that can be added or removed at will.
+        These represent hindrances or problems that make actions more difficult.
+        Unlike other traits, complications don't add dice to rolls but instead
+        modify difficulty or provide narrative prompts.
+        """
+        return TraitHandler(self, db_attribute_key="char_complications")
+
+    @lazy_property
     def organisations(self):
         """
         Get all organizations this character belongs to.
@@ -182,6 +192,12 @@ class Character(ObjectParent, DefaultCharacter):
 
         # Initialize signature assets handler (will be initialized empty)
         _ = self.signature_assets
+
+        # Initialize temporary assets handler (will be initialized empty)
+        _ = self.temporary_assets
+        
+        # Initialize complications handler (will be initialized empty)
+        _ = self.complications
 
         # Initialize empty list for offline board notifications
         self.db.offline_board_notifications = []

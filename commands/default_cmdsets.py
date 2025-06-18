@@ -22,6 +22,7 @@ from commands.plot_points import PlotPointCmdSet
 from commands.cortex_roll import CortexCmdSet
 from commands.organisations import OrgCmdSet
 from commands.temporary_assets import TemporaryAssetCmdSet
+from commands.complications import ComplicationCmdSet
 from commands.requests import CmdRequest
 from commands.board import CmdBoard
 from commands.room_management import CmdRoomManagement
@@ -57,6 +58,7 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CortexCmdSet)
         self.add(OrgCmdSet)
         self.add(TemporaryAssetCmdSet)
+        self.add(ComplicationCmdSet)
         self.add(CmdBoard())
         self.add(CmdRoomManagement())
         self.add(home.CmdHome())
